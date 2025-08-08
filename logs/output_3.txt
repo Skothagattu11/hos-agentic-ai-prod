@@ -1,0 +1,77 @@
+{
+  "timestamp": "2025-08-08T14:22:28.408306",
+  "user_id": "end_to_end_test_user_legacy",
+  "archetype": "Peak Performer",
+  "behavior_analysis": {
+    "user_id": "end_to_end_test_user_legacy",
+    "analysis_date": "2025-08-08",
+    "behavioral_signature": {
+      "signature": "Data-Driven Optimizer",
+      "confidence": 0.95
+    },
+    "sophistication_assessment": {
+      "score": 8.7,
+      "category": "Advanced",
+      "justification": "User demonstrates high engagement with data tracking and self-experimentation, seeks advanced strategies and shows a strong ability to integrate and adapt to new protocols."
+    },
+    "primary_goal": {
+      "goal": "Achieve peak physical performance and mental clarity",
+      "timeline": "6 months",
+      "success_metrics": [
+        "Increased stamina as measured by extended workout duration",
+        "Improved cognitive function as evidenced by increased focus and productivity"
+      ]
+    },
+    "personalized_strategy": {
+      "motivation_drivers": [
+        "Data visualization of progress",
+        "Personal bests and performance milestones",
+        "Scientific understanding of physiological changes"
+      ],
+      "habit_integration": [
+        "Integrating performance tracking into daily workouts",
+        "Scheduled cognitive exercises during peak mental clarity times",
+        "Regular sleep optimization"
+      ],
+      "barrier_mitigation": [
+        "Setting realistic performance goals to avoid burnout",
+        "Incorporating recovery protocols into routine",
+        "Using data analysis to adjust protocols based on body's response"
+      ]
+    },
+    "readiness_level": "High",
+    "recommendations": [
+      {
+        "recommendation": "Integrate a heart rate variability monitor into daily routine to track physiological stress and recovery.",
+        "justification": "Allows for data-driven adjustments to workout intensity and recovery routines."
+      },
+      {
+        "recommendation": "Implement a nootropic regimen to support cognitive function.",
+        "justification": "Can help enhance mental clarity and focus, supporting the user's cognitive goals."
+      },
+      {
+        "recommendation": "Develop a sleep optimization protocol including controlled sleep environment, consistent sleep-wake cycle, and sleep quality tracking.",
+        "justification": "Sleep plays a crucial role in physical recovery and cognitive function, supporting both primary goals."
+      },
+      {
+        "recommendation": "Schedule regular check-ins to assess progress, adjust goals, and prevent over-optimization.",
+        "justification": "Regular assessments can help ensure sustainable progress and avoid potential risks associated with over-optimization."
+      }
+    ]
+  },
+  "nutrition_plan": {
+    "date": "2025-08-08",
+    "archetype": "Peak Performer",
+    "content": "PEAK PERFORMER NUTRITION PLAN:\nUser ID: end_to_end_test_user_legacy\nDate: 2025-08-08\n\nDaily Nutrition Targets:\n- Calories: 2800\n- Protein: 210g\n- Carbohydrates: 280g\n- Fat: 93g\n- Fiber: 38g\n- Vitamins and minerals: achieve 100% RDA through a combination of diet and supplementation\n\nMEAL PLAN:\n\n1) Early Morning:\n- Pre-Workout Drink: 1 scoop of whey protein (25g protein, 120 calories), 1 banana (105 calories, 27g carbs)\n- Total: 225 calories, 25g protein, 27g carbs, 2g fat\n\nNutrition Tip: A light pre-workout meal with easily digestible protein and simple carbohydrates will provide immediate energy for your workout without causing digestive discomfort.\n\n2) Breakfast (Post-Workout):\n- Scrambled eggs (3 whole eggs, 1 egg white): 255 calories, 22g protein, 1g carbs, 18g fat\n- Whole grain toast (2 slices): 180 calories, 6g protein, 36g carbs, 2g fat\n- Avocado (half): 120 calories, 2g protein, 6g carbs, 10g fat\n- Total: 555 calories, 30g protein, 43g carbs, 30g fat\n\nNutrition Tip: A protein-rich post-workout meal aids muscle recovery. Adding healthy fats and complex carbohydrates replenishes energy stores and supports sustained energy levels.\n\n3) Morning Snack:\n- Greek yogurt (1 cup): 150 calories, 20g protein, 8g carbs, 4g fat\n- Mixed berries (1 cup): 84 calories, 1g protein, 21g carbs, 0g fat\n- Total: 234 calories, 21g protein, 29g carbs, 4g fat\n\nNutrition Tip: Mid-morning protein with antioxidants from berries supports ongoing recovery and provides a sustained energy source.\n\n4) Lunch:\n- Grilled chicken breast (6 oz): 280 calories, 54g protein, 0g carbs, 6g fat\n- Quinoa (1 cup): 220 calories, 8g protein, 39g carbs, 4g fat\n- Mixed Vegetables (2 cups): 180 calories, 8g protein, 40g carbs, 0g fat\n- Total: 680 calories, 70g protein, 79g carbs, 10g fat\n\nNutrition Tip: A balanced lunch with lean protein, complex carbohydrates, and fibrous vegetables provides sustained energy and supports afternoon cognitive function.\n\n5) Afternoon Snack:\n- Almonds (1 oz): 160 calories, 6g protein, 6g carbs, 14g fat\n- Apple (1 medium): 95 calories, 0g protein, 25g carbs, 0g fat\n- Total: 255 calories, 6g protein, 31g carbs, 14g fat\n\nNutrition Tip: A balanced snack with healthy fats, protein, and natural sugars provides a quick energy boost and maintains cognitive function.\n\n6) Dinner:\n- Salmon fillet (6 oz): 367 calories, 39g protein, 0g carbs, 23g fat\n- Sweet potato (1 large): 162 calories, 4g protein, 37g carbs, 0g fat\n- Steamed broccoli (1 cup): 55 calories, 4g protein, 11g carbs, 0g fat\n- Total: 584 calories, 47g protein, 48g carbs, 23g fat\n\nNutrition Tip: A dinner rich in omega-3 fatty acids, lean protein, and complex carbohydrates aids recovery, supports brain health, and promotes quality sleep.\n\n7) Evening Snack:\n- Cottage cheese (1 cup): 220 calories, 28g protein, 6g carbs, 10g fat\n- Dark chocolate (1 oz): 170 calories, 2g protein, 13g carbs, 12g fat\n- Total: 390 calories, 30g protein, 19g carbs, 22g fat\n\nNutrition Tip: A casein-rich snack like cottage cheese provides a slow-release protein source for overnight recovery. Dark chocolate offers a satisfying treat that also provides antioxidants.\n\nTOTAL DAILY INTAKE:\n- Calories: 2823\n- Protein: 229g\n- Carbohydrates: 275g\n- Fat: 105g\n\nNote: Adjust amounts as needed based on hunger, energy levels, and performance. Hydrate adequately throughout the day. Consider a multivitamin to cover any potential micronutrient gaps.",
+    "mode": "OpenAI Direct",
+    "system": "HolisticOS"
+  },
+  "routine_plan": {
+    "date": "2025-08-08",
+    "archetype": "Peak Performer",
+    "content": "PLAN GENERATION RESULTS:\n{\n  \"user_id\": \"end_to_end_test_user_legacy\",\n  \"plan_date\": \"2025-08-08\",\n  \"routine_plan\": {\n    \"morning_wakeup\": {\n      \"time_range\": \"6:00 - 7:30 AM\",\n      \"tasks\": [\n        {\n          \"task\": \"Heart Rate Variability (HRV) measurement upon waking\",\n          \"reasoning\": \"Provides immediate feedback on physiological readiness and recovery from the previous day's activities. This data-driven insight can help guide the intensity of today's workout.\"\n        },\n        {\n          \"task\": \"Hydration with a glass of water\",\n          \"reasoning\": \"Supports optimal body function and kickstarts metabolism. Hydration is a simple but essential element of overall health optimization.\"\n        },\n        {\n          \"task\": \"High-intensity interval training (HIIT) workout\",\n          \"reasoning\": \"Maximizes physical performance gains within a short time frame. HIIT workouts can increase stamina and are a highly effective, data-validated exercise approach.\"\n        },\n        {\n          \"task\": \"Post-workout protein-rich breakfast\",\n          \"reasoning\": \"Supports muscle recovery and provides sustained energy. A balanced, protein-rich meal after a workout replenishes nutrients and supports physical performance goals.\"\n        }\n      ]\n    },\n    \"focus_block\": {\n      \"time_range\": \"9:00 AM - 12:00 PM\",\n      \"tasks\": [\n        {\n          \"task\": \"Take nootropic supplement\",\n          \"reasoning\": \"Supports cognitive function and promotes mental clarity. Nootropics can enhance focus, supporting the user's cognitive performance goals.\"\n        },\n        {\n          \"task\": \"Deep work session with focus on most demanding tasks\",\n          \"reasoning\": \"Leverages peak cognitive function times for productive, focused work. Scheduling demanding tasks during this time can enhance productivity and performance.\"\n        },\n        {\n          \"task\": \"Active standing or walking breaks every hour\",\n          \"reasoning\": \"Promotes physical activity and mitigates the effects of prolonged sitting. Regular movement breaks during work sessions can boost energy and maintain physical activity levels.\"\n        }\n      ]\n    },\n    \"afternoon_recharge\": {\n      \"time_range\": \"1:00 - 2:00 PM\",\n      \"tasks\": [\n        {\n          \"task\": \"Balanced, nutrient-dense lunch\",\n          \"reasoning\": \"Maintains energy levels and supports overall health. A nutritious lunch helps sustain energy for the afternoon and supports overall health optimization goals.\"\n        },\n        {\n          \"task\": \"Short meditation or mindfulness session\",\n          \"reasoning\": \"Reduces stress and enhances mental clarity. Incorporating mindfulness into daily routines can promote mental well-being and enhance cognitive performance.\"\n        },\n        {\n          \"task\": \"Short walk or light physical activity\",\n          \"reasoning\": \"Recharges energy and promotes physical health. A short walk or light physical activity can break the after-lunch slump and maintain physical activity levels.\"\n        }\n      ]\n    },\n    \"evening_winddown\": {\n      \"time_range\": \"9:00 - 10:30 PM\",\n      \"tasks\": [\n        {\n          \"task\": \"Review of performance data and goal tracking\",\n          \"reasoning\": \"Provides insight into progress and informs future optimization strategies. Regular review of performance data is a key aspect of the data-driven Peak Performer approach.\"\n        },\n        {\n          \"task\": \"Relaxation activities such as reading or listening to music\",\n          \"reasoning\": \"Promotes relaxation and prepares the body for sleep. Engaging in calming activities before sleep can enhance sleep quality.\"\n        },\n        {\n          \"task\": \"Sleep optimization protocol\",\n          \"reasoning\": \"Supports restful sleep, recovery, and cognitive function. A consistent sleep routine and optimized sleep environment are essential for peak performance and recovery.\"\n        }\n      ]\n    }\n  }\n}\n\nThis routine plan is tailored to the Peak Performer archetype, focusing on data-driven optimization, advanced strategies, and a balance between physical performance and mental clarity. Each task has been chosen to align with the user's goals and archetype characteristics, providing a structured, actionable plan for health optimization.",
+    "mode": "OpenAI Direct",
+    "system": "HolisticOS"
+  },
+  "analysis_number": 3
+}

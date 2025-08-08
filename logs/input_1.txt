@@ -1,0 +1,7 @@
+{
+  "timestamp": "2025-08-08T11:54:07.201377",
+  "user_id": "test_user",
+  "archetype": "Foundation Builder",
+  "mode": "OpenAI Direct",
+  "analysis_number": 1
+}

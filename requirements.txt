@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+redis
+asyncpg
+supabase
+python-dotenv
+structlog
+pytest
+pytest-asyncio
+agents
+openai
+typing-extensions
+tensorflow
