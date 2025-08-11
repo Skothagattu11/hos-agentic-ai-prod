@@ -457,3 +457,98 @@ def create_health_context_from_raw_data(
         data_quality=data_quality,
         fetch_timestamp=datetime.now(timezone.utc)
     )
+
+# PHASE 4.1: Memory Persistence Models
+class UserGoal(BaseModel):
+    """User health goal tracking"""
+    goal_id: str
+    user_id: str  
+    goal_type: str  # "primary", "secondary", "micro"
+    description: str
+    target_value: Optional[float] = None
+    current_value: Optional[float] = None
+    timeline: str
+    success_metrics: List[str] = Field(default_factory=list)
+    status: str = "active"  # "active", "completed", "paused", "abandoned"
+    created_date: datetime
+    target_date: Optional[datetime] = None
+    completion_date: Optional[datetime] = None
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+class AnalysisHistory(BaseModel):
+    """Historical analysis record"""
+    analysis_id: str
+    user_id: str
+    analysis_date: datetime
+    archetype: str
+    analysis_type: str  # "initial", "follow_up", "adaptation"
+    behavior_analysis: Optional[Dict[str, Any]] = None
+    nutrition_plan: Optional[Dict[str, Any]] = None
+    routine_plan: Optional[Dict[str, Any]] = None
+    goals_achieved: List[str] = Field(default_factory=list)
+    user_feedback: Optional[Dict[str, Any]] = None
+    effectiveness_score: Optional[float] = None  # 0.0 to 1.0
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+class UserMemoryProfile(BaseModel):
+    """Comprehensive user memory and preferences"""
+    user_id: str
+    preferred_archetype: Optional[str] = None
+    archetype_confidence: float = 0.5
+    
+    # Behavioral patterns learned over time
+    behavioral_patterns: Dict[str, Any] = Field(default_factory=dict)
+    motivation_patterns: Dict[str, Any] = Field(default_factory=dict) 
+    barrier_patterns: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Goals and progress
+    current_goals: List[UserGoal] = Field(default_factory=list)
+    completed_goals: List[UserGoal] = Field(default_factory=list)
+    
+    # Analysis history
+    total_analyses: int = 0
+    analysis_history: List[AnalysisHistory] = Field(default_factory=list)
+    last_analysis_date: Optional[datetime] = None
+    
+    # Adaptation tracking
+    successful_adaptations: List[str] = Field(default_factory=list)
+    failed_adaptations: List[str] = Field(default_factory=list)
+    adaptation_triggers: Dict[str, int] = Field(default_factory=dict)
+    
+    # Preferences
+    preferred_analysis_frequency: str = "weekly"  # "daily", "weekly", "monthly"
+    notification_preferences: Dict[str, bool] = Field(default_factory=dict)
+    
+    # Memory metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    memory_version: str = "1.0"
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+class AdaptationTrigger(BaseModel):
+    """Triggers for plan adaptation"""
+    trigger_id: str
+    user_id: str
+    trigger_type: str  # "goal_progress", "user_feedback", "performance_decline", "new_data"
+    trigger_data: Dict[str, Any] = Field(default_factory=dict)
+    confidence: float  # 0.0 to 1.0
+    action_recommended: str  # "escalate", "de_escalate", "pivot", "maintain"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    processed: bool = False
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }

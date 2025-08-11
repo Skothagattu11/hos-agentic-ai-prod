@@ -541,9 +541,9 @@ async def analyze_user(request: AnalysisRequest):
         user_service = UserDataService()
         
         try:
-            # PHASE 3.1: Fetch real user health data
-            print(f"📊 Fetching real user data for {user_id}...")
-            user_context = await user_service.get_user_health_data(user_id, days=7)
+            # PHASE 4.0 MVP: Use incremental sync for efficiency  
+            print(f"📊 Fetching user data with incremental sync for {user_id}...")
+            user_context = await user_service.get_incremental_health_data(user_id)
             
             # Extract real data for analysis
             data_quality = user_context.data_quality
