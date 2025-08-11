@@ -396,15 +396,23 @@ class SupabaseAsyncPGAdapter:
         return min_pos
     
     def _parse_where_clause(self, where_clause: str) -> list:
-        """Parse WHERE clause into conditions for Supabase"""
+        """Parse WHERE clause into conditions for Supabase - Fixed boundary detection"""
         conditions = []
         
+        # Clean the where clause - remove any ORDER BY, LIMIT, GROUP BY that leaked in
+        clean_where = where_clause
+        for keyword in [' ORDER BY', ' LIMIT', ' GROUP BY']:
+            if keyword in clean_where.upper():
+                clean_where = clean_where[:clean_where.upper().find(keyword)]
+        
         # Split by AND (simple parsing)
-        and_parts = where_clause.split(' AND ')
+        and_parts = clean_where.split(' AND ')
         
         for part in and_parts:
             part = part.strip()
-            
+            if not part:  # Skip empty parts
+                continue
+                
             # Handle different operators
             if '>=' in part:
                 column, value = part.split('>=', 1)

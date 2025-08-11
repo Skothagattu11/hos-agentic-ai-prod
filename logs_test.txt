@@ -1,0 +1,458 @@
+python .\test_health_endpoints.py
+🚀 HOLISTICOS MVP - PHASE 2.1 TESTING
+FastAPI Health Data Endpoints Integration
+CTO Validation: Production-ready endpoints with real data integration
+
+🧪 Running Endpoints Integration test...
+
+============================================================
+PHASE 2.1 - HEALTH DATA ENDPOINTS TESTING
+============================================================
+
+[TEST] Integrating health data endpoints...
+INFO:services.api_gateway.integrate_health_endpoints:[INTEGRATION] Health data endpoints added successfully
+INFO:services.api_gateway.integrate_health_endpoints:[INTEGRATION] Available endpoints:
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/health-context
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/summary
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/data-quality
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/agent/{agent_name}/data
+INFO:services.api_gateway.integrate_health_endpoints:  - POST /api/v1/health-data/users/{user_id}/analyze
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/system/health
+✅ Endpoints integrated successfully
+
+[TEST] System health check...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:httpx:HTTP Request: HEAD https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=%2A "HTTP/2 200 OK"
+INFO:services.health_data_client:[API_REQUEST] /health with params: {}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/health "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /health: 1 records in 440ms
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/system/health "HTTP/1.1 200 OK"      
+Status: 200
+System Status: healthy
+✅ System health endpoint working
+
+[TEST] User health context endpoint...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting health context for user test_endpoints_user, 7 days
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1415ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 1180ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 1828ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.97s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.29s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.13s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 3.51s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/health-context?days=7 "HTTP/1.1 200 OK"
+Status: 200
+Success: True
+User ID: test_endpoints_user
+Data Quality: poor
+Agent Views Included: True
+✅ Health context endpoint working
+
+[TEST] User health summary endpoint...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting health summary for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 3 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 3 days: 2025-08-08 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-08', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-08', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-08&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1124ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-08&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 973ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 815ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 3 days: 2025-08-08 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.96s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 3 days: 2025-08-08 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.28s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.29s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.95s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/summary "HTTP/1.1 200 OK"
+Status: 200
+User ID: test_endpoints_user
+Data Quality: poor
+Agent Readiness: 0/6 agents ready
+✅ Health summary endpoint working
+
+[TEST] Data quality assessment endpoint...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Assessing data quality for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 853ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1283ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 811ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.97s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.30s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.98s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/data-quality?days=7 "HTTP/1.1 200 OK"
+Status: 200
+Quality Level: poor
+Completeness: 0.00
+Recommendations: 5
+✅ Data quality endpoint working
+
+[TEST] Agent-specific data endpoints...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting behavior agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 751ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1492ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 1334ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.94s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.36s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 3.25s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/behavior/data?days=7 "HTTP/1.1 200 OK"
+  • Behavior Agent: ⚠️  Not Ready
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting memory agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1145ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 983ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 808ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.93s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.33s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.33s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.99s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/memory/data?days=7 "HTTP/1.1 200 OK"
+  • Memory Agent: ⚠️  Not Ready
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting nutrition agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1443ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 968ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 1412ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.92s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.33s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 3.27s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/nutrition/data?days=7 "HTTP/1.1 200 OK"
+  • Nutrition Agent: ⚠️  Not Ready
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting routine agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 902ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1330ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 896ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.93s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.31s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.12s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.86s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/routine/data?days=7 "HTTP/1.1 200 OK"
+  • Routine Agent: ⚠️  Not Ready
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting adaptation agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 847ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 659ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1382ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.77s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.31s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.11s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.57s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/adaptation/data?days=7 "HTTP/1.1 200 OK"
+  • Adaptation Agent: ⚠️  Not Ready
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Getting insights agent data for user test_endpoints_user
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1118ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 962ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 806ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.95s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.31s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.97s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/health-data/users/test_endpoints_user/agent/insights/data?days=7 "HTTP/1.1 200 OK"
+  • Insights Agent: ⚠️  Not Ready
+Agent endpoints working: 6/6
+
+[TEST] Analysis trigger endpoint...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com   
+INFO:services.user_data_service:[USER_DATA_SERVICE] Initialized with API client and database fallback  
+INFO:services.api_gateway.health_data_endpoints:[ENDPOINT] Triggering complete analysis for user test_endpoints_user with ArchetypeType.FOUNDATION_BUILDER archetype
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user test_endpoints_user, 7 days 
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for test_endpoints_user
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': 'test_endpoints_user', 'start_date': '2025-08-04', 'end_date': '2025-08-11', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': 'test_endpoints_user', 'limit': 100}
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=test_endpoints_user&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 0 records in 522ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 0 records in 957ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=test_endpoints_user&start_date=2025-08-04&end_date=2025-08-11&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 0 records in 1391ms
+INFO:services.user_data_service:[API_NO_DATA] No API data found, falling back to database
+INFO:services.user_data_service:[DB_FALLBACK] Using database for test_endpoints_user
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+[✅] Connected to Supabase successfully
+INFO:services.user_data_service:[DB] Connected to Supabase successfully
+INFO:services.user_data_service:[SCORES] Fetching for user test_endpoints_user (simplified query)      
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[SCORES] Retrieved 0 records in 0.94s
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-04 to 2025-08-11
+INFO:services.user_data_service:[BIOMARKERS] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[BIOMARKERS] Retrieved 0 records in 0.13s
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user test_endpoints_user (simplified query)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.test_endpoints_us "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.13s
+INFO:services.user_data_service:[USER_HEALTH_DATA] Database completed for test_endpoints_user in 2.60s 
+INFO:services.user_data_service:[DATA_QUALITY] Scores: 0, Biomarkers: 0, Quality: DataQualityLevel.POOR
+WARNING:services.api_gateway.health_data_endpoints:[ENDPOINT] Poor data quality for test_endpoints_user, but proceeding with analysis
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:httpx:HTTP Request: POST http://testserver/api/v1/health-data/users/test_endpoints_user/analyze "HTTP/1.1 200 OK"
+Status: 200
+Analysis ID: 7e0cbcb2-9dcd-4e21-9086-fc9fdbac4ff3
+Status: queued
+Ready Agents: 0
+✅ Analysis trigger endpoint working
+
+🧪 Running API Documentation test...
+
+[TEST] API Documentation Generation...
+INFO:services.api_gateway.integrate_health_endpoints:[INTEGRATION] Health data endpoints added successfully
+INFO:services.api_gateway.integrate_health_endpoints:[INTEGRATION] Available endpoints:
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/health-context
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/summary
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/data-quality
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/users/{user_id}/agent/{agent_name}/data
+INFO:services.api_gateway.integrate_health_endpoints:  - POST /api/v1/health-data/users/{user_id}/analyze
+INFO:services.api_gateway.integrate_health_endpoints:  - GET /api/v1/health-data/system/health
+INFO:httpx:HTTP Request: GET http://testserver/openapi.json "HTTP/1.1 200 OK"
+✅ OpenAPI schema generated successfully
+✅ Health data endpoints documented: 6
+✅ API documentation ready for Swagger UI
+
+============================================================
+PHASE 2.1 TEST RESULTS SUMMARY
+============================================================
+✅ PASS Endpoints Integration
+✅ PASS API Documentation
+
+Results: 2/2 tests passed
+Duration: 31.59 seconds
+
+🎉 ALL TESTS PASSED! Phase 2.1 FastAPI endpoints are ready!
+
+✅ Health Data Endpoints Complete:
+   • GET /api/v1/health-data/users/{user_id}/health-context - Complete user data
+   • GET /api/v1/health-data/users/{user_id}/summary - Quick health overview
+   • GET /api/v1/health-data/users/{user_id}/data-quality - Data quality assessment
+   • GET /api/v1/health-data/users/{user_id}/agent/{agent}/data - Agent-specific data
+   • POST /api/v1/health-data/users/{user_id}/analyze - Trigger analysis
+   • GET /api/v1/health-data/system/health - System monitoring
+
+🔗 Integration Ready:
+   • All 6 agents can now get real user data instead of mock data
+   • API-first approach with database fallback
+   • Comprehensive error handling and logging
+   • Production-ready monitoring and health checks
+
+🚀 Next: Integrate with your existing HolisticOS orchestrator

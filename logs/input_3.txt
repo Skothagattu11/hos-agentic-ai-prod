@@ -1,7 +1,0 @@
-{
-  "timestamp": "2025-08-08T14:22:28.408298",
-  "user_id": "end_to_end_test_user_legacy",
-  "archetype": "Peak Performer",
-  "mode": "OpenAI Direct",
-  "analysis_number": 3
-}

@@ -32,6 +32,23 @@ app = FastAPI(
     description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation"
 )
 
+# Integrate Phase 2 Health Data Endpoints - CTO Integration
+try:
+    from .health_data_endpoints import router as health_data_router
+    app.include_router(health_data_router)
+    print("✅ [INTEGRATION] Health data endpoints added successfully")
+    print("📡 [ENDPOINTS] Real user data endpoints now available:")
+    print("   • GET /api/v1/health-data/users/{user_id}/health-context")
+    print("   • GET /api/v1/health-data/users/{user_id}/summary") 
+    print("   • GET /api/v1/health-data/users/{user_id}/data-quality")
+    print("   • GET /api/v1/health-data/users/{user_id}/agent/{agent}/data")
+    print("   • POST /api/v1/health-data/users/{user_id}/analyze")
+    print("   • GET /api/v1/health-data/system/health")
+except ImportError as e:
+    print(f"⚠️  [WARNING] Health data endpoints not available: {e}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate health data endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -507,89 +524,254 @@ async def get_user_memory(user_id: str, memory_type: str = "all", category: Opti
 @app.post("/api/analyze", response_model=AnalysisResponse)
 async def analyze_user(request: AnalysisRequest):
     """
-    User analysis endpoint - OpenAI direct implementation
-    Uses HolisticOS system prompts with OpenAI API directly
+    User analysis endpoint - PHASE 3.1 REAL DATA INTEGRATION
+    Now uses real user data from Supabase via UserDataService
     """
     try:
         user_id = request.user_id
         archetype = request.archetype
         
-        print(f"🔍 Starting OpenAI-based analysis for user: {user_id}, archetype: {archetype}")
+        print(f"🔍 Starting REAL DATA analysis for user: {user_id}, archetype: {archetype}")
         
-        # Import system prompts
+        # PHASE 3.1: Import real data services
+        from services.user_data_service import UserDataService
         from shared_libs.utils.system_prompts import get_system_prompt, get_archetype_adaptation
         
-        # Get system prompts
-        behavior_prompt = get_system_prompt("behavior_analysis")
-        nutrition_prompt = get_system_prompt("plan_generation") 
-        routine_prompt = get_system_prompt("plan_generation")
-        archetype_guidance = get_archetype_adaptation(archetype)
+        # Initialize UserDataService for real data
+        user_service = UserDataService()
         
-        print(f"✅ System prompts loaded: {len(behavior_prompt):,} chars")
-        
-        # Create user context summary for analysis
-        user_context_summary = f"""
-USER ANALYSIS REQUEST:
-- User ID: {user_id}
-- Selected Archetype: {archetype}
+        try:
+            # PHASE 3.1: Fetch real user health data
+            print(f"📊 Fetching real user data for {user_id}...")
+            user_context = await user_service.get_user_health_data(user_id, days=7)
+            
+            # Extract real data for analysis
+            data_quality = user_context.data_quality
+            print(f"✅ Real data retrieved:")
+            print(f"   • Data Quality: {data_quality.quality_level}")
+            print(f"   • Scores: {data_quality.scores_count}")
+            print(f"   • Biomarkers: {data_quality.biomarkers_count}")
+            print(f"   • Completeness: {data_quality.completeness_score:.2f}")
+            
+            # Get system prompts
+            behavior_prompt = get_system_prompt("behavior_analysis")
+            nutrition_prompt = get_system_prompt("plan_generation") 
+            routine_prompt = get_system_prompt("plan_generation")
+            archetype_guidance = get_archetype_adaptation(archetype)
+            
+            print(f"✅ System prompts loaded: {len(behavior_prompt):,} chars")
+            
+            # PHASE 3.2: Create health context summary with AI-friendly language
+            user_context_summary = f"""
+HEALTH ANALYSIS REQUEST - COMPREHENSIVE DATA:
+- Profile Reference: {user_id}
+- Health Archetype: {archetype}
 - Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
-- Mode: Phase 1 Testing (Fallback data)
+- Mode: Comprehensive Health Analysis (Phase 3.2)
 
-ARCHETYPE GUIDANCE:
+HEALTH DATA PROFILE:
+- Data Quality Level: {data_quality.quality_level} 
+- Health Score Samples: {data_quality.scores_count}
+- Biomarker Measurements: {data_quality.biomarkers_count}
+- Data Coverage: {data_quality.completeness_score:.1%}
+- Recent Measurements: {data_quality.has_recent_data}
+- Time Period: {user_context.date_range.start_date.strftime('%Y-%m-%d')} to {user_context.date_range.end_date.strftime('%Y-%m-%d')}
+
+HEALTH TRACKING DATA SUMMARY:
+{await format_health_data_for_ai(user_context)}
+
+ARCHETYPE FRAMEWORK:
 {archetype_guidance}
 
-Note: This is a test analysis using fallback data patterns since no real user data is available for {user_id}.
-Please provide a comprehensive analysis that demonstrates the {archetype} approach to health optimization.
+ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics.
 """
+            
+        except Exception as data_error:
+            print(f"⚠️  Real data fetch failed for {user_id}: {data_error}")
+            print(f"🔄 Falling back to mock data analysis...")
+            
+            # Fallback to original mock data approach if real data fails
+            user_context_summary = f"""
+HEALTH ANALYSIS REQUEST - SAMPLE MODE:
+- Profile Reference: {user_id}
+- Health Archetype: {archetype}
+- Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
+- Mode: Sample Analysis (Health data unavailable)
 
-        # Step 1: Behavior Analysis
-        print("🧠 Running behavior analysis with OpenAI...")
-        behavior_analysis = await run_behavior_analysis(behavior_prompt, user_context_summary)
-        print(f"✅ Behavior analysis complete")
-        
-        # Step 2: Nutrition Plan
-        print("🥗 Generating nutrition plan with OpenAI...")
-        nutrition_plan = await run_nutrition_planning(nutrition_prompt, user_context_summary, behavior_analysis, archetype)
-        print(f"✅ Nutrition plan complete")
-        
-        # Step 3: Routine Plan
-        print("🏃‍♂️ Generating routine plan with OpenAI...")
-        routine_plan = await run_routine_planning(routine_prompt, user_context_summary, behavior_analysis, archetype)
-        print(f"✅ Routine plan complete")
-        
-        # Log analysis data
+ARCHETYPE FRAMEWORK:
+{get_archetype_adaptation(archetype)}
+
+Note: Comprehensive health data was unavailable for {user_id}, using sample analysis patterns.
+Please provide a detailed analysis that demonstrates the {archetype} approach to health optimization.
+"""
+        finally:
+            # Always cleanup the service
+            await user_service.cleanup()
+
+        # Get analysis number early for logging
         analysis_number = await get_next_analysis_number()
-        await log_analysis_data({
+        
+        # Step 1: Behavior Analysis (using o3 for deep analysis) - Phase 3.3 Agent-Specific Data
+        print("🧠 Running behavior analysis with o3 model...")
+        behavior_agent_data = await prepare_behavior_agent_data(user_context if 'user_context' in locals() else None, user_context_summary)
+        behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
+        await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_analysis, analysis_number)
+        print(f"✅ Behavior analysis complete with comprehensive pattern data")
+        
+        # Step 2: Nutrition Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data  
+        print("🥗 Generating nutrition plan with gpt-4o...")
+        nutrition_agent_data = await prepare_nutrition_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
+        nutrition_plan = await run_nutrition_planning_4o(nutrition_prompt, user_context_summary, behavior_analysis, archetype)
+        await log_agent_handoff("nutrition_plan", nutrition_agent_data, nutrition_plan, analysis_number)
+        print(f"✅ Nutrition plan complete with nutrition-specific data filtering")
+        
+        # Step 3: Routine Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data
+        print("🏃‍♂️ Generating routine plan with gpt-4o...")
+        routine_agent_data = await prepare_routine_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
+        routine_plan = await run_routine_planning_4o(routine_prompt, user_context_summary, behavior_analysis, archetype)
+        await log_agent_handoff("routine_plan", routine_agent_data, routine_plan, analysis_number)
+        print(f"✅ Routine plan complete with routine-specific data filtering")
+        
+        # Log analysis data - PHASE 3.3 UPDATE
+        # Determine if we used real data or fallback
+        analysis_mode = "Agent-Specific Data Filtering - Phase 3.3" if "Comprehensive Health Analysis" in user_context_summary else "Sample Mode"
+        
+        # Enhanced input logging with raw data
+        input_log_data = {
             "timestamp": datetime.now().isoformat(),
             "user_id": user_id,
             "archetype": archetype,
-            "mode": "OpenAI Direct",
-            "analysis_number": analysis_number
-        }, {
+            "mode": analysis_mode,
+            "analysis_number": analysis_number,
+            "phase": "3.3 - Agent-Specific Data Filtering",
+            "models_used": {
+                "behavior_analysis": "o3",
+                "nutrition_plan": "gpt-4o",
+                "routine_plan": "gpt-4o"
+            },
+            "raw_health_data": {
+                "data_quality": {
+                    "level": data_quality.quality_level.value if 'data_quality' in locals() else "unknown",
+                    "scores_count": data_quality.scores_count if 'data_quality' in locals() else 0,
+                    "biomarkers_count": data_quality.biomarkers_count if 'data_quality' in locals() else 0,
+                    "completeness_score": data_quality.completeness_score if 'data_quality' in locals() else 0,
+                    "has_recent_data": data_quality.has_recent_data if 'data_quality' in locals() else False
+                } if 'data_quality' in locals() else {},
+                "date_range": {
+                    "start": user_context.date_range.start_date.isoformat() if 'user_context' in locals() else None,
+                    "end": user_context.date_range.end_date.isoformat() if 'user_context' in locals() else None,
+                    "days": user_context.date_range.days if 'user_context' in locals() else 0
+                } if 'user_context' in locals() else {},
+                "sql_queries_used": {
+                    "scores_query": """
+                        SELECT id, profile_id, type, score, data, 
+                               score_date_time, created_at, updated_at
+                        FROM scores 
+                        WHERE profile_id = $1
+                        LIMIT $2
+                    """,
+                    "biomarkers_query": """
+                        SELECT id, profile_id, category, type, data,
+                               start_date_time, end_date_time, created_at, updated_at
+                        FROM biomarkers 
+                        WHERE profile_id = $1
+                        LIMIT $2
+                    """,
+                    "archetypes_query": """
+                        SELECT id, profile_id, name, periodicity, value, data,
+                               start_date_time, end_date_time, created_at, updated_at
+                        FROM archetypes 
+                        WHERE profile_id = $1
+                    """,
+                    "query_parameters": {
+                        "profile_id": user_id,
+                        "max_records": 1000,
+                        "date_filter": "No date filtering in current queries (gets all records)"
+                    }
+                },
+                "complete_behavior_analysis_input": behavior_agent_data if 'behavior_agent_data' in locals() else {},
+                "all_scores_fetched": [
+                    {
+                        "id": score.id,
+                        "type": score.type,
+                        "score": score.score,
+                        "data": score.data,
+                        "score_date_time": score.score_date_time.isoformat() if hasattr(score.score_date_time, 'isoformat') else str(score.score_date_time),
+                        "created_at": score.created_at.isoformat() if hasattr(score, 'created_at') else None
+                    } for score in (user_context.scores if 'user_context' in locals() else [])
+                ] if 'user_context' in locals() else [],
+                "all_biomarkers_fetched": [
+                    {
+                        "id": bio.id,
+                        "type": bio.type,
+                        "category": bio.category,
+                        "data": bio.data,
+                        "start_date_time": bio.start_date_time.isoformat() if hasattr(bio, 'start_date_time') else None,
+                        "end_date_time": bio.end_date_time.isoformat() if hasattr(bio, 'end_date_time') and bio.end_date_time else None
+                    } for bio in (user_context.biomarkers if 'user_context' in locals() else [])
+                ] if 'user_context' in locals() else [],
+                "behavior_analysis_filtered_data": {
+                    "activity_sleep_readiness_scores": [
+                        {
+                            "date": score.created_at.strftime("%Y-%m-%d") if hasattr(score, 'created_at') else "unknown",
+                            "type": score.type,
+                            "score": score.score,
+                            "state": score.data.get("state", "unknown") if score.data else "unknown"
+                        }
+                        for score in (user_context.scores if 'user_context' in locals() else []) 
+                        if score.type in ["activity", "sleep", "readiness"]
+                    ][:15] if 'user_context' in locals() else [],
+                    "first_20_biomarkers_all_types": [
+                        {
+                            "type": bio.type,
+                            "category": bio.category,
+                            "date": bio.start_date_time.strftime("%Y-%m-%d") if hasattr(bio, 'start_date_time') else "unknown"
+                        }
+                        for bio in (user_context.biomarkers[:20] if 'user_context' in locals() else [])
+                    ] if 'user_context' in locals() else []
+                }
+            }
+        }
+        
+        await log_analysis_data(input_log_data, {
             "timestamp": datetime.now().isoformat(),
             "user_id": user_id,
             "archetype": archetype,
             "behavior_analysis": behavior_analysis,
             "nutrition_plan": nutrition_plan,
             "routine_plan": routine_plan,
-            "analysis_number": analysis_number
+            "analysis_number": analysis_number,
+            "mode": analysis_mode,
+            "phase": "3.3 - Agent-Specific Data Filtering",
+            "models_used": {
+                "behavior_analysis": "o3",
+                "nutrition_plan": "gpt-4o", 
+                "routine_plan": "gpt-4o"
+            }
         }, analysis_number)
         
-        print(f"✅ Complete analysis finished for {user_id}")
+        print(f"✅ Complete multi-model analysis finished for {user_id}")
         
         return AnalysisResponse(
             status="success",
             user_id=user_id,
             archetype=archetype,
-            message="Analysis completed successfully using HolisticOS system prompts",
+            message="Analysis completed successfully using comprehensive health data with multi-model approach - Phase 3.2",
             analysis={
                 "behavior_analysis": behavior_analysis,
                 "nutrition_plan": nutrition_plan,
                 "routine_plan": routine_plan,
                 "system_info": {
-                    "mode": "OpenAI Direct Integration",
+                    "mode": analysis_mode,
                     "prompt_system": "HolisticOS",
-                    "archetype_applied": archetype
+                    "archetype_applied": archetype,
+                    "phase": "3.3 - Agent-Specific Data Filtering",
+                    "data_source": "Supabase via UserDataService",
+                    "models_used": {
+                        "behavior_analysis": "o3 (deep analysis)",
+                        "nutrition_plan": "gpt-4o (plan generation)",
+                        "routine_plan": "gpt-4o (plan generation)"
+                    }
                 }
             }
         )
@@ -606,136 +788,464 @@ Please provide a comprehensive analysis that demonstrates the {archetype} approa
             message=f"Analysis failed: {str(e)}"
         )
 
-async def run_behavior_analysis(system_prompt: str, user_context: str) -> dict:
-    """Run behavior analysis using OpenAI with HolisticOS prompts"""
+async def prepare_behavior_agent_data(user_context, user_context_summary: str) -> dict:
+    """Prepare comprehensive data for behavior analysis agent (o3) - Phase 3.3"""
     try:
-        response = await asyncio.to_thread(
-            openai.chat.completions.create,
-            model="gpt-4",
+        # Behavior agent gets the most comprehensive data for pattern analysis
+        behavior_data = {
+            "comprehensive_health_context": user_context_summary,
+            "detailed_metrics": {
+                "data_quality": {
+                    "level": user_context.data_quality.quality_level.value,
+                    "completeness": user_context.data_quality.completeness_score,
+                    "scores_count": user_context.data_quality.scores_count,
+                    "biomarkers_count": user_context.data_quality.biomarkers_count,
+                    "recent_data_available": user_context.data_quality.has_recent_data
+                },
+                "time_coverage": {
+                    "start_date": user_context.date_range.start_date.isoformat(),
+                    "end_date": user_context.date_range.end_date.isoformat(),
+                    "total_days": user_context.date_range.days
+                },
+                "activity_patterns": [
+                    {
+                        "date": score.created_at.strftime("%Y-%m-%d"),
+                        "type": score.type,
+                        "score": score.score,
+                        "state": score.data.get("state", "unknown") if score.data else "unknown"
+                    }
+                    for score in user_context.scores if score.type in ["activity", "sleep", "readiness"]
+                ][:15],  # Last 15 key scores for pattern analysis
+                "biomarker_categories": {}
+            },
+            "analysis_focus": "comprehensive_behavior_pattern_analysis"
+        }
+        
+        # Group biomarkers by category for behavior insights
+        for bio in user_context.biomarkers[:20]:
+            category = bio.category
+            if category not in behavior_data["detailed_metrics"]["biomarker_categories"]:
+                behavior_data["detailed_metrics"]["biomarker_categories"][category] = []
+            behavior_data["detailed_metrics"]["biomarker_categories"][category].append({
+                "type": bio.type,
+                "date": bio.start_date_time.strftime("%Y-%m-%d")
+            })
+        
+        return behavior_data
+        
+    except Exception as e:
+        return {"error": f"Error preparing behavior data: {str(e)}"}
+
+async def prepare_nutrition_agent_data(user_context, behavior_analysis: dict) -> dict:
+    """Prepare nutrition-relevant data for nutrition planning agent (gpt-4o) - Phase 3.3"""
+    try:
+        # Extract nutrition-relevant insights from behavior analysis
+        behavioral_insights = {
+            "sophistication_level": behavior_analysis.get("sophistication_assessment", {}).get("category", "unknown"),
+            "readiness_level": behavior_analysis.get("readiness_level", "unknown"),
+            "primary_goal": behavior_analysis.get("primary_goal", {}),
+            "motivation_drivers": behavior_analysis.get("personalized_strategy", {}).get("motivation_drivers", "unknown")
+        }
+        
+        # Filter health data relevant to nutrition planning
+        nutrition_relevant_data = {
+            "activity_levels": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "activity_score": score.score,
+                    "state": score.data.get("state", "unknown") if score.data else "unknown"
+                }
+                for score in user_context.scores if score.type == "activity"
+            ][:7],  # Last 7 days of activity
+            
+            "sleep_quality": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "sleep_score": score.score,
+                    "state": score.data.get("state", "unknown") if score.data else "unknown"
+                }
+                for score in user_context.scores if score.type == "sleep"
+            ][:7],  # Last 7 days of sleep
+            
+            "energy_indicators": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "readiness_score": score.score,
+                    "state": score.data.get("state", "unknown") if score.data else "unknown"
+                }
+                for score in user_context.scores if score.type == "readiness"
+            ][:7],  # Last 7 days of readiness
+            
+            "nutrition_biomarkers": [
+                {
+                    "type": bio.type,
+                    "category": bio.category,
+                    "date": bio.start_date_time.strftime("%Y-%m-%d")
+                }
+                for bio in user_context.biomarkers 
+                if bio.category in ["metabolic", "nutrition", "energy", "recovery"]
+            ][:10]  # Nutrition-relevant biomarkers
+        }
+        
+        return {
+            "behavioral_insights": behavioral_insights,
+            "nutrition_relevant_metrics": nutrition_relevant_data,
+            "planning_focus": "nutrition_plan_based_on_activity_sleep_and_goals"
+        }
+        
+    except Exception as e:
+        return {"error": f"Error preparing nutrition data: {str(e)}"}
+
+async def prepare_routine_agent_data(user_context, behavior_analysis: dict) -> dict:
+    """Prepare routine-relevant data for routine planning agent (gpt-4o) - Phase 3.3"""
+    try:
+        # Extract routine-relevant insights from behavior analysis
+        behavioral_insights = {
+            "habit_integration_strategy": behavior_analysis.get("personalized_strategy", {}).get("habit_integration", "unknown"),
+            "barrier_mitigation": behavior_analysis.get("personalized_strategy", {}).get("barrier_mitigation", "unknown"),
+            "readiness_level": behavior_analysis.get("readiness_level", "unknown"),
+            "key_recommendations": behavior_analysis.get("recommendations", [])[:3]  # Top 3 recommendations
+        }
+        
+        # Filter health data relevant to routine planning
+        routine_relevant_data = {
+            "sleep_patterns": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "sleep_score": score.score,
+                    "sleep_state": score.data.get("state", "unknown") if score.data else "unknown",
+                    "factors": score.data.get("factors", []) if score.data else []
+                }
+                for score in user_context.scores if score.type == "sleep"
+            ][:7],  # Last 7 days for pattern recognition
+            
+            "activity_patterns": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "activity_score": score.score,
+                    "activity_state": score.data.get("state", "unknown") if score.data else "unknown",
+                    "factors": score.data.get("factors", []) if score.data else []
+                }
+                for score in user_context.scores if score.type == "activity"
+            ][:7],  # Last 7 days for routine optimization
+            
+            "recovery_readiness": [
+                {
+                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "readiness_score": score.score,
+                    "readiness_state": score.data.get("state", "unknown") if score.data else "unknown"
+                }
+                for score in user_context.scores if score.type == "readiness"
+            ][:7],  # Last 7 days for routine timing
+            
+            "routine_biomarkers": [
+                {
+                    "type": bio.type,
+                    "category": bio.category,
+                    "date": bio.start_date_time.strftime("%Y-%m-%d")
+                }
+                for bio in user_context.biomarkers 
+                if bio.category in ["activity", "sleep", "recovery", "stress"]
+            ][:10]  # Routine-relevant biomarkers
+        }
+        
+        return {
+            "behavioral_insights": behavioral_insights,
+            "routine_relevant_metrics": routine_relevant_data,
+            "planning_focus": "daily_routine_optimization_based_on_sleep_activity_patterns"
+        }
+        
+    except Exception as e:
+        return {"error": f"Error preparing routine data: {str(e)}"}
+
+async def format_health_data_for_ai(user_context) -> str:
+    """Format health tracking data for AI analysis - Phase 3.2 (Legacy function)"""
+    try:
+        # Get latest scores for summary
+        recent_scores = {}
+        for score in user_context.scores[:10]:  # Latest 10 scores
+            score_type = score.type
+            if score_type not in recent_scores:
+                recent_scores[score_type] = []
+            recent_scores[score_type].append({
+                'score': score.score,
+                'date': score.created_at.strftime('%Y-%m-%d'),
+                'state': score.data.get('state', 'unknown') if hasattr(score, 'data') and score.data else 'unknown'
+            })
+        
+        # Get key biomarkers
+        key_biomarkers = {}
+        for bio in user_context.biomarkers[:20]:  # Latest 20 biomarkers
+            bio_type = bio.type
+            if bio_type not in key_biomarkers:
+                key_biomarkers[bio_type] = []
+            key_biomarkers[bio_type].append({
+                'category': bio.category,
+                'data': bio.data,
+                'date': bio.start_date_time.strftime('%Y-%m-%d') if hasattr(bio, 'start_date_time') else 'unknown'
+            })
+        
+        # Format for AI
+        data_summary = []
+        
+        # Health Scores Summary
+        if recent_scores:
+            data_summary.append("HEALTH SCORE PATTERNS:")
+            for score_type, scores in recent_scores.items():
+                avg_score = sum(s['score'] for s in scores) / len(scores)
+                latest_state = scores[0]['state']
+                data_summary.append(f"  • {score_type.title()} Metrics: {avg_score:.2f} (trend: {latest_state}) - {len(scores)} measurements")
+        
+        # Biomarkers Summary
+        if key_biomarkers:
+            data_summary.append("\nBIOMARKER MEASUREMENTS:")
+            for bio_type, values in list(key_biomarkers.items())[:10]:  # Top 10 biomarker types
+                recent_categories = [v['category'] for v in values[:3]]
+                category_summary = ", ".join(set(recent_categories)) if recent_categories else "unknown"
+                data_sample_count = len(values)
+                data_summary.append(f"  • {bio_type.replace('_', ' ').title()}: {category_summary} category ({data_sample_count} measurements)")
+        
+        # Activity Patterns
+        behavior_data = user_context.behavior_data
+        if behavior_data and isinstance(behavior_data, dict):
+            data_summary.append("\nACTIVITY PATTERNS:")
+            if 'activity_scores' in behavior_data:
+                activity_count = len(behavior_data['activity_scores'])
+                data_summary.append(f"  • Activity sessions: {activity_count} tracked periods")
+            
+            if 'sleep_scores' in behavior_data:
+                sleep_count = len(behavior_data['sleep_scores'])
+                data_summary.append(f"  • Sleep cycles: {sleep_count} recorded periods")
+        
+        return '\n'.join(data_summary) if data_summary else "Health tracking data available for analysis."
+        
+    except Exception as e:
+        return f"Error formatting user data: {str(e)}"
+
+async def run_behavior_analysis_o3(system_prompt: str, user_context: str) -> dict:
+    """Run behavior analysis using o3 model for deep analysis - Phase 3.2"""
+    try:
+        # Use o3 for complex behavior analysis
+        client = openai.AsyncOpenAI()
+        
+        # Note: o3 model only supports default temperature (1)
+        response = await client.chat.completions.create(
+            model="o3",
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"""
+                {
+                    "role": "system", 
+                    "content": f"{system_prompt}\n\nYou are an expert behavioral analyst. Focus on identifying patterns in health tracking data and provide detailed insights."
+                },
+                {
+                    "role": "user", 
+                    "content": f"""
 {user_context}
 
-Please provide a comprehensive behavioral analysis following the HolisticOS framework. 
-Return a JSON-structured analysis including:
-- behavioral_signature (with signature and confidence)
-- sophistication_assessment (with score, category, justification)  
-- primary_goal (with goal, timeline, success_metrics)
-- personalized_strategy (with motivation_drivers, habit_integration, barrier_mitigation)
-- readiness_level
-- recommendations
+Analyze the health tracking patterns and provide a comprehensive behavioral analysis following the HolisticOS framework.
 
-Make this analysis realistic and detailed as if for a real user.
-"""}
+Provide analysis in this JSON structure:
+{{
+    "behavioral_signature": {{
+        "signature": "Detailed behavior pattern description",
+        "confidence": 0.0-1.0
+    }},
+    "sophistication_assessment": {{
+        "score": 0-100,
+        "category": "Beginner/Intermediate/Advanced/Expert",
+        "justification": "Assessment reasoning"
+    }},
+    "primary_goal": {{
+        "goal": "Identified primary health goal",
+        "timeline": "Estimated timeline",
+        "success_metrics": "Measurable success indicators"
+    }},
+    "personalized_strategy": {{
+        "motivation_drivers": "Key motivation factors",
+        "habit_integration": "Habit formation recommendations",
+        "barrier_mitigation": "Obstacle management strategies"
+    }},
+    "readiness_level": "High/Medium/Low",
+    "recommendations": ["List of specific recommendations"],
+    "data_insights": "Analysis of the provided health data patterns"
+}}
+
+Focus on actionable insights from the provided health metrics.
+"""
+                }
             ],
-            temperature=0.7
+            # temperature parameter removed - o3 only supports default value of 1
+            response_format={"type": "json_object"}
         )
         
         content = response.choices[0].message.content
-        # Try to parse as JSON, fallback to structured text
+        
+        # Parse JSON response
         try:
-            return json.loads(content)
-        except:
+            analysis_data = json.loads(content)
+            analysis_data["model_used"] = "o3"
+            analysis_data["analysis_type"] = "comprehensive_behavior"
+            return analysis_data
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
             return {
                 "behavioral_signature": {
-                    "signature": "OpenAI Generated Analysis",
+                    "signature": "Health Data Analysis Complete",
                     "confidence": 0.85
                 },
                 "sophistication_assessment": {
                     "score": 75,
-                    "category": "Advanced",
-                    "justification": "Generated using HolisticOS system prompts"
+                    "category": "Intermediate",
+                    "justification": "Analysis based on comprehensive health data"
                 },
                 "analysis_content": content,
-                "mode": "OpenAI Direct"
+                "model_used": "o3",
+                "analysis_type": "comprehensive_behavior"
             }
             
     except Exception as e:
-        print(f"Error in behavior analysis: {e}")
+        print(f"Error in o3 behavior analysis: {e}")
         return {
             "error": str(e),
-            "mode": "OpenAI Direct - Fallback",
-            "behavioral_signature": {"signature": "Fallback Analysis", "confidence": 0.5}
+            "model_used": "o3 - fallback",
+            "behavioral_signature": {"signature": "Analysis Error", "confidence": 0.5}
         }
 
-async def run_nutrition_planning(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
-    """Run nutrition planning using OpenAI with HolisticOS prompts"""
+async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
+    """Run nutrition planning using gpt-4o for plan generation - Phase 3.2"""
     try:
-        response = await asyncio.to_thread(
-            openai.chat.completions.create,
-            model="gpt-4",
+        client = openai.AsyncOpenAI()
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o",
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"""
+                {
+                    "role": "system", 
+                    "content": f"{system_prompt}\n\nYou are a nutrition planning expert. Create detailed, practical nutrition plans based on health data and behavioral insights."
+                },
+                {
+                    "role": "user", 
+                    "content": f"""
 {user_context}
 
-BEHAVIOR ANALYSIS RESULTS:
+BEHAVIORAL INSIGHTS:
 {json.dumps(behavior_analysis, indent=2)}
 
-Create a detailed {archetype} nutrition plan for TODAY using the HolisticOS approach.
-Include:
-- Complete daily nutritional targets (calories, macros, vitamins)
-- 7 meal blocks: Early_Morning, Breakfast, Morning_Snack, Lunch, Afternoon_Snack, Dinner, Evening_Snack
-- Each meal with specific foods, calories, protein, and macro breakdown
-- Nutrition tips explaining timing and composition
+Create a comprehensive {archetype} nutrition plan for TODAY using the HolisticOS approach.
 
-Make this practical and {archetype}-appropriate.
-"""}
+Include the following structure:
+1. **Daily Nutritional Targets** (calories, protein, carbs, fats, fiber, vitamins)
+2. **7 Meal Blocks** with detailed breakdown:
+   - Early_Morning: Light hydration/preparation
+   - Breakfast: Balanced start with protein and complex carbs
+   - Morning_Snack: Energy maintenance
+   - Lunch: Balanced midday nutrition
+   - Afternoon_Snack: Sustained energy
+   - Dinner: Recovery and satisfaction
+   - Evening_Snack: Sleep preparation
+3. **Nutrition Tips** for each meal explaining timing and composition
+4. **Health Data Integration** - reference the provided health metrics
+
+Make this plan practical, evidence-based, and specifically tailored to the {archetype} archetype and the provided health data patterns.
+"""
+                }
             ],
-            temperature=0.7
+            temperature=0.4,  # Balanced creativity for practical planning
+            max_tokens=2000
         )
         
         return {
             "date": datetime.now().strftime("%Y-%m-%d"),
             "archetype": archetype,
             "content": response.choices[0].message.content,
-            "mode": "OpenAI Direct",
+            "model_used": "gpt-4o",
+            "plan_type": "comprehensive_nutrition",
             "system": "HolisticOS"
         }
         
     except Exception as e:
-        print(f"Error in nutrition planning: {e}")
-        return {"error": str(e), "mode": "OpenAI Direct - Fallback"}
+        print(f"Error in 4o nutrition planning: {e}")
+        return {
+            "error": str(e), 
+            "model_used": "gpt-4o - fallback",
+            "archetype": archetype,
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
 
-async def run_routine_planning(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
-    """Run routine planning using OpenAI with HolisticOS prompts"""
+async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
+    """Run routine planning using gpt-4o for plan generation - Phase 3.2"""
     try:
-        response = await asyncio.to_thread(
-            openai.chat.completions.create,
-            model="gpt-4",
+        client = openai.AsyncOpenAI()
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o",
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"""
+                {
+                    "role": "system", 
+                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, and archetype frameworks."
+                },
+                {
+                    "role": "user", 
+                    "content": f"""
 {user_context}
 
-BEHAVIOR ANALYSIS RESULTS:
+BEHAVIORAL INSIGHTS:
 {json.dumps(behavior_analysis, indent=2)}
 
-Create a detailed {archetype} routine plan for TODAY using the HolisticOS approach.
-Include:
-- 4 time blocks: morning_wakeup, focus_block, afternoon_recharge, evening_winddown
-- Each block with specific time ranges, tasks, and scientific reasoning
-- Tasks should reflect the {archetype} philosophy and approach
-- Explain why each routine element matters for this archetype
+Create a comprehensive {archetype} routine plan for TODAY using the HolisticOS approach.
 
-Make this actionable and {archetype}-specific.
-"""}
+Structure the plan with these 4 time blocks:
+
+1. **Morning Wakeup** (6:00 AM - 8:00 AM)
+   - Hydration and activation tasks
+   - Mindfulness or preparation activities
+   - Energy optimization based on sleep data
+
+2. **Focus Block** (9:00 AM - 12:00 PM) 
+   - Peak productivity tasks aligned with archetype
+   - Break timing based on activity patterns
+   - Cognitive optimization strategies
+
+3. **Afternoon Recharge** (1:00 PM - 4:00 PM)
+   - Recovery and refueling activities
+   - Physical activity aligned with fitness data
+   - Energy maintenance strategies
+
+4. **Evening Winddown** (8:00 PM - 10:00 PM)
+   - Sleep preparation based on sleep patterns
+   - Recovery activities
+   - Next-day preparation
+
+For each block include:
+- Specific time ranges and tasks
+- Scientific reasoning for each element
+- Integration with provided health data patterns
+- {archetype}-specific customizations
+
+Make this routine actionable, evidence-based, and specifically tailored to the health data insights.
+"""
+                }
             ],
-            temperature=0.7
+            temperature=0.4,  # Balanced creativity for practical planning
+            max_tokens=2000
         )
         
         return {
             "date": datetime.now().strftime("%Y-%m-%d"),
             "archetype": archetype,
             "content": response.choices[0].message.content,
-            "mode": "OpenAI Direct",
+            "model_used": "gpt-4o",
+            "plan_type": "comprehensive_routine",
             "system": "HolisticOS"
         }
         
     except Exception as e:
-        print(f"Error in routine planning: {e}")
-        return {"error": str(e), "mode": "OpenAI Direct - Fallback"}
+        print(f"Error in 4o routine planning: {e}")
+        return {
+            "error": str(e), 
+            "model_used": "gpt-4o - fallback",
+            "archetype": archetype,
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
 
 @app.get("/api/status/{user_id}")
 async def get_analysis_status(user_id: str):
@@ -769,13 +1279,16 @@ async def get_next_analysis_number() -> int:
         return 1
 
 async def log_analysis_data(input_data: dict, output_data: dict, analysis_number: int):
-    """Log analysis data to files"""
+    """Log analysis data to files with enhanced details"""
     try:
         os.makedirs("logs", exist_ok=True)
+        os.makedirs("logs/agent_handoffs", exist_ok=True)
         
+        # Enhanced input log with raw data
         with open(f"logs/input_{analysis_number}.txt", 'w') as f:
             json.dump(input_data, f, indent=2, default=str)
         
+        # Enhanced output log
         with open(f"logs/output_{analysis_number}.txt", 'w') as f:
             json.dump(output_data, f, indent=2, default=str)
             
@@ -783,6 +1296,38 @@ async def log_analysis_data(input_data: dict, output_data: dict, analysis_number
         
     except Exception as e:
         print(f"Error logging: {e}")
+
+async def log_agent_handoff(agent_name: str, input_data: dict, output_data: dict, analysis_number: int):
+    """Log data at each agent handoff point"""
+    try:
+        os.makedirs("logs/agent_handoffs", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        filename = f"logs/agent_handoffs/{analysis_number}_{agent_name}_{timestamp}.txt"
+        
+        with open(filename, 'w') as f:
+            f.write(f"{'='*60}\n")
+            f.write(f"AGENT HANDOFF: {agent_name.upper()}\n")
+            f.write(f"Analysis #: {analysis_number}\n")
+            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+            f.write(f"{'='*60}\n\n")
+            
+            f.write("INPUT DATA:\n")
+            f.write("-"*40 + "\n")
+            json.dump(input_data, f, indent=2, default=str)
+            f.write("\n\n")
+            
+            f.write("OUTPUT DATA:\n")
+            f.write("-"*40 + "\n")
+            json.dump(output_data, f, indent=2, default=str)
+            f.write("\n\n")
+            
+            f.write(f"{'='*60}\n")
+            
+        print(f"   📋 Agent handoff logged: {agent_name} → {filename}")
+        
+    except Exception as e:
+        print(f"Error logging agent handoff: {e}")
 
 if __name__ == "__main__":
     import uvicorn

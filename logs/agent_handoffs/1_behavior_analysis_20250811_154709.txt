@@ -1,0 +1,225 @@
+============================================================
+AGENT HANDOFF: BEHAVIOR_ANALYSIS
+Analysis #: 1
+Timestamp: 2025-08-11T15:47:09.712983
+============================================================
+
+INPUT DATA:
+----------------------------------------
+{
+  "comprehensive_health_context": "\nHEALTH ANALYSIS REQUEST - COMPREHENSIVE DATA:\n- Profile Reference: 35pDPUIfAoRl2Y700bFkxPKYjjf2\n- Health Archetype: Foundation Builder\n- Analysis Date: 2025-08-11\n- Mode: Comprehensive Health Analysis (Phase 3.2)\n\nHEALTH DATA PROFILE:\n- Data Quality Level: DataQualityLevel.EXCELLENT \n- Health Score Samples: 24\n- Biomarker Measurements: 80\n- Data Coverage: 100.0%\n- Recent Measurements: True\n- Time Period: 2025-08-04 to 2025-08-11\n\nHEALTH TRACKING DATA SUMMARY:\nHEALTH SCORE PATTERNS:\n  \u2022 Sleep Metrics: 0.81 (trend: high) - 2 measurements\n  \u2022 Activity Metrics: 0.63 (trend: medium) - 2 measurements\n  \u2022 Mental_Wellbeing Metrics: 0.83 (trend: high) - 3 measurements\n  \u2022 Wellbeing Metrics: 0.75 (trend: medium) - 3 measurements\n\nBIOMARKER MEASUREMENTS:\n  \u2022 Activity Low Intensity Duration: activity category (1 measurements)\n  \u2022 Oxygen Saturation Sleep: vitals category (1 measurements)\n  \u2022 Respiratory Rate Sleep: vitals category (1 measurements)\n  \u2022 Oxygen Saturation: vitals category (1 measurements)\n  \u2022 Heart Rate Variability Sdnn: vitals category (1 measurements)\n  \u2022 Heart Rate Resting: vitals category (1 measurements)\n  \u2022 Active Duration: activity category (1 measurements)\n  \u2022 Steps: activity category (1 measurements)\n  \u2022 Activity Sedentary Duration: activity category (1 measurements)\n  \u2022 Floors Climbed: activity category (1 measurements)\n\nACTIVITY PATTERNS:\n  \u2022 Activity sessions: 6 tracked periods\n  \u2022 Sleep cycles: 6 recorded periods\n\nARCHETYPE FRAMEWORK:\nEmphasize simplicity and confidence building. Provide gentle, supportive guidance.\n\nANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings. Analyze these health indicators to identify patterns, trends, and insights that align with the Foundation Builder framework. Focus on actionable observations from the provided health metrics.\n",
+  "detailed_metrics": {
+    "data_quality": {
+      "level": "excellent",
+      "completeness": 1.0,
+      "scores_count": 24,
+      "biomarkers_count": 80,
+      "recent_data_available": true
+    },
+    "time_coverage": {
+      "start_date": "2025-08-04T19:46:54.590118+00:00",
+      "end_date": "2025-08-11T19:46:54.590118+00:00",
+      "total_days": 7
+    },
+    "activity_patterns": [
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.81,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.68,
+        "state": "medium"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.8,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.58,
+        "state": "low"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.83,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.74,
+        "state": "medium"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.82,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.88,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.8,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.48,
+        "state": "minimal"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "sleep",
+        "score": 0.81,
+        "state": "high"
+      },
+      {
+        "date": "2025-08-09",
+        "type": "activity",
+        "score": 0.6,
+        "state": "low"
+      }
+    ],
+    "biomarker_categories": {
+      "activity": [
+        {
+          "type": "activity_low_intensity_duration",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "active_duration",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "steps",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "activity_sedentary_duration",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "floors_climbed",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "active_hours",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "active_energy_burned",
+          "date": "2025-08-10"
+        }
+      ],
+      "vitals": [
+        {
+          "type": "oxygen_saturation_sleep",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "respiratory_rate_sleep",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "oxygen_saturation",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "heart_rate_variability_sdnn",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "heart_rate_resting",
+          "date": "2025-08-10"
+        },
+        {
+          "type": "respiratory_rate",
+          "date": "2025-08-10"
+        }
+      ],
+      "sleep": [
+        {
+          "type": "sleep_efficiency",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_end_time",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_awake_duration",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_latency",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_start_time",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_mid_time",
+          "date": "2025-08-09"
+        },
+        {
+          "type": "sleep_interruptions",
+          "date": "2025-08-09"
+        }
+      ]
+    }
+  },
+  "analysis_focus": "comprehensive_behavior_pattern_analysis"
+}
+
+OUTPUT DATA:
+----------------------------------------
+{
+  "behavioral_signature": {
+    "signature": "User shows reliable basic self-tracking (6 sleep + 6 activity logs in 7 days) with solid sleep hygiene (Sleep score 0.81, upward trend) and strong mental wellbeing (0.83). Physical activity is present but remains in a \u2018medium\u2019 zone (Activity score 0.63) with single-measurement biomarkers suggesting mostly sedentary patterns (recorded Activity Sedentary Duration; one low-intensity session, minimal floors climbed). Engagement pattern fits a Foundation Builder profile: consistent but low-complexity routines, openness to guidance, and preference for small achievable steps.",
+    "confidence": 0.78
+  },
+  "sophistication_assessment": {
+    "score": 34,
+    "category": "Beginner",
+    "justification": "Data capture is consistent, but behavior change tactics are still basic (few activity modalities, no intensity variation). Biomarker set is narrow\u2014indicates early stage experimentation rather than advanced self-optimization."
+  },
+  "primary_goal": {
+    "goal": "Build a sustainable daily movement habit that elevates Activity score from 0.63 \u2192 \u22650.70 without compromising sleep quality.",
+    "timeline": "8\u201310 weeks",
+    "success_metrics": "\u2022 \u22657,500 average daily steps for 4 consecutive weeks\n\u2022 \u2265150 min/week of low-to-moderate intensity movement logged\n\u2022 Activity score \u22650.70 maintained for 3 weeks while Sleep score stays \u22650.78"
+  },
+  "personalized_strategy": {
+    "motivation_drivers": "Enjoyment of feeling rested; visible progress tracking; confidence from accomplishing small, clearly defined tasks.",
+    "habit_integration": "Anchor a 20-minute post-wake walk or light routine immediately after morning hydration; stack 2\u00d75-minute stretch breaks onto existing screen-time pauses (mid-morning, mid-afternoon). Use wearable reminders already trusted for sleep tracking.",
+    "barrier_mitigation": "1) Overwhelm \u2192 cap new habits at <30 min/day for first 3 weeks.\n2) Forgetfulness \u2192 schedule phone/wearable prompt synced with usual wake time.\n3) Weather/environment \u2192 have an indoor back-up (guided video or hallway steps)."
+  },
+  "readiness_level": "Medium",
+  "recommendations": [
+    "Add one additional low-intensity activity session on non-exercise days (e.g., 15-min walk after lunch).",
+    "Set a weekly step target: start at current average +1,000; increase by 500 each week until 7,500 is met comfortably.",
+    "Continue current sleep routine; log bedtime and wake time to preserve 0.81 score trend.",
+    "Perform a 2-minute breathing or gratitude check-in before bed to reinforce strong mental wellbeing metrics.",
+    "Schedule a 4-week progress review to adjust targets and celebrate milestones."
+  ],
+  "data_insights": "Sleep and mental wellbeing are strengths (high trend scores). Physical activity requires gentle scaling: only 1 registered low-intensity bout and singular step record indicate limited daily movement. Biomarkers (resting HR, HRV, SpO2) are normal but sparse; continued collection will allow clearer baselines. Consistent logging shows user reliability, supporting incremental habit layering without risk of data fatigue.",
+  "model_used": "o3",
+  "analysis_type": "comprehensive_behavior"
+}
+
+============================================================
