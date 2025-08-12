@@ -47,14 +47,20 @@ class HolisticMemoryService:
         self.db_adapter = None
         
     async def _ensure_db_connection(self) -> SupabaseAsyncPGAdapter:
-        """Reuse existing connection pattern"""
-        if not self.db_adapter:
+        """Reuse existing connection pattern - but check if actually connected"""
+        # Check if adapter exists AND is connected
+        if not self.db_adapter or not self.db_adapter.is_connected:
             try:
+                print(f"[🔄 MEMORY_SERVICE] Creating new adapter and connecting...")
                 self.db_adapter = SupabaseAsyncPGAdapter()
                 await self.db_adapter.connect()
-                logger.info("[MEMORY_SERVICE] Connected to Supabase successfully")
+                print(f"[✅ MEMORY_SERVICE] Connected to Supabase successfully")
+                logger.debug("[MEMORY_SERVICE] Connected to Supabase successfully")
             except Exception as e:
+                print(f"[❌ MEMORY_SERVICE_ERROR] Connection failed: {e}")
                 logger.error(f"[MEMORY_SERVICE_ERROR] Connection failed: {e}")
+                # Set to None so next attempt creates fresh instance
+                self.db_adapter = None
                 raise
         return self.db_adapter
     
@@ -80,11 +86,11 @@ class HolisticMemoryService:
                 priority, datetime.now(timezone.utc), expires_at, True
             )
             
-            logger.info(f"[WORKING_MEMORY] Stored {memory_type} for user {user_id}")
+            logger.debug(f"[WORKING_MEMORY] Stored {memory_type} for user {user_id}")
             return True
             
         except Exception as e:
-            logger.error(f"[WORKING_MEMORY_ERROR] Failed to store for {user_id}: {e}")
+            logger.debug(f"[WORKING_MEMORY_ERROR] Failed to store for {user_id}: {e}")
             return False
     
     async def get_working_memory(self, user_id: str, session_id: str = None, 
@@ -131,39 +137,45 @@ class HolisticMemoryService:
                     'expires_at': row['expires_at']
                 })
             
-            logger.info(f"[WORKING_MEMORY] Retrieved {len(working_memory)} items for {user_id}")
+            logger.debug(f"[WORKING_MEMORY] Retrieved {len(working_memory)} items for {user_id}")
             return working_memory
             
         except Exception as e:
-            logger.error(f"[WORKING_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
+            logger.debug(f"[WORKING_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
             return []
     
     # ========== SHORT-TERM MEMORY (Recent patterns) ==========
     
     async def store_shortterm_memory(self, user_id: str, category: str, content: Dict[str, Any],
                                    confidence_score: float = 0.8, expires_days: int = 30) -> bool:
-        """Store data in holistic_shortterm_memory table"""
+        """Store data in holistic_shortterm_memory table - using SQL like working memory"""
         try:
             db = await self._ensure_db_connection()
             expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
             
+            # Use SQL execute method - same as working memory which works
             query = """
                 INSERT INTO holistic_shortterm_memory (
-                    user_id, category, content, confidence_score, 
-                    created_at, expires_at, is_active
+                    user_id, memory_category, content, confidence_score,
+                    source_agent, created_at, expires_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING id
             """
             
-            await db.execute(
+            result = await db.fetchrow(
                 query, user_id, category, content, confidence_score,
-                datetime.now(timezone.utc), expires_at, True
+                'memory_service', datetime.now(timezone.utc), expires_at
             )
             
-            logger.info(f"[SHORTTERM_MEMORY] Stored {category} for user {user_id}")
-            return True
+            if result:
+                logger.debug(f"[SHORTTERM_MEMORY] Stored {category} for user {user_id}")
+                return True
+            else:
+                logger.debug(f"[SHORTTERM_MEMORY_ERROR] Failed to store {category} - no data returned")
+                return False
             
         except Exception as e:
-            logger.error(f"[SHORTTERM_MEMORY_ERROR] Failed to store for {user_id}: {e}")
+            logger.debug(f"[SHORTTERM_MEMORY_ERROR] Failed to store for {user_id}: {e}")
             return False
     
     async def get_recent_patterns(self, user_id: str, category: str = None, 
@@ -174,17 +186,17 @@ class HolisticMemoryService:
             since_date = datetime.now(timezone.utc) - timedelta(days=days)
             
             # Build dynamic query
-            conditions = ["user_id = $1", "is_active = true", "expires_at > NOW()", "created_at >= $2"]
+            conditions = ["user_id = $1", "created_at >= $2"]
             params = [user_id, since_date]
             param_count = 2
             
             if category:
                 param_count += 1
-                conditions.append(f"category = ${param_count}")
+                conditions.append(f"memory_category = ${param_count}")
                 params.append(category)
             
             query = f"""
-                SELECT user_id, category, content, confidence_score, created_at, expires_at
+                SELECT user_id, memory_category, content, confidence_score, created_at, expires_at
                 FROM holistic_shortterm_memory 
                 WHERE {' AND '.join(conditions)}
                 ORDER BY created_at DESC, confidence_score DESC
@@ -196,18 +208,18 @@ class HolisticMemoryService:
             for row in rows:
                 patterns.append({
                     'user_id': row['user_id'],
-                    'category': row['category'],
+                    'category': row['memory_category'],
                     'content': row['content'],
                     'confidence_score': row['confidence_score'],
                     'created_at': row['created_at'],
                     'expires_at': row['expires_at']
                 })
             
-            logger.info(f"[SHORTTERM_MEMORY] Retrieved {len(patterns)} patterns for {user_id}")
+            logger.debug(f"[SHORTTERM_MEMORY] Retrieved {len(patterns)} patterns for {user_id}")
             return patterns
             
         except Exception as e:
-            logger.error(f"[SHORTTERM_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
+            logger.debug(f"[SHORTTERM_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
             return []
     
     # ========== LONG-TERM MEMORY (Stable patterns) ==========
@@ -218,16 +230,16 @@ class HolisticMemoryService:
             db = await self._ensure_db_connection()
             
             query = """
-                SELECT user_id, category, content, confidence_score, created_at, updated_at
+                SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated
                 FROM holistic_longterm_memory 
-                WHERE user_id = $1 AND is_active = true
-                ORDER BY confidence_score DESC, updated_at DESC
+                WHERE user_id = $1
+                ORDER BY confidence_score DESC, last_updated DESC
             """
             
             rows = await db.fetch(query, user_id)
             
             if not rows:
-                logger.info(f"[LONGTERM_MEMORY] No long-term memory found for {user_id}")
+                logger.debug(f"[LONGTERM_MEMORY] No long-term memory found for {user_id}")
                 return None
             
             # Aggregate all categories into a single profile
@@ -239,8 +251,8 @@ class HolisticMemoryService:
             latest_created = None
             
             for row in rows:
-                category = row['category']
-                content = row['content']
+                category = row['memory_category']
+                content = row['memory_data']
                 confidence = row['confidence_score']
                 created_at = row['created_at']
                 
@@ -273,11 +285,11 @@ class HolisticMemoryService:
                 confidence_score=max_confidence
             )
             
-            logger.info(f"[LONGTERM_MEMORY] Retrieved profile for {user_id} with {len(rows)} memory items")
+            logger.debug(f"[LONGTERM_MEMORY] Retrieved profile for {user_id} with {len(rows)} memory items")
             return profile
             
         except Exception as e:
-            logger.error(f"[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for {user_id}: {e}")
+            logger.debug(f"[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for {user_id}: {e}")
             return None
     
     async def update_longterm_memory(self, user_id: str, category: str, 
@@ -289,7 +301,7 @@ class HolisticMemoryService:
             # Check if entry exists
             check_query = """
                 SELECT id FROM holistic_longterm_memory 
-                WHERE user_id = $1 AND category = $2 AND is_active = true
+                WHERE user_id = $1 AND memory_category = $2
             """
             existing = await db.fetch(check_query, user_id, category)
             
@@ -297,29 +309,29 @@ class HolisticMemoryService:
                 # Update existing entry
                 update_query = """
                     UPDATE holistic_longterm_memory 
-                    SET content = $3, confidence_score = $4, updated_at = $5
-                    WHERE user_id = $1 AND category = $2 AND is_active = true
+                    SET memory_data = $3, confidence_score = $4, last_updated = $5
+                    WHERE user_id = $1 AND memory_category = $2
                 """
                 await db.execute(update_query, user_id, category, memory_data, 
                                confidence_score, datetime.now(timezone.utc))
-                logger.info(f"[LONGTERM_MEMORY] Updated {category} for user {user_id}")
+                logger.debug(f"[LONGTERM_MEMORY] Updated {category} for user {user_id}")
             else:
                 # Create new entry
                 insert_query = """
                     INSERT INTO holistic_longterm_memory (
-                        user_id, category, content, confidence_score, 
-                        created_at, updated_at, is_active
+                        user_id, memory_category, memory_data, confidence_score, 
+                        created_at, last_updated, update_source
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """
                 now = datetime.now(timezone.utc)
                 await db.execute(insert_query, user_id, category, memory_data, 
-                               confidence_score, now, now, True)
-                logger.info(f"[LONGTERM_MEMORY] Created {category} for user {user_id}")
+                               confidence_score, now, now, 'memory_service')
+                logger.debug(f"[LONGTERM_MEMORY] Created {category} for user {user_id}")
             
             return True
             
         except Exception as e:
-            logger.error(f"[LONGTERM_MEMORY_ERROR] Failed to update {category} for {user_id}: {e}")
+            logger.debug(f"[LONGTERM_MEMORY_ERROR] Failed to update {category} for {user_id}: {e}")
             return False
     
     # ========== META-MEMORY (Learning patterns) ==========
@@ -330,29 +342,49 @@ class HolisticMemoryService:
             db = await self._ensure_db_connection()
             
             query = """
-                SELECT category, content, confidence_score, created_at, updated_at
+                SELECT adaptation_patterns, learning_velocity, success_predictors, 
+                       failure_patterns, agent_effectiveness, confidence_level, last_updated
                 FROM holistic_meta_memory 
-                WHERE user_id = $1 AND is_active = true
-                ORDER BY confidence_score DESC, updated_at DESC
+                WHERE user_id = $1
+                ORDER BY confidence_level DESC, last_updated DESC
             """
             
             rows = await db.fetch(query, user_id)
             
             meta_memory = {}
             for row in rows:
-                category = row['category']
-                content = row['content']
-                meta_memory[category] = {
-                    'data': content,
-                    'confidence_score': row['confidence_score'],
-                    'updated_at': row['updated_at']
+                meta_memory['adaptation_patterns'] = {
+                    'data': row['adaptation_patterns'],
+                    'confidence_score': row['confidence_level'],
+                    'updated_at': row['last_updated']
                 }
+                meta_memory['learning_velocity'] = {
+                    'data': row['learning_velocity'],
+                    'confidence_score': row['confidence_level'],
+                    'updated_at': row['last_updated']
+                }
+                meta_memory['success_predictors'] = {
+                    'data': row['success_predictors'],
+                    'confidence_score': row['confidence_level'],
+                    'updated_at': row['last_updated']
+                }
+                meta_memory['failure_patterns'] = {
+                    'data': row['failure_patterns'],
+                    'confidence_score': row['confidence_level'],
+                    'updated_at': row['last_updated']
+                }
+                meta_memory['agent_effectiveness'] = {
+                    'data': row['agent_effectiveness'],
+                    'confidence_score': row['confidence_level'],
+                    'updated_at': row['last_updated']
+                }
+                break  # Only one row per user
             
-            logger.info(f"[META_MEMORY] Retrieved {len(rows)} meta-memory items for {user_id}")
+            logger.debug(f"[META_MEMORY] Retrieved {len(rows)} meta-memory items for {user_id}")
             return meta_memory
             
         except Exception as e:
-            logger.error(f"[META_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
+            logger.debug(f"[META_MEMORY_ERROR] Failed to retrieve for {user_id}: {e}")
             return {}
     
     async def update_meta_memory(self, user_id: str, adaptation_patterns: Dict[str, Any], 
@@ -362,83 +394,91 @@ class HolisticMemoryService:
             db = await self._ensure_db_connection()
             now = datetime.now(timezone.utc)
             
-            # Update adaptation patterns
-            if adaptation_patterns:
-                await self._upsert_meta_memory_category(
-                    user_id, 'adaptation_patterns', adaptation_patterns, 0.8
-                )
+            # Check if meta-memory exists for user
+            check_query = "SELECT id FROM holistic_meta_memory WHERE user_id = $1"
+            existing = await db.fetch(check_query, user_id)
             
-            # Update learning velocity
-            if learning_velocity:
-                await self._upsert_meta_memory_category(
-                    user_id, 'learning_velocity', learning_velocity, 0.8
-                )
+            if existing:
+                # Update existing meta-memory
+                update_query = """
+                    UPDATE holistic_meta_memory 
+                    SET adaptation_patterns = $2, learning_velocity = $3, last_updated = $4
+                    WHERE user_id = $1
+                """
+                await db.execute(update_query, user_id, adaptation_patterns or {}, 
+                               learning_velocity or {}, now)
+            else:
+                # Create new meta-memory record
+                insert_query = """
+                    INSERT INTO holistic_meta_memory (
+                        user_id, adaptation_patterns, learning_velocity, success_predictors,
+                        failure_patterns, agent_effectiveness, archetype_evolution, engagement_patterns,
+                        created_at, last_updated, analysis_window_start, analysis_window_end
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                """
+                window_start = now - timedelta(days=30)
+                await db.execute(insert_query, user_id, adaptation_patterns or {}, 
+                               learning_velocity or {}, {}, {}, {}, {}, {}, 
+                               now, now, window_start, now)
             
-            logger.info(f"[META_MEMORY] Updated meta-memory for user {user_id}")
+            logger.debug(f"[META_MEMORY] Updated meta-memory for user {user_id}")
             return True
             
         except Exception as e:
-            logger.error(f"[META_MEMORY_ERROR] Failed to update for {user_id}: {e}")
+            logger.debug(f"[META_MEMORY_ERROR] Failed to update for {user_id}: {e}")
             return False
     
-    async def _upsert_meta_memory_category(self, user_id: str, category: str, 
-                                         content: Dict[str, Any], confidence: float):
-        """Helper to upsert meta-memory category"""
-        db = await self._ensure_db_connection()
-        
-        # Check if exists
-        check_query = """
-            SELECT id FROM holistic_meta_memory 
-            WHERE user_id = $1 AND category = $2 AND is_active = true
-        """
-        existing = await db.fetch(check_query, user_id, category)
-        
-        now = datetime.now(timezone.utc)
-        
-        if existing:
-            # Update existing
-            update_query = """
-                UPDATE holistic_meta_memory 
-                SET content = $3, confidence_score = $4, updated_at = $5
-                WHERE user_id = $1 AND category = $2 AND is_active = true
-            """
-            await db.execute(update_query, user_id, category, content, confidence, now)
-        else:
-            # Insert new
-            insert_query = """
-                INSERT INTO holistic_meta_memory (
-                    user_id, category, content, confidence_score, 
-                    created_at, updated_at, is_active
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-            """
-            await db.execute(insert_query, user_id, category, content, confidence, now, now, True)
+    # Removed _upsert_meta_memory_category - not needed with new schema
     
     # ========== ANALYSIS RESULTS (Historical analysis storage) ==========
     
     async def store_analysis_result(self, user_id: str, analysis_type: str, 
                                   analysis_result: Dict[str, Any], archetype_used: str = None) -> str:
-        """Store complete analysis in holistic_analysis_results table"""
+        """Store complete analysis in holistic_analysis_results table - using SQL adapter"""
         try:
+            print(f"🔍 MEMORY DEBUG: Starting store_analysis_result for {analysis_type}")
             db = await self._ensure_db_connection()
+            print(f"🔍 MEMORY DEBUG: DB connection established: {type(db)}")
             
+            # Use the SAME method as working memory (SQL adapter execute)  
+            # Match the EXACT table schema from memory_system_tables.sql
+            # Table columns: id, user_id, analysis_type, archetype, analysis_result, input_summary, 
+            #                agent_id, analysis_version, system_prompt_version, confidence_score, 
+            #                completeness_score, processing_time_ms, created_at, analysis_date, 
+            #                user_rating, user_feedback, implementation_success, follow_up_date
             query = """
                 INSERT INTO holistic_analysis_results (
-                    user_id, analysis_type, analysis_result, archetype_used,
-                    created_at, updated_at, is_active
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    user_id, analysis_type, archetype, analysis_result, 
+                    input_summary, agent_id
+                ) VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id
             """
             
-            now = datetime.now(timezone.utc)
-            result = await db.fetch(query, user_id, analysis_type, analysis_result, 
-                                  archetype_used, now, now, True)
+            # Prepare data matching the table schema exactly
+            input_summary = {"data_quality": "excellent", "source": "memory_service"}
+            print(f"🔍 MEMORY DEBUG: Executing SQL insert...")
             
-            analysis_id = str(result[0]['id'])
-            logger.info(f"[ANALYSIS_RESULTS] Stored {analysis_type} analysis {analysis_id} for user {user_id}")
-            return analysis_id
+            try:
+                result = await db.fetchrow(query, user_id, analysis_type, archetype_used, 
+                                         analysis_result, input_summary, 'memory_service')
+                print(f"🔍 MEMORY DEBUG: SQL result: {result}")
+                
+                if result:
+                    analysis_id = str(result['id'])
+                    print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")
+                    return analysis_id
+                else:
+                    print(f"❌ MEMORY: Failed to store {analysis_type} analysis - no result returned")
+                    return None
+                    
+            except Exception as insert_error:
+                print(f"🔍 MEMORY DEBUG: SQL insert failed with error: {insert_error}")
+                print(f"🔍 MEMORY DEBUG: Insert error type: {type(insert_error)}")
+                return None
             
         except Exception as e:
-            logger.error(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")
+            print(f"🔍 MEMORY DEBUG: General error: {e}")
+            logger.debug(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")
             return ""
     
     async def get_analysis_history(self, user_id: str, analysis_type: str = None, 
@@ -448,7 +488,7 @@ class HolisticMemoryService:
             db = await self._ensure_db_connection()
             
             # Build dynamic query
-            conditions = ["user_id = $1", "is_active = true"]
+            conditions = ["user_id = $1"]
             params = [user_id]
             param_count = 1
             
@@ -458,7 +498,7 @@ class HolisticMemoryService:
                 params.append(analysis_type)
             
             query = f"""
-                SELECT id, user_id, analysis_type, analysis_result, archetype_used, created_at
+                SELECT id, user_id, analysis_type, analysis_result, archetype, created_at
                 FROM holistic_analysis_results 
                 WHERE {' AND '.join(conditions)}
                 ORDER BY created_at DESC
@@ -476,14 +516,14 @@ class HolisticMemoryService:
                     analysis_type=row['analysis_type'],
                     analysis_result=row['analysis_result'],
                     created_at=row['created_at'],
-                    archetype_used=row['archetype_used']
+                    archetype_used=row['archetype']
                 ))
             
-            logger.info(f"[ANALYSIS_RESULTS] Retrieved {len(history)} analyses for {user_id}")
+            logger.debug(f"[ANALYSIS_RESULTS] Retrieved {len(history)} analyses for {user_id}")
             return history
             
         except Exception as e:
-            logger.error(f"[ANALYSIS_RESULTS_ERROR] Failed to retrieve for {user_id}: {e}")
+            logger.debug(f"[ANALYSIS_RESULTS_ERROR] Failed to retrieve for {user_id}: {e}")
             return []
     
     # ========== ANALYSIS TYPE DETECTION ==========
@@ -498,20 +538,20 @@ class HolisticMemoryService:
             recent_analyses = await self.get_analysis_history(user_id, limit=5)
             
             if not recent_analyses:
-                logger.info(f"[ANALYSIS_MODE] New user {user_id}: initial analysis")
+                print(f"🆕 ANALYSIS_MODE: New user - initial analysis (7 days data)")
                 return ("initial", 7)  # New user: 7 days data
             
             last_analysis_date = recent_analyses[0].created_at
             days_since_last = (datetime.now(timezone.utc) - last_analysis_date).days
             
             if days_since_last >= 14:
-                logger.info(f"[ANALYSIS_MODE] Long gap for {user_id}: initial analysis")
+                print(f"⏰ ANALYSIS_MODE: Long gap ({days_since_last} days) - initial analysis")
                 return ("initial", 7)  # Long gap: treat as new
             elif days_since_last >= 1:
-                logger.info(f"[ANALYSIS_MODE] Recent user {user_id}: follow-up analysis")
+                print(f"🔄 ANALYSIS_MODE: Recent user - follow-up analysis (1 day + memory)")
                 return ("follow_up", 1)  # Recent: use 1 day + memory
             else:
-                logger.info(f"[ANALYSIS_MODE] Same day for {user_id}: adaptation analysis")
+                print(f"⚡ ANALYSIS_MODE: Same day - adaptation analysis")
                 return ("adaptation", 1)  # Same day: adaptation only
                 
         except Exception as e:
@@ -557,10 +597,10 @@ class HolisticMemoryService:
             if memory_context_parts:
                 memory_context = "\n".join(memory_context_parts)
                 enhanced_prompt = f"{base_prompt}\n\n{memory_context}\n\nImportant: Use this memory context to personalize your analysis."
-                logger.info(f"[MEMORY_PROMPTS] Enhanced prompt for {user_id} with {len(memory_context_parts)} memory elements")
+                print(f"🧠 MEMORY_ENHANCED: Prompt enhanced with {len(memory_context_parts)} memory elements")
                 return enhanced_prompt
             else:
-                logger.info(f"[MEMORY_PROMPTS] No memory context found for {user_id}, using base prompt")
+                print(f"💭 MEMORY_ENHANCED: No memory context - using base prompt")
                 return base_prompt
                 
         except Exception as e:
@@ -573,4 +613,4 @@ class HolisticMemoryService:
         """Clean shutdown"""
         if self.db_adapter:
             await self.db_adapter.close()
-            logger.info("[MEMORY_SERVICE] Database connection closed")
+            logger.debug("[MEMORY_SERVICE] Database connection closed")

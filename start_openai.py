@@ -10,44 +10,29 @@ import subprocess
 from pathlib import Path
 
 def main():
-    print("🚀 HolisticOS OpenAI-Based Testing Mode")
-    print("=" * 50)
+    print("🚀 Starting HolisticOS OpenAI API...")
     
-    # Get project root
+    # Get project root and setup
     project_root = Path(__file__).parent
-    print(f"📁 Project Root: {project_root}")
-    
-    # Change to project directory
     os.chdir(project_root)
-    print(f"📍 Working Directory: {os.getcwd()}")
-    
-    # Set Python path
     os.environ["PYTHONPATH"] = str(project_root)
-    print(f"🐍 Python Path: {project_root}")
     
-    # Check environment file and OpenAI key
+    # Check environment
     env_file = project_root / ".env"
     if not env_file.exists():
         print("❌ No .env file found")
         return False
     
-    print("✓ Environment file found")
-    
     # Load environment and check OpenAI key
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key:
-            print(f"✓ OpenAI API key loaded ({openai_key[:8]}...)")
-        else:
-            print("❌ OPENAI_API_KEY not found in environment")
-            return False
-    except ImportError:
-        print("⚠ python-dotenv not available")
         openai_key = os.getenv("OPENAI_API_KEY")
         if not openai_key:
+            print("❌ OPENAI_API_KEY not found")
+            return False
+    except ImportError:
+        if not os.getenv("OPENAI_API_KEY"):
             print("❌ OPENAI_API_KEY not found")
             return False
     
@@ -55,49 +40,17 @@ def main():
     try:
         sys.path.insert(0, str(project_root))
         from shared_libs.utils.system_prompts import get_system_prompt
-        prompt = get_system_prompt("behavior_analysis")
-        print(f"✓ HolisticOS System Prompts loaded ({len(prompt):,} chars)")
+        get_system_prompt("behavior_analysis")
     except Exception as e:
         print(f"❌ System Prompts error: {e}")
         return False
     
-    print("\n🎯 Starting HolisticOS OpenAI Integration API...")
-    print("   Mode: Direct OpenAI API + HolisticOS Prompts")
-    print("   URL: http://localhost:8001")
+    print("✅ Environment ready - Starting server on http://localhost:8001")
     print("   Docs: http://localhost:8001/docs")
     print("   Health: http://localhost:8001/api/health")
-    
-    print("\n✅ Benefits of This Approach:")
-    print("   • No TensorFlow compatibility issues")
-    print("   • Uses your HolisticOS system prompts")
-    print("   • Full archetype support (6 types)")
-    print("   • Direct OpenAI GPT-4 integration")
-    print("   • Same API interface as original system")
-    
-    print("\n🧪 Test Commands:")
-    print("   # Health Check:")
-    print("   curl http://localhost:8001/api/health")
-    print()
-    print("   # Foundation Builder Analysis:")
-    print("   curl -X POST http://localhost:8001/api/analyze \\")
-    print("     -H 'Content-Type: application/json' \\")
-    print("     -d '{\"user_id\": \"test_foundation\", \"archetype\": \"Foundation Builder\"}'")
-    print()
-    print("   # Peak Performer Analysis:")
-    print("   curl -X POST http://localhost:8001/api/analyze \\")
-    print("     -H 'Content-Type: application/json' \\")
-    print("     -d '{\"user_id\": \"test_peak\", \"archetype\": \"Peak Performer\"}'")
-    print()
-    print("   # Systematic Improver Analysis:")
-    print("   curl -X POST http://localhost:8001/api/analyze \\")
-    print("     -H 'Content-Type: application/json' \\")
-    print("     -d '{\"user_id\": \"test_systematic\", \"archetype\": \"Systematic Improver\"}'")
-    
-    print("\n" + "=" * 50)
-    print("Press Ctrl+C to stop")
     print("=" * 50)
     
-    # Start the OpenAI-based API gateway
+    # Start the server
     try:
         cmd = [
             sys.executable, "-m", "uvicorn",
@@ -107,11 +60,6 @@ def main():
             "--reload"
         ]
         
-        print(f"💻 Starting: {' '.join(cmd)}")
-        print(f"🏠 Directory: {os.getcwd()}")
-        print()
-        
-        # Run the server
         result = subprocess.run(cmd, cwd=project_root)
         return result.returncode == 0
         

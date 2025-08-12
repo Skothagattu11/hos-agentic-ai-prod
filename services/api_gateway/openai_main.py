@@ -38,12 +38,6 @@ try:
     app.include_router(health_data_router)
     print("✅ [INTEGRATION] Health data endpoints added successfully")
     print("📡 [ENDPOINTS] Real user data endpoints now available:")
-    print("   • GET /api/v1/health-data/users/{user_id}/health-context")
-    print("   • GET /api/v1/health-data/users/{user_id}/summary") 
-    print("   • GET /api/v1/health-data/users/{user_id}/data-quality")
-    print("   • GET /api/v1/health-data/users/{user_id}/agent/{agent}/data")
-    print("   • POST /api/v1/health-data/users/{user_id}/analyze")
-    print("   • GET /api/v1/health-data/system/health")
 except ImportError as e:
     print(f"⚠️  [WARNING] Health data endpoints not available: {e}")
 except Exception as e:
@@ -176,10 +170,6 @@ async def initialize_agents():
         adaptation_agent = HolisticAdaptationEngine()
         
         print("✅ All agents initialized successfully")
-        print(f"   🏗️  Orchestrator: {orchestrator.agent_id}")
-        print(f"   🧠 Memory Agent: {memory_agent.agent_id}")
-        print(f"   🔍 Insights Agent: {insights_agent.agent_id}")
-        print(f"   ⚡ Adaptation Engine: {adaptation_agent.agent_id}")
         
     except Exception as e:
         print(f"❌ Error initializing agents: {e}")
@@ -537,13 +527,26 @@ async def analyze_user(request: AnalysisRequest):
         from services.user_data_service import UserDataService
         from shared_libs.utils.system_prompts import get_system_prompt, get_archetype_adaptation
         
-        # Initialize UserDataService for real data
+        # PHASE 4.1: Import memory integration services
+        from services.memory_integration_service import MemoryIntegrationService
+        
+        # Initialize UserDataService and AnalysisTracker for real data
         user_service = UserDataService()
+        from services.simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
+        analysis_tracker = AnalysisTracker()
+        
+        # PHASE 4.1: Initialize Memory Integration Service
+        memory_service = MemoryIntegrationService()
+        print(f"🧠 Preparing memory-enhanced analysis context for {user_id}...")
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
         
         try:
-            # PHASE 4.0 MVP: Use incremental sync for efficiency  
-            print(f"📊 Fetching user data with incremental sync for {user_id}...")
-            user_context = await user_service.get_incremental_health_data(user_id)
+            # SIMPLIFIED INCREMENTAL SYNC: Fetch data since last analysis
+            # Use memory context to determine optimal data fetching strategy
+            days_to_fetch = memory_context.days_to_fetch
+            print(f"📊 Fetching user data with memory-guided incremental sync for {user_id}...")
+            print(f"🧠 Analysis mode: {memory_context.analysis_mode}, fetching {days_to_fetch} days of data")
+            user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
             
             # Extract real data for analysis
             data_quality = user_context.data_quality
@@ -553,21 +556,47 @@ async def analyze_user(request: AnalysisRequest):
             print(f"   • Biomarkers: {data_quality.biomarkers_count}")
             print(f"   • Completeness: {data_quality.completeness_score:.2f}")
             
-            # Get system prompts
-            behavior_prompt = get_system_prompt("behavior_analysis")
-            nutrition_prompt = get_system_prompt("plan_generation") 
-            routine_prompt = get_system_prompt("plan_generation")
+            # Get system prompts and enhance with memory context
+            base_behavior_prompt = get_system_prompt("behavior_analysis")
+            base_nutrition_prompt = get_system_prompt("plan_generation") 
+            base_routine_prompt = get_system_prompt("plan_generation")
             archetype_guidance = get_archetype_adaptation(archetype)
+            
+            # PHASE 4.1: Enhance prompts with memory context
+            behavior_prompt = await memory_service.enhance_agent_prompt(base_behavior_prompt, memory_context, "behavior_analysis")
+            nutrition_prompt = await memory_service.enhance_agent_prompt(base_nutrition_prompt, memory_context, "nutrition_plan")
+            routine_prompt = await memory_service.enhance_agent_prompt(base_routine_prompt, memory_context, "routine_plan")
+            
+            print(f"🧠 Memory-enhanced prompts prepared - Focus areas: {memory_context.personalized_focus_areas}")
+            print(f"🧠 Proven strategies available: {len(memory_context.proven_strategies)} strategies")
             
             print(f"✅ System prompts loaded: {len(behavior_prompt):,} chars")
             
-            # PHASE 3.2: Create health context summary with AI-friendly language
+            # PHASE 3.2 + 4.1: Create health context summary with AI-friendly language + Memory Context
+            memory_summary = ""
+            if memory_context.longterm_memory:
+                memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: {memory_context.analysis_mode.upper()}
+- User Memory Profile Available: YES
+- Personalized Focus Areas: {', '.join(memory_context.personalized_focus_areas)}
+- Proven Strategies: {len(memory_context.proven_strategies)} strategies identified
+- Recent Pattern Analysis: {len(memory_context.recent_patterns)} patterns tracked
+- Historical Analysis Count: {len(memory_context.analysis_history)}"""
+            else:
+                memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: {memory_context.analysis_mode.upper()} (New user)
+- User Memory Profile Available: NO (Building initial memory)"""
+
             user_context_summary = f"""
-HEALTH ANALYSIS REQUEST - COMPREHENSIVE DATA:
+HEALTH ANALYSIS REQUEST - MEMORY-ENHANCED COMPREHENSIVE DATA:
 - Profile Reference: {user_id}
 - Health Archetype: {archetype}
 - Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
-- Mode: Comprehensive Health Analysis (Phase 3.2)
+- Mode: Memory-Enhanced Health Analysis (Phase 4.1)
+
+{memory_summary}
 
 HEALTH DATA PROFILE:
 - Data Quality Level: {data_quality.quality_level} 
@@ -583,7 +612,7 @@ HEALTH TRACKING DATA SUMMARY:
 ARCHETYPE FRAMEWORK:
 {archetype_guidance}
 
-ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics.
+ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.
 """
             
         except Exception as data_error:
@@ -605,8 +634,12 @@ Note: Comprehensive health data was unavailable for {user_id}, using sample anal
 Please provide a detailed analysis that demonstrates the {archetype} approach to health optimization.
 """
         finally:
-            # Always cleanup the service
+            # Always cleanup the services
             await user_service.cleanup()
+            if 'analysis_tracker' in locals():
+                await analysis_tracker.cleanup()
+            if 'memory_service' in locals():
+                await memory_service.cleanup()
 
         # Get analysis number early for logging
         analysis_number = await get_next_analysis_number()
@@ -752,11 +785,28 @@ Please provide a detailed analysis that demonstrates the {archetype} approach to
         
         print(f"✅ Complete multi-model analysis finished for {user_id}")
         
+        # PHASE 4.1: Store analysis results in memory and update user memory profile
+        print(f"🧠 Updating user memory with analysis insights...")
+        
+        # Store individual analysis insights
+        await memory_service.store_analysis_insights(user_id, "behavior_analysis", behavior_analysis, archetype)
+        await memory_service.store_analysis_insights(user_id, "nutrition_plan", nutrition_plan, archetype)
+        await memory_service.store_analysis_insights(user_id, "routine_plan", routine_plan, archetype)
+        
+        # Update consolidated memory profile
+        await memory_service.update_user_memory_profile(user_id, behavior_analysis, nutrition_plan, routine_plan)
+        
+        print(f"✅ Memory profile updated with new insights")
+        
+        # Update last analysis timestamp AFTER successful analysis - use latest data timestamp
+        await analysis_tracker.update_analysis_time(user_id, latest_data_timestamp)
+        print(f"✅ Updated analysis timestamp for {user_id} to {latest_data_timestamp.isoformat()}")
+        
         return AnalysisResponse(
             status="success",
             user_id=user_id,
             archetype=archetype,
-            message="Analysis completed successfully using comprehensive health data with multi-model approach - Phase 3.2",
+            message="Analysis completed successfully using comprehensive health data with memory-enhanced multi-model approach - Phase 4.1",
             analysis={
                 "behavior_analysis": behavior_analysis,
                 "nutrition_plan": nutrition_plan,
@@ -765,7 +815,7 @@ Please provide a detailed analysis that demonstrates the {archetype} approach to
                     "mode": analysis_mode,
                     "prompt_system": "HolisticOS",
                     "archetype_applied": archetype,
-                    "phase": "3.3 - Agent-Specific Data Filtering",
+                    "phase": "4.1 - Memory-Enhanced Analysis Pipeline",
                     "data_source": "Supabase via UserDataService",
                     "models_used": {
                         "behavior_analysis": "o3 (deep analysis)",

@@ -12,3 +12,4 @@ agents
 openai
 typing-extensions
 tensorflow
+aiohttp

@@ -49,18 +49,29 @@ class SupabaseAsyncPGAdapter:
     async def connect(self):
         """Initialize Supabase client (mimics asyncpg.connect)"""
         try:
+            print(f"[🔍] Attempting Supabase connection...")
+            print(f"[🔍] URL: {self.supabase_url[:30]}..." if self.supabase_url else "[🔍] URL: None")
+            print(f"[🔍] Key: {'Present' if self.supabase_key else 'Missing'}")
+            
             self.client = create_client(self.supabase_url, self.supabase_key)
             self._connected = True
-            print(f"[✅] Connected to Supabase successfully")
+            print(f"[✅] Connected to Supabase successfully - client type: {type(self.client)}")
             return self
         except Exception as e:
             print(f"[❌] Supabase connection failed: {e}")
+            self._connected = False
+            self.client = None
             raise
 
     async def close(self):
         """Close connection (mimics asyncpg connection.close)"""
         self._connected = False
         self.client = None
+    
+    @property
+    def is_connected(self) -> bool:
+        """Check if adapter is connected"""
+        return self._connected and self.client is not None
 
     def _ensure_connected(self):
         """Ensure we have an active connection"""
@@ -192,6 +203,8 @@ class SupabaseAsyncPGAdapter:
         Fetch single row (SELECT queries or INSERT with RETURNING)
         Returns dictionary or None like asyncpg
         """
+        self._ensure_connected()  # ADD THIS CHECK - same as execute() has
+        
         try:
             # Handle INSERT with RETURNING specially
             if 'INSERT' in query.upper() and 'RETURNING' in query.upper():
@@ -259,12 +272,9 @@ class SupabaseAsyncPGAdapter:
                 table_end = query.find(' ', table_match)
             result['table'] = query[table_match:table_end].strip()
             
-            # For analysis_memory table INSERTs, create data dict from args
-            if result['table'] == 'analysis_memory':
-                result['data'] = self._create_analysis_memory_insert_data(args)
             # For memory table INSERTs, create data dict from args
-            elif result['table'] == 'memory':
-                result['data'] = self._create_memory_insert_data(args)
+            if 'memory' in result['table'] or result['table'] in ['analysis_memory', 'memory', 'holistic_analysis_results']:
+                result['data'] = self._create_generic_insert_data(query, args)
             
         # Parse UPDATE queries  
         elif query_upper.startswith('UPDATE'):
@@ -350,7 +360,7 @@ class SupabaseAsyncPGAdapter:
             where_clause = query[where_start:where_end].strip()
             result['where_conditions'] = self._parse_where_clause(where_clause)
         
-        # Extract ORDER BY - Robust parsing for multi-line queries
+        # Extract ORDER BY - Fixed parsing for multi-column and complex ordering
         order_pos = query_upper.find(' ORDER BY ')
         if order_pos != -1:
             # Get everything after ORDER BY
@@ -361,16 +371,31 @@ class SupabaseAsyncPGAdapter:
             # Clean the order clause - remove newlines and extra spaces
             order_clause = ' '.join(order_clause.split())
             
-            # Parse ORDER BY clause - Improved parsing
+            # Parse ORDER BY clause - Handle complex cases
             if order_clause:
-                # Check for DESC/ASC
-                is_desc = 'DESC' in order_clause.upper()
+                # Split by comma to handle multiple columns (take first one for Supabase)
+                first_column = order_clause.split(',')[0].strip()
                 
-                # Extract column name by removing DESC/ASC
-                column_name = order_clause.upper().replace(' DESC', '').replace(' ASC', '').strip()
+                # Check for DESC/ASC
+                is_desc = 'DESC' in first_column.upper()
+                
+                # Extract column name by removing DESC/ASC and any extra text
+                column_name = first_column.upper().replace(' DESC', '').replace(' ASC', '').strip()
+                
+                # Handle case where column name has been truncated/mangled - use original column from SELECT
+                if len(column_name) < 3 or "'" in column_name:
+                    # Fallback: extract column from ORDER BY in original query more carefully
+                    import re
+                    order_match = re.search(r'ORDER BY\s+([a-zA-Z_][a-zA-Z0-9_]*)', query_upper)
+                    if order_match:
+                        column_name = order_match.group(1).lower()
+                    else:
+                        column_name = 'created_at'  # Safe default
+                else:
+                    column_name = column_name.lower()
                 
                 result['order_by'] = {
-                    'column': column_name.lower(),  # Convert back to lowercase
+                    'column': column_name,
                     'desc': is_desc
                 }
         
@@ -385,6 +410,34 @@ class SupabaseAsyncPGAdapter:
                 pass
         
         return result
+    
+    def _create_generic_insert_data(self, query: str, args: tuple) -> Dict[str, Any]:
+        """Create INSERT data dict from query and args - generic parser"""
+        import re
+        
+        # Extract column names from INSERT query
+        values_match = re.search(r'\((.*?)\)\s+VALUES', query, re.IGNORECASE | re.DOTALL)
+        if not values_match:
+            print(f"[ERROR] Could not parse column names from INSERT query")
+            return {}
+        
+        columns_text = values_match.group(1)
+        columns = [col.strip() for col in columns_text.split(',')]
+        
+        # Create data dict from columns and args
+        data = {}
+        for i, col in enumerate(columns):
+            if i < len(args):
+                value = args[i]
+                # Handle JSON serialization for complex types
+                if isinstance(value, dict):
+                    data[col] = value
+                elif hasattr(value, 'isoformat'):  # datetime
+                    data[col] = value.isoformat()
+                else:
+                    data[col] = value
+        
+        return data
     
     def _find_next_keyword_pos(self, query_upper: str, start_pos: int, keywords: list) -> int:
         """Find the position of the next SQL keyword"""

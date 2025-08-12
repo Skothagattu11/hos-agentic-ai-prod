@@ -39,7 +39,7 @@ class UserDataService:
         # Phase 4.0 MVP: Simple sync tracking
         self.sync_cache = {}  # In-memory cache for last sync times (MVP approach)
         
-        logger.info("[USER_DATA_SERVICE] Initialized with API client and incremental sync support")
+        logger.debug("[USER_DATA_SERVICE] Initialized with API client and incremental sync support")
 
     async def _ensure_db_connection(self) -> SupabaseAsyncPGAdapter:
         """Lazy connection initialization - MVP pattern"""
@@ -47,7 +47,7 @@ class UserDataService:
             try:
                 self.db_adapter = SupabaseAsyncPGAdapter()
                 await self.db_adapter.connect()
-                logger.info("[DB] Connected to Supabase successfully")
+                logger.debug("[DB] Connected to Supabase successfully")
             except Exception as e:
                 logger.error(f"[DB_ERROR] Connection failed: {e}")
                 raise
@@ -233,7 +233,7 @@ class UserDataService:
         cache_key = f"{user_id}_{days}"
         if cache_key in self.cache:
             cache_data = self.cache[cache_key]
-            if (datetime.now() - cache_data.fetch_timestamp).seconds < 300:  # 5 min cache
+            if (datetime.now(timezone.utc) - cache_data.fetch_timestamp).seconds < 300:  # 5 min cache
                 logger.info(f"[CACHE_HIT] Returning cached data for {user_id}")
                 return cache_data
         
@@ -361,28 +361,48 @@ class UserDataService:
                 days=days
             )
     
-    # Phase 4.0 MVP: Incremental Sync Methods
-    async def fetch_scores_since_timestamp(self, user_id: str, since_timestamp: datetime) -> List[Dict[str, Any]]:
-        """MVP: Fetch scores updated since timestamp"""
+    # Simplified Incremental Sync - True incremental from last analysis to now
+    async def fetch_data_since(self, user_id: str, since_timestamp: datetime) -> tuple[List[Dict], List[Dict], List[Dict], datetime]:
+        """Fetch ALL data from timestamp to now - true incremental"""
         try:
             db = await self._ensure_db_connection()
             
-            # Enhanced query with timestamp filtering
-            query = """
+            # Get ALL scores since last analysis
+            scores_query = """
                 SELECT id, profile_id, type, score, data, 
                        score_date_time, created_at, updated_at
                 FROM scores 
                 WHERE profile_id = $1 
-                  AND (created_at > $2 OR updated_at > $2)
+                  AND created_at > $2
                 ORDER BY created_at DESC
                 LIMIT $3
             """
             
-            logger.info(f"[INCREMENTAL_SCORES] Fetching for {user_id} since {since_timestamp.isoformat()}")
-            rows = await db.fetch(query, user_id, since_timestamp, self.max_records)
+            # Get ALL biomarkers since last analysis
+            biomarkers_query = """
+                SELECT id, profile_id, category, type, data,
+                       start_date_time, end_date_time, created_at, updated_at
+                FROM biomarkers 
+                WHERE profile_id = $1 
+                  AND created_at > $2
+                ORDER BY created_at DESC
+                LIMIT $3
+            """
             
+            logger.info(f"[INCREMENTAL] Fetching data for {user_id} since {since_timestamp.isoformat()}")
+            
+            # Parallel fetch for efficiency
+            scores_task = db.fetch(scores_query, user_id, since_timestamp, self.max_records)
+            biomarkers_task = db.fetch(biomarkers_query, user_id, since_timestamp, self.max_records)
+            archetypes_task = self.fetch_user_archetypes(user_id)
+            
+            scores_rows, biomarkers_rows, archetypes = await asyncio.gather(
+                scores_task, biomarkers_task, archetypes_task
+            )
+            
+            # Process scores
             scores = []
-            for row in rows:
+            for row in scores_rows:
                 try:
                     score_data = {
                         'id': str(row['id']),
@@ -395,38 +415,12 @@ class UserDataService:
                         'updated_at': row['updated_at']
                     }
                     scores.append(score_data)
-                except Exception as row_error:
-                    logger.warning(f"[INCREMENTAL_SCORES_WARNING] Skipping bad row: {row_error}")
-                    continue
+                except Exception as e:
+                    logger.warning(f"[SCORES_WARNING] Skipping bad row: {e}")
             
-            logger.info(f"[INCREMENTAL_SCORES] Retrieved {len(scores)} records since {since_timestamp.isoformat()}")
-            return scores
-            
-        except Exception as e:
-            logger.error(f"[INCREMENTAL_SCORES_ERROR] Failed for user {user_id}: {e}")
-            return []
-    
-    async def fetch_biomarkers_since_timestamp(self, user_id: str, since_timestamp: datetime) -> List[Dict[str, Any]]:
-        """MVP: Fetch biomarkers updated since timestamp"""
-        try:
-            db = await self._ensure_db_connection()
-            
-            # Enhanced query with timestamp filtering
-            query = """
-                SELECT id, profile_id, category, type, data,
-                       start_date_time, end_date_time, created_at, updated_at
-                FROM biomarkers 
-                WHERE profile_id = $1 
-                  AND (created_at > $2 OR updated_at > $2)
-                ORDER BY created_at DESC
-                LIMIT $3
-            """
-            
-            logger.info(f"[INCREMENTAL_BIOMARKERS] Fetching for {user_id} since {since_timestamp.isoformat()}")
-            rows = await db.fetch(query, user_id, since_timestamp, self.max_records)
-            
+            # Process biomarkers
             biomarkers = []
-            for row in rows:
+            for row in biomarkers_rows:
                 try:
                     biomarker_data = {
                         'id': str(row['id']),
@@ -440,115 +434,200 @@ class UserDataService:
                         'updated_at': row['updated_at']
                     }
                     biomarkers.append(biomarker_data)
-                except Exception as row_error:
-                    logger.warning(f"[INCREMENTAL_BIOMARKERS_WARNING] Skipping bad row: {row_error}")
-                    continue
+                except Exception as e:
+                    logger.warning(f"[BIOMARKERS_WARNING] Skipping bad row: {e}")
             
-            logger.info(f"[INCREMENTAL_BIOMARKERS] Retrieved {len(biomarkers)} records since {since_timestamp.isoformat()}")
-            return biomarkers
+            # Calculate the latest data timestamp from all fetched data
+            latest_data_timestamp = since_timestamp  # Default to input timestamp
+            
+            # Find latest timestamp from scores
+            if scores:
+                latest_score_timestamp = max(score['created_at'] for score in scores)
+                latest_data_timestamp = max(latest_data_timestamp, latest_score_timestamp)
+            
+            # Find latest timestamp from biomarkers  
+            if biomarkers:
+                latest_biomarker_timestamp = max(biomarker['created_at'] for biomarker in biomarkers)
+                latest_data_timestamp = max(latest_data_timestamp, latest_biomarker_timestamp)
+            
+            hours_since = (datetime.now(timezone.utc) - since_timestamp).total_seconds() / 3600
+            print(f"📊 INCREMENTAL_RESULT: {len(scores)} scores, {len(biomarkers)} biomarkers")
+            print(f"⏰ TIME_SPAN: {hours_since:.1f} hours of new data")
+            print(f"📅 LATEST_DATA: {latest_data_timestamp.strftime('%m/%d %H:%M')}")
+            
+            return scores, biomarkers, archetypes, latest_data_timestamp
             
         except Exception as e:
-            logger.error(f"[INCREMENTAL_BIOMARKERS_ERROR] Failed for user {user_id}: {e}")
-            return []
+            logger.error(f"[INCREMENTAL_ERROR] Failed fetching data since {since_timestamp}: {e}")
+            return [], [], [], since_timestamp
     
-    async def get_incremental_health_data(self, user_id: str, since_timestamp: datetime = None) -> UserHealthContext:
+    async def get_analysis_data(self, user_id: str) -> tuple[UserHealthContext, datetime]:
         """
-        MVP: Get health data incrementally since timestamp
-        Falls back to full sync if no timestamp or if incremental fails
+        Get data for analysis based on last analysis time
+        True incremental: fetches ALL data from last analysis to now
         """
-        from .sync_tracker import SyncTracker
+        from .simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
         
         overall_start = datetime.now()
-        sync_tracker = SyncTracker()
+        tracker = AnalysisTracker()
         
-        # If no timestamp provided, get last sync time or do full sync
-        if not since_timestamp:
-            since_timestamp = await sync_tracker.get_last_sync_time(user_id)
-            
-        if not since_timestamp:
-            logger.info(f"[INCREMENTAL] No previous sync for {user_id}, doing full sync")
-            result = await self.get_user_health_data(user_id)
-            await sync_tracker.update_sync_time(user_id)
-            return result
+        # Check when we last analyzed this user
+        last_analysis = await tracker.get_last_analysis_time(user_id)
         
-        logger.info(f"[INCREMENTAL] Getting data for {user_id} since {since_timestamp.isoformat()}")
-        
-        try:
-            # Get incremental data using new timestamp-filtered methods
-            incremental_scores = await self.fetch_scores_since_timestamp(user_id, since_timestamp)
-            incremental_biomarkers = await self.fetch_biomarkers_since_timestamp(user_id, since_timestamp)
-            archetypes = await self.fetch_user_archetypes(user_id)  # Archetypes don't change often
+        if not last_analysis:
+            # First analysis - get 7 days baseline
+            logger.info(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days")
+            result = await self.get_user_health_data(user_id, days=7)
             
-            # Update sync tracker stats
-            await sync_tracker.update_sync_stats(user_id, len(incremental_scores), len(incremental_biomarkers))
+            # For first analysis, calculate latest timestamp from the fetched data
+            latest_data_timestamp = datetime.now(timezone.utc)
+            if result.scores:
+                latest_data_timestamp = max(score.created_at for score in result.scores)
+            if result.biomarkers:
+                biomarker_latest = max(biomarker.created_at for biomarker in result.biomarkers)
+                latest_data_timestamp = max(latest_data_timestamp, biomarker_latest)
             
-            # Calculate appropriate date range for incremental data
-            hours_since = (datetime.now(timezone.utc) - since_timestamp).total_seconds() / 3600
-            days_for_range = max(1, int(hours_since / 24) + 1)  # At least 1 day
-            
-            # Create health context with incremental data
-            result = create_health_context_from_raw_data(
-                user_id=user_id,
-                raw_scores=incremental_scores,
-                raw_biomarkers=incremental_biomarkers,
-                raw_archetypes=[
-                    {
-                        'id': a['id'],
-                        'profile_id': a['profile_id'],
-                        'name': a['name'],
-                        'periodicity': a['periodicity'],
-                        'value': a['value'],
-                        'data': a['data'],
-                        'start_date_time': a['start_date_time'],
-                        'end_date_time': a['end_date_time'],
-                        'created_at': a['created_at'],
-                        'updated_at': a['updated_at']
-                    } for a in archetypes
-                ],
-                days=days_for_range
+            # Track data volume for monitoring
+            await tracker.increment_analysis_count(
+                user_id, 
+                result.data_quality.scores_count,
+                result.data_quality.biomarkers_count
             )
             
-            # Update sync time to now
-            await sync_tracker.update_sync_time(user_id)
+            duration = (datetime.now() - overall_start).total_seconds()
+            logger.info(f"[ANALYSIS_DATA] Initial analysis completed in {duration:.2f}s")
+            logger.info(f"[ANALYSIS_DATA] Latest data found: {latest_data_timestamp.isoformat()}")
+            return result, latest_data_timestamp
+        
+        # Calculate time span
+        hours_since = (datetime.now(timezone.utc) - last_analysis).total_seconds() / 3600
+        days_span = max(1, int(hours_since / 24) + 1)
+        
+        logger.info(f"[ANALYSIS_DATA] Incremental analysis for {user_id}")
+        logger.info(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago")
+        logger.info(f"[ANALYSIS_DATA] Fetching data from {last_analysis.isoformat()} to now")
+        
+        try:
+            # Get ALL data since last analysis (true incremental)
+            scores, biomarkers, archetypes, latest_data_timestamp = await self.fetch_data_since(user_id, last_analysis)
+            
+            if not scores and not biomarkers:
+                print(f"⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timestamp")
+                
+                # Check if last_analysis is beyond all existing data (invalid timestamp scenario)
+                db = await self._ensure_db_connection()
+                
+                # Get the actual latest data timestamp from database
+                actual_latest_query = """
+                    SELECT 
+                        GREATEST(
+                            COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp),
+                            COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)
+                        ) as actual_latest_timestamp
+                    FROM profiles 
+                    LEFT JOIN scores ON scores.profile_id = profiles.id
+                    LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
+                    WHERE profiles.id = $1
+                """
+                
+                actual_latest_result = await db.fetch(actual_latest_query, user_id)
+                actual_latest_timestamp = actual_latest_result[0]['actual_latest_timestamp'] if actual_latest_result else datetime(1970, 1, 1, tzinfo=timezone.utc)
+                
+                # If last_analysis is in the future relative to actual data, reset to initial analysis
+                if last_analysis > actual_latest_timestamp:
+                    print(f"🔄 RESET_TO_INITIAL: last_analysis ({last_analysis.isoformat()}) > actual_latest ({actual_latest_timestamp.isoformat()})")
+                    print(f"📊 FALLBACK: Fetching 7 days of historical data for initial analysis")
+                    
+                    # Fetch 7 days of baseline data (initial analysis mode)
+                    result = await self.get_user_health_data(user_id, days=7)
+                    
+                    # Calculate latest timestamp from the fetched data
+                    latest_data_timestamp = datetime.now(timezone.utc)
+                    if result.scores:
+                        latest_data_timestamp = max(score.created_at for score in result.scores)
+                    if result.biomarkers:
+                        biomarker_latest = max(biomarker.created_at for biomarker in result.biomarkers)
+                        latest_data_timestamp = max(latest_data_timestamp, biomarker_latest)
+                        
+                    print(f"✅ RECOVERY_SUCCESS: Found {result.data_quality.scores_count} scores, {result.data_quality.biomarkers_count} biomarkers")
+                else:
+                    print(f"✅ ANALYSIS_DATA: No new data since last analysis - up to date")
+                    # Return empty context with last analysis timestamp (no newer data found)
+                    result = create_health_context_from_raw_data(
+                        user_id=user_id,
+                        raw_scores=[],
+                        raw_biomarkers=[],
+                        raw_archetypes=[],
+                        days=days_span
+                    )
+                    # Use the last analysis timestamp since no new data was found
+                    latest_data_timestamp = last_analysis
+            else:
+                # Create context with incremental data
+                result = create_health_context_from_raw_data(
+                    user_id=user_id,
+                    raw_scores=scores,
+                    raw_biomarkers=biomarkers,
+                    raw_archetypes=[
+                        {
+                            'id': a['id'],
+                            'profile_id': a['profile_id'],
+                            'name': a['name'],
+                            'periodicity': a['periodicity'],
+                            'value': a['value'],
+                            'data': a['data'],
+                            'start_date_time': a['start_date_time'],
+                            'end_date_time': a['end_date_time'],
+                            'created_at': a['created_at'],
+                            'updated_at': a['updated_at']
+                        } for a in archetypes
+                    ],
+                    days=days_span
+                )
+            
+            # Track analysis stats
+            await tracker.increment_analysis_count(
+                user_id,
+                len(scores),
+                len(biomarkers)
+            )
             
             duration = (datetime.now() - overall_start).total_seconds()
-            logger.info(f"[INCREMENTAL] Completed for {user_id} in {duration:.2f}s")
-            logger.info(f"[INCREMENTAL] Found {len(incremental_scores)} scores, {len(incremental_biomarkers)} biomarkers")
+            logger.info(f"[ANALYSIS_DATA] Incremental analysis completed in {duration:.2f}s")
+            logger.info(f"[ANALYSIS_DATA] Fetched {len(scores)} scores, {len(biomarkers)} biomarkers")
+            logger.info(f"[ANALYSIS_DATA] Latest data timestamp: {latest_data_timestamp.isoformat()}")
             
-            return result
+            return result, latest_data_timestamp
             
         except Exception as e:
-            logger.error(f"[INCREMENTAL_ERROR] Failed for {user_id}: {e}")
-            # Fallback to full sync on any incremental failure
-            logger.info(f"[INCREMENTAL] Falling back to full sync for {user_id}")
-            result = await self.get_user_health_data(user_id)
-            await sync_tracker.update_sync_time(user_id)
-            return result
+            logger.error(f"[ANALYSIS_DATA_ERROR] Incremental failed for {user_id}: {e}")
+            # Fallback to full sync on error
+            logger.info(f"[ANALYSIS_DATA] Falling back to 7-day fetch")
+            result = await self.get_user_health_data(user_id, days=7)
+            
+            # Calculate latest timestamp from fallback data
+            fallback_latest_timestamp = datetime.now(timezone.utc)
+            if result.scores:
+                fallback_latest_timestamp = max(score.created_at for score in result.scores)
+            if result.biomarkers:
+                biomarker_latest = max(biomarker.created_at for biomarker in result.biomarkers)
+                fallback_latest_timestamp = max(fallback_latest_timestamp, biomarker_latest)
+            
+            await tracker.increment_analysis_count(
+                user_id,
+                result.data_quality.scores_count,
+                result.data_quality.biomarkers_count
+            )
+            
+            return result, fallback_latest_timestamp
 
-    # TODO: Phase 2 Placeholder - Smart Strategy Detection
-    async def get_optimal_health_data(self, user_id: str) -> UserHealthContext:
+    # Backward compatibility wrapper
+    async def get_incremental_health_data(self, user_id: str) -> UserHealthContext:
         """
-        PLACEHOLDER for Phase 2: Smart strategy detection
-        Will determine optimal sync strategy based on user patterns
-        For now, uses simple incremental logic
+        Backward compatibility - redirects to new simplified method
         """
-        # Phase 2 will implement:
-        # - Analysis of user's data frequency
-        # - Smart context merging  
-        # - Adaptive sync strategies
-        return await self.get_incremental_health_data(user_id)
-    
-    # TODO: Phase 3 Placeholder - Advanced Optimization  
-    async def get_micro_update_data(self, user_id: str) -> Optional[UserHealthContext]:
-        """
-        PLACEHOLDER for Phase 3: Micro-updates for frequent users
-        Will handle very small incremental changes efficiently
-        """
-        # Phase 3 will implement:
-        # - Micro-change detection
-        # - Intelligent caching
-        # - Performance optimizations
-        return None
+        result, _ = await self.get_analysis_data(user_id)
+        return result
 
     def _clean_cache(self):
         """Clean old cache entries - prevent memory leaks"""
