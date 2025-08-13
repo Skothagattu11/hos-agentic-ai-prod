@@ -257,56 +257,29 @@ class LongTermMemoryLayer(MemoryLayer):
                 logger.warning("No database connection - using fallback storage")
                 return True
             
-            # Check if this category already exists for user
-            existing_query = """
-                SELECT id, version, confidence_score FROM holistic_longterm_memory 
-                WHERE user_id = $1 AND memory_category = $2
-                ORDER BY version DESC LIMIT 1
-            """
-            
+            # Use UPSERT to handle existing records properly
             async with self.db_pool.acquire() as conn:
-                existing = await conn.fetchrow(existing_query, user_id, category)
+                upsert_query = """
+                    INSERT INTO holistic_longterm_memory 
+                    (user_id, memory_category, memory_data, confidence_score, 
+                     update_source, is_consolidated, version, created_at, last_updated)
+                    VALUES ($1, $2, $3, $4, $5, $6, 1, NOW(), NOW())
+                    ON CONFLICT (user_id, memory_category) 
+                    DO UPDATE SET
+                        memory_data = EXCLUDED.memory_data,
+                        confidence_score = GREATEST(holistic_longterm_memory.confidence_score, EXCLUDED.confidence_score),
+                        version = holistic_longterm_memory.version + 1,
+                        last_updated = NOW(),
+                        update_source = EXCLUDED.update_source,
+                        is_consolidated = EXCLUDED.is_consolidated OR holistic_longterm_memory.is_consolidated
+                    RETURNING id, version
+                """
                 
-                if existing:
-                    # Update existing record with versioning
-                    new_version = existing["version"] + 1
-                    new_confidence = max(existing["confidence_score"], confidence)
-                    
-                    # Store previous version reference
-                    previous_id = existing["id"]
-                    
-                    insert_query = """
-                        INSERT INTO holistic_longterm_memory 
-                        (user_id, memory_category, memory_data, confidence_score, 
-                         version, previous_version_id, update_source, is_consolidated)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    """
-                    
-                    await conn.execute(
-                        insert_query,
-                        user_id,
-                        category,
-                        json.dumps(data),
-                        new_confidence,
-                        new_version,
-                        previous_id,
-                        "memory_agent",
-                        confidence > 0.7  # Auto-consolidate high confidence data
-                    )
-                else:
-                    # Create new long-term memory
-                    insert_query = """
-                        INSERT INTO holistic_longterm_memory 
-                        (user_id, memory_category, memory_data, confidence_score, 
-                         update_source, is_consolidated)
-                        VALUES ($1, $2, $3, $4, $5, $6)
-                    """
-                    
-                    await conn.execute(
-                        insert_query,
-                        user_id,
-                        category,
-                        json.dumps(data),
+                result = await conn.fetchrow(
+                    upsert_query,
+                    user_id,
+                    category,
+                    json.dumps(data),
                         confidence,
                         "memory_agent",
                         confidence > 0.8  # Higher threshold for new memories

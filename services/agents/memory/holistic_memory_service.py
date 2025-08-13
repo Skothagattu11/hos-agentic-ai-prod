@@ -408,16 +408,21 @@ class HolisticMemoryService:
                 await db.execute(update_query, user_id, adaptation_patterns or {}, 
                                learning_velocity or {}, now)
             else:
-                # Create new meta-memory record
-                insert_query = """
+                # Create new meta-memory record using UPSERT for safety
+                upsert_query = """
                     INSERT INTO holistic_meta_memory (
                         user_id, adaptation_patterns, learning_velocity, success_predictors,
                         failure_patterns, agent_effectiveness, archetype_evolution, engagement_patterns,
                         created_at, last_updated, analysis_window_start, analysis_window_end
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        adaptation_patterns = EXCLUDED.adaptation_patterns,
+                        learning_velocity = EXCLUDED.learning_velocity,
+                        last_updated = EXCLUDED.last_updated,
+                        analysis_window_end = EXCLUDED.analysis_window_end
                 """
                 window_start = now - timedelta(days=30)
-                await db.execute(insert_query, user_id, adaptation_patterns or {}, 
+                await db.execute(upsert_query, user_id, adaptation_patterns or {}, 
                                learning_velocity or {}, {}, {}, {}, {}, {}, 
                                now, now, window_start, now)
             

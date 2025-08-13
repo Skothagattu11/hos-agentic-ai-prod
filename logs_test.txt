@@ -1,479 +1,247 @@
- Starting HolisticOS OpenAI Integration API...
-   Mode: Direct OpenAI API + HolisticOS Prompts
-   URL: http://localhost:8001
-   Docs: http://localhost:8001/docs      
-   Health: http://localhost:8001/api/health
-
-✅ Benefits of This Approach:
-   • No TensorFlow compatibility issues  
-   • Uses your HolisticOS system prompts 
-   • Full archetype support (6 types)    
-   • Direct OpenAI GPT-4 integration     
-   • Same API interface as original system
-
-🧪 Test Commands:
-   # Health Check:
-   curl http://localhost:8001/api/health 
-
-   # Foundation Builder Analysis:        
-   curl -X POST http://localhost:8001/api/analyze \
-     -H 'Content-Type: application/json' \
-     -d '{"user_id": "test_foundation", "archetype": "Foundation Builder"}'       
-
-   # Peak Performer Analysis:
-   curl -X POST http://localhost:8001/api/analyze \
-     -H 'Content-Type: application/json' \
-     -d '{"user_id": "test_peak", "archetype": "Peak Performer"}'
-
-   # Systematic Improver Analysis:       
-   curl -X POST http://localhost:8001/api/analyze \
-     -H 'Content-Type: application/json' \
-     -d '{"user_id": "test_systematic", "archetype": "Systematic Improver"}'      
-
-==================================================
-Press Ctrl+C to stop
-==================================================
-💻 Starting: C:\dev_skoth\health-agent-main\holisticos-mvp\venv\Scripts\python.exe -m uvicorn services.api_gateway.openai_main:app --host 0.0.0.0 --port 8001 --reload
-🏠 Directory: C:\dev_skoth\health-agent-main\holisticos-mvp
-
-INFO:     Will watch for changes in these directories: ['C:\\dev_skoth\\health-agent-main\\holisticos-mvp']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [32812] using StatReload
-✅ [INTEGRATION] Health data endpoints added successfully
-📡 [ENDPOINTS] Real user data endpoints now available:
-   • GET /api/v1/health-data/users/{user_id}/health-context
-   • GET /api/v1/health-data/users/{user_id}/summary
-   • GET /api/v1/health-data/users/{user_id}/data-quality
-   • GET /api/v1/health-data/users/{user_id}/agent/{agent}/data
-   • POST /api/v1/health-data/users/{user_id}/analyze
-   • GET /api/v1/health-data/system/health
-INFO:     Started server process [34204] 
-INFO:     Waiting for application startup.
-🚀 Initializing HolisticOS Multi-Agent System...
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=holistic_orchestrator agent_type=orchestrator system_prompt_length=5320
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=memory_management_agent agent_type=memory_management system_prompt_length=7499
-INFO:services.agents.memory.main:Initialized HolisticMemoryAgent with system prompt length: 7499
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=insights_generation_agent agent_type=insights_generation system_prompt_length=11002
-INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771
-INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
-2025-08-12 12:22:11 [info     ] Direct agent instances created successfully agent_id=holistic_orchestrator agent_type=orchestrator
-2025-08-12 12:22:11 [info     ] HolisticOS Multi-Agent Orchestrator initialized with 6 agents agent_id=holistic_orchestrator agent_type=orchestrator
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=insights_generation_agent agent_type=insights_generation system_prompt_length=11002
-INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002
-2025-08-12 12:22:11 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771
-INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
-✅ All agents initialized successfully
-   🏗️  Orchestrator: holistic_orchestrator
-   🧠 Memory Agent: memory_management_agent
-   🔍 Insights Agent: insights_generation_agent
-   ⚡ Adaptation Engine: adaptation_engine_agent
-INFO:     Application startup complete.
-INFO:     127.0.0.1:63935 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63935 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-WARNING:  StatReload detected changes in 'test_scripts\test_real_e2e_interactive.py'. Reloading...
- INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [34204]
-✅ [INTEGRATION] Health data endpoints added successfully
-📡 [ENDPOINTS] Real user data endpoints now available:
-   • GET /api/v1/health-data/users/{user_id}/health-context
-   • GET /api/v1/health-data/users/{user_id}/summary
-   • GET /api/v1/health-data/users/{user_id}/data-quality
-   • GET /api/v1/health-data/users/{user_id}/agent/{agent}/data
-   • POST /api/v1/health-data/users/{user_id}/analyze
-   • GET /api/v1/health-data/system/health
-INFO:     Started server process [3276]
-INFO:     Waiting for application startup.
-🚀 Initializing HolisticOS Multi-Agent System...
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=holistic_orchestrator agent_type=orchestrator system_prompt_length=5320
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=memory_management_agent agent_type=memory_management system_prompt_length=7499
-INFO:services.agents.memory.main:Initialized HolisticMemoryAgent with system prompt length: 7499 
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=insights_generation_agent
- agent_type=insights_generation system_prompt_length=11002
-INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771
-INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
-2025-08-12 12:22:39 [info     ] Direct agent instances created successfully agent_id=holistic_orchestrator agent_type=orchestrator
-2025-08-12 12:22:39 [info     ] HolisticOS Multi-Agent Orchestrator initialized with 6 agents agent_id=hol2025-08-12 12:22:39 [info     ] HolisticOS Multi-Agent Orchestrator initialized with 6 agents agent_id=holistic_orchestrator agent_type=orchestrator
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=memory_management_agent agent_type=memory_management system_prompt_length=7499
-INFO:services.agents.memory.main:Initialized HolisticMemoryAgent with system prompt length: 7499
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=insights_generation_agent agent_type=insights_generation system_prompt_length=11002    
-INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002     
-2025-08-12 12:22:39 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771        
-INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
-✅ All agents initialized successfully
-   🏗️  Orchestrator: holistic_orchestrator
-   🧠 Memory Agent: memory_management_agent
-   🔍 Insights Agent: insights_generation_agent      
-   ⚡ Adaptation Engine: adaptation_engine_agent     
-INFO:     Application startup complete.
-INFO:     127.0.0.1:63949 - "GET / HTTP/1.1" 200 OK
-🔍 Starting REAL DATA analysis for user: 35pDPUIfAoRl2Y700bFkxPKYjjf2, archetype: Foundation Builder      
-INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com      
+ [ROUTINE_GENERATE] Processing routine request for user 35pDPUIf...      
+❌ [ROUTINE_GENERATE_ERROR] Failed to generate routine for 35pDPUIfAoRl2Y700bFkxPKYjjf2: No module named 'services.agents.routine_plan_agent'
+INFO:     127.0.0.1:54887 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/routine/generate HTTP/1.1" 500 Internal Server Error
+🥗 [NUTRITION_API] Getting latest nutrition for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:     127.0.0.1:54887 - "GET /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/nutrition/latest HTTP/1.1" 200 OK
+🔄 [NUTRITION_GENERATE] Smart nutrition generation for user 35pDPUIf...    
+❌ [NUTRITION_GENERATE_ERROR] Failed to generate nutrition for 35pDPUIfAoRl2Y700bFkxPKYjjf2: No module named 'services.agents.nutrition_plan_agent'   
+INFO:     127.0.0.1:54887 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/nutrition/generate HTTP/1.1" 500 Internal Server Error
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.ondemand_analysis_service:[ONDEMAND] Initialized on-demand analysis service
+INFO:     127.0.0.1:54894 - "GET /api/scheduler/status HTTP/1.1" 200 OK    
+🔍 Starting REAL DATA analysis for user: 35pDPUIfAoRl2Y700bFkxPKYjjf2, archetype: Foundation Builder
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
 🧠 Preparing memory-enhanced analysis context for 35pDPUIfAoRl2Y700bFkxPKYjjf2...
-[✅] Connected to Supabase successfully
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+cre.asc "HTTP/2 400 Bad Request" 
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by cre.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-[DEBUG] Original Query:
-                SELECT id, user_id, analysis_type, analysis_result, archetype, created_at
-                FROM holistic_analysis_results       
-                WHERE user_id = $1
-                ORDER BY created_at DESC
-                LIMIT $2
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 5)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_analysis_results      
-[DEBUG] Processed Query: SELECT id, user_id, analysis_type, analysis_result, archetype, created_at        
-                FROM holistic_analysis_results       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY created_at DESC
-                LIMIT 5
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by cre", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[ANALYSIS_RESULTS_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by cre.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-🆕 ANALYSIS_MODE: New user - initial analysis (7 days data)
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_s.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated  
-                FROM holistic_longterm_memory        
-                WHERE user_id = $1
-                ORDER BY confidence_score DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_longterm_memory       
-[DEBUG] Processed Query: SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated
-                FROM holistic_longterm_memory        
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_score DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_s", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=%272025-08-05t16%3A22%3A55.387064%2B00%3A00%27.asc "HTTP/2 400 Bad Request"     
-[ERROR] Query fetch failed: {'message': '"failed to parse order (\'2025-08-05t16:22:55.387064+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, content, confidence_score, created_at, expires_at        
-                FROM holistic_shortterm_memory       
-                WHERE user_id = $1 AND created_at >= $2
-                ORDER BY created_at DESC, confidence_score DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', datetime.datetime(2025, 8, 5, 16, 22, 55, 387064, tzinfo=datetime.timezone.utc))
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_shortterm_memory      
-[DEBUG] Processed Query: SELECT user_id, memory_category, content, confidence_score, created_at, expires_at
-                FROM holistic_shortterm_memory       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2' AND created_at >= '2025-08-05T16:22:55.387064+00:00'
-                ORDER BY created_at DESC, confidence_score DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700bFkxPKYjjf2'}]
-[DEBUG] ORDER BY: {'column': "'2025-08-05t16:22:55.387064+00:00'", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (\'2025-08-05t16:22:55.387064+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_l.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = $1
-                ORDER BY confidence_level DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_meta_memory
-[DEBUG] Processed Query: SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_level DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_l", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[META_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+cre.asc "HTTP/2 400 Bad Request" 
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by cre.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-[DEBUG] Original Query:
-                SELECT id, user_id, analysis_type, analysis_result, archetype, created_at
-                FROM holistic_analysis_results       
-                WHERE user_id = $1
-                ORDER BY created_at DESC
-                LIMIT $2
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 5)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_analysis_results      
-[DEBUG] Processed Query: SELECT id, user_id, analysis_type, analysis_result, archetype, created_at        
-                FROM holistic_analysis_results       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY created_at DESC
-                LIMIT 5
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by cre", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[ANALYSIS_RESULTS_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by cre.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-[❌] Query execution failed: 'data'
-[📝] Query:
-                INSERT INTO holistic_working_memory (
-                    user_id, session_id, agent_id, memory_type, content,
-                    priority, created_at, expires_at, is_active
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-
-[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 'session_20250812_122253', 'memory_integration_agent', 'analysis_context', {'analysis_mode': 'initial', 'focus_areas': ['general_health', 'behavior_optimization'], 'session_start': '2025-08-12T16:22:56.107741+00:00'}, 8, datetime.datetime(2025, 8, 12, 16, 22, 56, 107762, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 16, 22, 56, 107758, tzinfo=datetime.timezone.utc), True)
-ERROR:services.agents.memory.holistic_memory_service:[WORKING_MEMORY_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 'data'
-📋 MEMORY_CONTEXT: initial mode, 7 days, 2 focus areas
-📊 Fetching user data with memory-guided incremental sync for 35pDPUIfAoRl2Y700bFkxPKYjjf2...
-🧠 Analysis mode: initial, fetching 7 days of data   
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
 INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
 INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
-INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-INFO:services.user_data_service:[ANALYSIS_DATA] First analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2, fetching 7 days
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-13T20:50:51.108736+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 0.3 hours
+📊 PROFILE_CHECK: Found last_analysis_at = 2025-08-13T20:50:51.108736+00:00
+✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)
+⏱️ ANALYSIS_MODE: Last analysis was 16.7 minutes ago (0.3 hours, 0 days) frrom profiles
+🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory "HTTP/2 201 Created"
+📋 MEMORY_CONTEXT: follow_up mode, 1 days, 4 focus areas
+✨ Initializing memory-enhanced prompt generation for 35pDPUIfAoRl2Y700bFkxPKYjjf2...
+📊 Fetching user data with memory-guided incremental sync for 35pDPUIfAoRl2Y700bFkxPKYjjf2...
+🧠 Analysis mode: follow_up, fetching 1 days of data
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-13T20:50:51.108736+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 0.3 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 0.3 hours ago at 2025-08-13T20:50:51.108736+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-13T20:50:51.108736+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 0.3 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-13 20:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-13T20:50:51.108736+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-13 20:50:51.108736+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+[ERROR] Query fetch failed: Invalid non-printable ASCII character in URL, '\n' at position 10.
+[DEBUG] Original Query:
+                    SELECT
+                        GREATEST(
+                            COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp),
+                            COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)
+                        ) as actual_latest_timestamp
+                    FROM profiles
+                    LEFT JOIN scores ON scores.profile_id = profiles.id    
+                    LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
+                    WHERE profiles.id = $1
+
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles
+                    LEFT JOIN scores ON scores.profile_id = profiles.id    
+                    LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
+[DEBUG] Processed Query: SELECT
+                        GREATEST(
+                            COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp),
+                            COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)
+                        ) as actual_latest_timestamp
+                    FROM profiles
+                    LEFT JOIN scores ON scores.profile_id = profiles.id    
+                    LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
+                    WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'     
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Invalid non-printable ASCII character in URL, '\n' at position 10.
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
 INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
-INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-05 to 2025-08-12
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-06 to 2025-08-13
 INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-05', 'end_date': '2025-08-12', 'limit': 1000}
-INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-05', 'end_date': '2025-08-12', 'limit': 1000}
-INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}
-INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-05&end_date=2025-08-12&limit=1000 "HTTP/1.1 200 OK"
-INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 20 records in 1525ms
-INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"   
-INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 60 records in 1032ms
-INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-05&end_date=2025-08-12&limit=1000 "HTTP/1.1 200 OK"
-INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 80 records in 1706ms
-INFO:services.user_data_service:[API_SUCCESS] Using API data: 20 scores, 80 biomarkers
-INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 2.01s
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-06', 'end_date': '2025-08-13', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-06', 'end_date': '2025-08-13', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-06&end_date=2025-08-13&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 138 records in 1022ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 879ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-06&end_date=2025-08-13&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 40 records in 1780ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 40 scores, 138 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.78s
 INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
 INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
 INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-INFO:services.user_data_service:[ANALYSIS_DATA] Initial analysis completed in 3.03s
-INFO:services.user_data_service:[ANALYSIS_DATA] Latest data found: 2025-08-10T20:09:58.319604+00:00       
 ✅ Real data retrieved:
-   • Data Quality: DataQualityLevel.EXCELLENT        
-   • Scores: 20
-   • Biomarkers: 80
+   • Data Quality: DataQualityLevel.EXCELLENT
+   • Scores: 40
+   • Biomarkers: 138
    • Completeness: 1.00
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_s.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated  
-                FROM holistic_longterm_memory        
-                WHERE user_id = $1
-                ORDER BY confidence_score DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_longterm_memory       
-[DEBUG] Processed Query: SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated
-                FROM holistic_longterm_memory        
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_score DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_s", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=%272025-08-05t16%3A22%3A59.262939%2B00%3A00%27.asc "HTTP/2 400 Bad Request"     
-[ERROR] Query fetch failed: {'message': '"failed to parse order (\'2025-08-05t16:22:59.262939+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, content, confidence_score, created_at, expires_at        
-                FROM holistic_shortterm_memory       
-                WHERE user_id = $1 AND created_at >= $2
-                ORDER BY created_at DESC, confidence_score DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', datetime.datetime(2025, 8, 5, 16, 22, 59, 262939, tzinfo=datetime.timezone.utc))
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_shortterm_memory      
-[DEBUG] Processed Query: SELECT user_id, memory_category, content, confidence_score, created_at, expires_at
-                FROM holistic_shortterm_memory       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2' AND created_at >= '2025-08-05T16:22:59.262939+00:00'
-                ORDER BY created_at DESC, confidence_score DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700bFkxPKYjjf2'}]
-[DEBUG] ORDER BY: {'column': "'2025-08-05t16:22:59.262939+00:00'", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (\'2025-08-05t16:22:59.262939+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_l.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = $1
-                ORDER BY confidence_level DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_meta_memory
-[DEBUG] Processed Query: SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_level DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_l", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[META_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-💭 MEMORY_ENHANCED: No memory context - using base prompt
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced behavior_analysis prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_s.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated  
-                FROM holistic_longterm_memory        
-                WHERE user_id = $1
-                ORDER BY confidence_score DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_longterm_memory       
-[DEBUG] Processed Query: SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated
-                FROM holistic_longterm_memory        
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_score DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_s", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=%272025-08-05t16%3A22%3A59.627910%2B00%3A00%27.asc "HTTP/2 400 Bad Request"     
-[ERROR] Query fetch failed: {'message': '"failed to parse order (\'2025-08-05t16:22:59.627910+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, content, confidence_score, created_at, expires_at        
-                FROM holistic_shortterm_memory       
-                WHERE user_id = $1 AND created_at >= $2
-                ORDER BY created_at DESC, confidence_score DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', datetime.datetime(2025, 8, 5, 16, 22, 59, 627910, tzinfo=datetime.timezone.utc))
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_shortterm_memory      
-[DEBUG] Processed Query: SELECT user_id, memory_category, content, confidence_score, created_at, expires_at
-                FROM holistic_shortterm_memory       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2' AND created_at >= '2025-08-05T16:22:59.627910+00:00'
-                ORDER BY created_at DESC, confidence_score DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700bFkxPKYjjf2'}]
-[DEBUG] ORDER BY: {'column': "'2025-08-05t16:22:59.627910+00:00'", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (\'2025-08-05t16:22:59.627910+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_l.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = $1
-                ORDER BY confidence_level DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_meta_memory
-[DEBUG] Processed Query: SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_level DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_l", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[META_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-💭 MEMORY_ENHANCED: No memory context - using base prompt
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced nutrition_plan prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_s.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated  
-                FROM holistic_longterm_memory        
-                WHERE user_id = $1
-                ORDER BY confidence_score DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_longterm_memory       
-[DEBUG] Processed Query: SELECT user_id, memory_category, memory_data, confidence_score, created_at, last_updated
-                FROM holistic_longterm_memory        
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_score DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_s", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[LONGTERM_MEMORY_ERROR] Failed to retrieve profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_s.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=%272025-08-05t16%3A22%3A59.981239%2B00%3A00%27.asc "HTTP/2 400 Bad Request"     
-[ERROR] Query fetch failed: {'message': '"failed to parse order (\'2025-08-05t16:22:59.981239+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-[DEBUG] Original Query:
-                SELECT user_id, memory_category, content, confidence_score, created_at, expires_at        
-                FROM holistic_shortterm_memory       
-                WHERE user_id = $1 AND created_at >= $2
-                ORDER BY created_at DESC, confidence_score DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', datetime.datetime(2025, 8, 5, 16, 22, 59, 981239, tzinfo=datetime.timezone.utc))
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_shortterm_memory      
-[DEBUG] Processed Query: SELECT user_id, memory_category, content, confidence_score, created_at, expires_at
-                FROM holistic_shortterm_memory       
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2' AND created_at >= '2025-08-05T16:22:59.981239+00:00'
-                ORDER BY created_at DESC, confidence_score DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700bFkxPKYjjf2'}]
-[DEBUG] ORDER BY: {'column': "'2025-08-05t16:22:59.981239+00:00'", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (\'2025-08-05t16:22:59.981239+00:00\'.asc)" (line 1, column 1)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "\'" expecting field name (* or [a..z0..9_$])'}
-INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=2%27+order+by+confidence_l.asc "HTTP/2 400 Bad Request"
-[ERROR] Query fetch failed: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}  
-[DEBUG] Original Query:
-                SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = $1
-                ORDER BY confidence_level DESC, last_updated DESC
-
-[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
-[DEBUG] Parsed Operation: SELECT
-[DEBUG] Target Table: holistic_meta_memory
-[DEBUG] Processed Query: SELECT adaptation_patterns, learning_velocity, success_predictors,
-                       failure_patterns, agent_effectiveness, confidence_level, last_updated
-                FROM holistic_meta_memory
-                WHERE user_id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
-                ORDER BY confidence_level DESC, last_updated DESC
-[DEBUG] WHERE Conditions: [{'column': 'user_id', 'operator': 'eq', 'value': '35pDPUIfAoRl2Y700'}]
-[DEBUG] ORDER BY: {'column': "2' order by confidence_l", 'desc': False}
-ERROR:services.agents.memory.holistic_memory_service:[META_MEMORY_ERROR] Failed to retrieve for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse order (2\' order by confidence_l.asc)" (line 1, column 2)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected \'\\\'\' expecting letter, digit, "-", "->>", "->", delimiter (.), "," or end of input'}
-💭 MEMORY_ENHANCED: No memory context - using base prompt
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced routine_plan prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-🧠 Memory-enhanced prompts prepared - Focus areas: ['general_health', 'behavior_optimization']
+✨ Enhancing prompts with 4-layer memory intelligence...
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing behavior_analysis prompt with memory context for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing nutrition_planning prompt with memory context for user 35pDPUIf...
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing routine_planning prompt with memory context for user 35pDPUIf...
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+🧠 Memory-enhanced prompts prepared - Focus areas: ['recommendation_following', 'health_analysis', 'readiness_improvement', 'activity_tracking']      
 🧠 Proven strategies available: 0 strategies
-✅ System prompts loaded: 8,688 chars
-INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Cleanup completed
+✅ System prompts loaded: 11,861 chars
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Cleanup completed   
 INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Service cleaned up
-🧠 Running behavior analysis with o3 model...        
+🧠 Running behavior analysis with o3 model...
 INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/1_behavior_analysis_20250812_122312.txt
+   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/2_behavior_analysis_20250813_170805.txt
 ✅ Behavior analysis complete with comprehensive pattern data
 🥗 Generating nutrition plan with gpt-4o...
 INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-   📋 Agent handoff logged: nutrition_plan → logs/agent_handoffs/1_nutrition_plan_20250812_122325.txt     
+   📋 Agent handoff logged: nutrition_plan → logs/agent_handoffs/2_nutrition_plan_20250813_170820.txt
 ✅ Nutrition plan complete with nutrition-specific data filtering
 🏃‍♂️ Generating routine plan with gpt-4o...
 INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-   📋 Agent handoff logged: routine_plan → logs/agent_handoffs/1_routine_plan_20250812_122348.txt
+   📋 Agent handoff logged: routine_plan → logs/agent_handoffs/2_routine_plan_20250813_170840.txt
 ✅ Routine plan complete with routine-specific data filtering
-📝 Analysis logged: logs/input_1.txt, logs/output_1.txt
+📝 Analysis logged: logs/input_2.txt, logs/output_2.txt
 ✅ Complete multi-model analysis finished for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-🧠 Updating user memory with analysis insights...    
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from behavior_analysis analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-ERROR:services.agents.memory.holistic_memory_service:[ANALYSIS_RESULTS_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID:
+🧠 Updating user memory with analysis insights...
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from behavior_analysis analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2       
+🔍 MEMORY DEBUG: Starting store_analysis_result for behavior_analysis      
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '5825d180-64c1-40d7-ae25-ce515942a3ee', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'behavior_analysis', 'archetype': 'Foundation Builder', 'analysis_result': {'model_used': 'o3', 'primary_goal': {'goal': 'Build a sustainable daily routine that keeps activity, sleep and mental-wellbeing scores consistently above 0.80 while elevating readiness to at least 0.75.', 'timeline': '6 weeks', 'success_metrics': '• ≥5 days per week with Activity score ≥0.85\n• Average Sleep score ≥0.82 for 4 consecutive weeks\n• Rolling 7-day Readiness score ≥0.75 by week 6'}, 'analysis_type': 'comprehensive_behavior', 'data_insights': 'All core health domains except readiness are already in the high range (0.82-0.87), demonstrating that the user’s basic sleep and movement behaviors are effective. Readiness trending medium suggests that recovery capacity lags behind exertion—likely due to subtle stressors or insufficient restorative practices. No red-flag biomarkers appear in the single oxygen saturation (sleep) and respiratory rate readings. The user’s high data-capture rate signals a strong early adoption phase; sustaining this consistency will be the key determinant of long-term success.', 'readiness_level': 'Medium', 'recommendations': ['Maintain current bedtime and wake-time within a 30-minute window for the next week.', 'Aim for ≥7,500 steps per day; on low-step days add an extra 5-minute stroll after dinner.', 'Introduce one recovery activity (e.g., 5-minute box breathing or guided relaxation) on any day readiness <0.65.', 'Log a brief nightly reflection (1–2 sentences) on energy and mood; this will enrich future pattern analysis.', 'Re-review metrics every Sunday evening to reinforce progress and adjust the coming week’s plan.'], 'behavioral_signature': {'signature': 'During the first 8-day observation window the user has logged data with perfect coverage, suggesting a high initial engagement-momentum typical of a motivated Foundation Builder. Sleep, activity and overall wellbeing scores are all clustered in the 0.82-0.87 range, indicating that basic lifestyle practices (bedtime regularity, daily movement) are already generating positive feedback. Readiness, however, lags at 0.67, hinting at either accumulated fatigue or limited recovery capacity. The pattern shows a user who follows through on simple, clearly defined tasks but may need guidance on pacing and recovery to avoid early burnout.', 'confidence': 0.73}, 'personalized_strategy': {'habit_integration': '• Anchor a 10-minute morning stretch to an existing cue (e.g., after brushing teeth).\n• Schedule a 30-minute light-to-moderate walk immediately after lunch on workdays.\n• Fixed ‘digital sunset’ 60 minutes before bedtime to support sleep consistency.', 'barrier_mitigation': '• Use calendar reminders for the first 2 weeks to solidify timing cues.\n• If readiness drops below 0.65, swap walk for gentle mobility to preserve habit while allowing recovery.\n• Keep all new habits <40 minutes total per day to avoid overwhelm.', 'motivation_drivers': 'Positive reinforcement from seeing high scores; desire for simple, doable actions that fit current lifestyle; early feelings of success building confidence.'}, 'sophistication_assessment': {'score': 38, 'category': 'Beginner', 'justification': 'This is the user’s first logged analysis; there is no prior long-term pattern history. Data capture is excellent, yet the behaviors tracked (steps, floors, sleep cycles) are foundational rather than advanced biohacking metrics. The focus is still on establishing consistency rather than optimization.'}}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-13T21:08:42.080257+00:00', 'analysis_date': '2025-08-13', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}
+📊 MEMORY: Stored behavior_analysis analysis for user 35pDPUIf... ID: 5825d180-64c1-40d7-ae25-ce515942a3ee
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: 5825d180-64c1-40d7-ae25-ce515942a3ee
 INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from nutrition_plan analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-ERROR:services.agents.memory.holistic_memory_service:[ANALYSIS_RESULTS_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID:
+🔍 MEMORY DEBUG: Starting store_analysis_result for nutrition_plan
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '9ac20d4e-e065-41d2-b139-38be4037d314', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'nutrition_plan', 'archetype': 'Foundation Builder', 'analysis_result': {'date': '2025-08-13', 'system': 'HolisticOS', 'content': "Certainly! Let's create a comprehensive nutrition plan for today tailored to the Foundation Builder archetype, focusing on simplicity, confidence-building, and alignment with your current health metrics.\n\n---\n\n### Daily Nutritional Targets\n- **Calories**: 1800-2000 kcal\n- **Protein**: 70-90g\n- **Carbohydrates**: 200-250g\n- **Fats**: 60-70g\n- **Fiber**: 25-30g\n- **Vitamins**: Ensure adequate intake of Vitamin D, B12, and Omega-3s\n\n### 7 Meal Blocks\n\n1. **Early Morning: Light Hydration/Preparation**\n   - **Hydration**: 1 glass of warm water with a slice of lemon\n   - **Nutrition Tip**: Start your day with hydration to kickstart metabolism and aid digestion.\n\n2. **Breakfast: Balanced Start**\n   - **Meal**: Oatmeal topped with a handful of mixed berries and a tablespoon of chia seeds\n   - **Protein**: 1 boiled egg\n   - **Nutrition Tip**: Oatmeal provides complex carbs for sustained energy, while berries add antioxidants. The egg offers a protein boost.\n\n3. **Morning Snack: Energy Maintenance**\n   - **Meal**: 1 small apple with a tablespoon of almond butter\n   - **Nutrition Tip**: Apples provide fiber and natural sugars for energy, while almond butter adds healthy fats and protein.\n\n4. **Lunch: Balanced Midday Nutrition**\n   - **Meal**: Grilled chicken salad with mixed greens, cherry tomatoes, cucumber, and a drizzle of olive oil and lemon juice\n   - **Carbs**: 1 whole grain roll or a small serving of quinoa\n   - **Nutrition Tip**: This meal balances protein, healthy fats, and complex carbs to keep you full and energized.\n\n5. **Afternoon Snack: Sustained Energy**\n   - **Meal**: Greek yogurt with a sprinkle of nuts and seeds\n   - **Nutrition Tip**: Greek yogurt provides probiotics and protein, while nuts and seeds add healthy fats and fiber.\n\n6. **Dinner: Recovery and Satisfaction**\n   - **Meal**: Baked salmon with a side of steamed broccoli and sweet potato mash\n   - **Nutrition Tip**: Salmon is rich in Omega-3s, supporting recovery and heart health. Sweet potatoes provide complex carbs and fiber.\n\n7. **Evening Snack: Sleep Preparation**\n   - **Meal**: Herbal tea (e.g., chamomile) and a small banana\n   - **Nutrition Tip**: The banana provides magnesium and potassium, aiding muscle relaxation and sleep quality.\n\n### Nutrition Tips\n- **Timing**: Aim to eat meals and snacks at regular intervals to maintain energy levels and prevent overeating.\n- **Portion Control**: Focus on portion sizes to avoid excess calorie intake, especially in snacks.\n- **Mindful Eating**: Take time to enjoy your meals without distractions to enhance digestion and satisfaction.\n\n### Health Data Integration\n- **Activity Metrics**: Align your carbohydrate intake with your activity levels to ensure adequate energy for movement.\n- **Sleep Metrics**: Support your sleep quality with evening snacks that promote relaxation.\n- **Readiness Metrics**: Incorporate recovery-supportive foods like Omega-3-rich salmon to enhance readiness over time.\n\nThis plan is designed to be practical, evidence-based, and easy to follow, ensuring you build confidence and consistency in your nutritional habits. Adjust portions and food choices based on personal preferences and any dietary restrictions you may have. Remember, the key is to maintain a balanced approach that supports your overall well-being and aligns with your current lifestyle.", 'archetype': 'Foundation Builder', 'plan_type': 'comprehensive_nutrition', 'model_used': 'gpt-4o'}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-13T21:08:42.739522+00:00', 'analysis_date': '2025-08-13', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}
+📊 MEMORY: Stored nutrition_plan analysis for user 35pDPUIf... ID: 9ac20d4e-e065-41d2-b139-38be4037d314
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: 9ac20d4e-e065-41d2-b139-38be4037d314
 INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from routine_plan analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-ERROR:services.agents.memory.holistic_memory_service:[ANALYSIS_RESULTS_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-ERROR:services.agents.memory.holistic_memory_service:[SHORTTERM_MEMORY_ERROR] Failed to store for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID:
+🔍 MEMORY DEBUG: Starting store_analysis_result for routine_plan
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '5ad39a11-138f-4b24-b9e5-62302508e1cd', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'routine_plan', 'archetype': 'Foundation Builder', 'analysis_result': {'date': '2025-08-13', 'system': 'HolisticOS', 'content': "Here's a comprehensive Foundation Builder routine plan tailored for today, utilizing the HolisticOS approach and aligned with your health data insights:\n\n### Morning Wakeup (6:00 AM - 8:00 AM)\n\n**6:00 AM - 6:15 AM: Hydration and Activation**\n- **Task:** Drink a glass of water immediately upon waking.\n- **Reasoning:** Hydration first thing in the morning kickstarts metabolism and aids in waking up the body after sleep.\n- **Integration:** Supports high sleep metrics by ensuring your body is replenished and ready for the day.\n\n**6:15 AM - 6:30 AM: Mindful Breathing**\n- **Task:** Engage in 5 minutes of box breathing (inhale for 4 seconds, hold for 4, exhale for 4, hold for 4).\n- **Reasoning:** This practice helps reduce stress and improve focus, aligning with your goal to boost readiness.\n- **Integration:** Encourages mental wellbeing, contributing to maintaining high mental wellbeing metrics.\n\n**6:30 AM - 7:00 AM: Light Stretching Routine**\n- **Task:** Perform a 10-minute stretching routine focusing on major muscle groups.\n- **Reasoning:** Stretching increases blood flow and flexibility, preparing your body for the day.\n- **Integration:** Anchored to the morning routine, this activity builds on the habit integration strategy.\n\n### Focus Block (9:00 AM - 12:00 PM)\n\n**9:00 AM - 11:00 AM: Peak Productivity Tasks**\n- **Task:** Tackle your most important tasks of the day during this period.\n- **Reasoning:** Cognitive performance is typically highest in the morning; leveraging this time can enhance productivity.\n- **Integration:** Aligns with high mental wellbeing and activity scores, ensuring you're working at your best.\n\n**11:00 AM - 11:15 AM: Active Break**\n- **Task:** Take a 15-minute walk or perform light movement exercises.\n- **Reasoning:** Short active breaks can help maintain energy levels and prevent mental fatigue.\n- **Integration:** Supports the goal of achieving at least 7,500 steps per day and maintains high activity metrics.\n\n### Afternoon Recharge (1:00 PM - 4:00 PM)\n\n**1:00 PM - 1:30 PM: Post-Lunch Walk**\n- **Task:** Engage in a 30-minute light-to-moderate walk.\n- **Reasoning:** Walking after meals aids digestion and maintains energy levels.\n- **Integration:** Scheduled as per habit integration strategy, reinforcing daily movement.\n\n**2:30 PM - 2:45 PM: Mindful Relaxation**\n- **Task:** Spend 5 minutes in guided relaxation or a brief meditation session.\n- **Reasoning:** This helps manage stress and supports recovery, crucial for improving readiness.\n- **Integration:** Aligns with the recommendation to introduce recovery activities when readiness is low.\n\n### Evening Winddown (8:00 PM - 10:00 PM)\n\n**8:00 PM - 8:30 PM: Digital Sunset**\n- **Task:** Begin a digital detox by turning off screens and engaging in a relaxing activity like reading.\n- **Reasoning:** Reducing screen time before bed improves sleep quality by minimizing blue light exposure.\n- **Integration:** Supports sleep consistency and high sleep metrics.\n\n**9:30 PM - 9:45 PM: Nightly Reflection**\n- **Task:** Write a brief reflection on your day's energy and mood.\n- **Reasoning:** Reflecting helps consolidate learning and provides valuable data for future pattern analysis.\n- **Integration:** Enriches future pattern analysis, aligning with personalized strategy recommendations.\n\nThis routine is designed to be simple, supportive, and confidence-building, aligning with your Foundation Builder archetype. By integrating these activities into your day, you can maintain high health scores while gradually improving your readiness metric.", 'archetype': 'Foundation Builder', 'plan_type': 'comprehensive_routine', 'model_used': 'gpt-4o'}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-13T21:08:43.39073+00:00', 'analysis_date': '2025-08-13', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}
+📊 MEMORY: Stored routine_plan analysis for user 35pDPUIf... ID: 5ad39a11-138f-4b24-b9e5-62302508e1cd
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: 5ad39a11-138f-4b24-b9e5-62302508e1cd
 INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Updating memory profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2
-ERROR:services.agents.memory.holistic_memory_service:[LONGTERM_MEMORY_ERROR] Failed to update successful_strategies for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
-ERROR:services.agents.memory.holistic_memory_service:[META_MEMORY_ERROR] Failed to update for 35pDPUIfAoRl2Y700bFkxPKYjjf2: Not connected to Supabase. Call connect() first.
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=id&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjj "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_memory_category"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_longterm_memory (
+                        user_id, memory_category, memory_data, confidence_score,
+                        created_at, last_updated, update_source
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 'behavioral_patterns', {'_raw_analysis': {'behavioral_signature': {'signature': 'During the first 8-day observation window the user has logged data with perfect coverage, suggesting a high initial engagement-momentum typical of a motivated Foundation Builder. Sleep, activity and overall wellbeing scores are all clustered in the 0.82-0.87 range, indicating that basic lifestyle practices (bedtime regularity, daily movement) are already generating positive feedback. Readiness, however, lags at 0.67, hinting at either accumulated fatigue or limited recovery capacity. The pattern shows a user who follows through on simple, clearly defined tasks but may need guidance on pacing and recovery to avoid early burnout.', 'confidence': 0.73}, 'sophistication_assessment': {'score': 38, 'category': 'Beginner', 'justification': 'This is the user’s first logged analysis; there is no prior long-term pattern history. Data capture is excellent, yet the behaviors tracked (steps, floors, sleep cycles) are foundational rather than advanced biohacking metrics. The focus is still on establishing consistency rather than optimization.'}, 'primary_goal': {'goal': 'Build a sustainable daily routine that keeps activity, sleep and mental-wellbeing scores consistently above 0.80 while elevating readiness to at least 0.75.', 'timeline': '6 weeks', 'success_metrics': '• ≥5 days per week with Activity score ≥0.85\n• Average Sleep score ≥0.82 for 4 consecutive weeks\n• Rolling 7-day Readiness score ≥0.75 by week 6'}, 'personalized_strategy': {'motivation_drivers': 'Positive reinforcement from seeing high scores; desire for simple, doable actions that fit current lifestyle; early feelings of success building confidence.', 'habit_integration': '• Anchor a 10-minute morning stretch to an existing cue (e.g., after brushing teeth).\n• Schedule a 30-minute light-to-moderate walk immediately after lunch on workdays.\n• Fixed ‘digital sunset’ 60 minutes before bedtime to support sleep consistency.', 'barrier_mitigation': '• Use calendar reminders for the first 2 weeks to solidify timing cues.\n• If readiness drops below 0.65, swap walk for gentle mobility to preserve habit while allowing recovery.\n• Keep all new habits <40 minutes total per day to avoid overwhelm.'}, 'readiness_level': 'Medium', 'recommendations': ['Maintain current bedtime and wake-time within a 30-minute window for the next week.', 'Aim for ≥7,500 steps per day; on low-step days add an extra 5-minute stroll after dinner.', 'Introduce one recovery activity (e.g., 5-minute box breathing or guided relaxation) on any day readiness <0.65.', 'Log a brief nightly reflection (1–2 sentences) on energy and mood; this will enrich future pattern analysis.', 'Re-review metrics every Sunday evening to reinforce progress and adjust the coming week’s plan.'], 'data_insights': 'All core health domains except readiness are already in the high range (0.82-0.87), demonstrating that the user’s basic sleep and movement behaviors are effective. Readiness trending medium suggests that recovery capacity lags behind exertion—likely due to subtle stressors or insufficient restorative practices. No red-flag biomarkers appear in the single oxygen saturation (sleep) and respiratory rate readings. The user’s high data-capture rate signals a strong early adoption phase; sustaining this consistency will be the key determinant of long-term success.', 'model_used': 'o3', 'analysis_type': 'comprehensive_behavior'}, '_extraction_timestamp': '2025-08-13T21:08:43.272347+00:00', '_analysis_type': 'behavior_analysis', '_source_model': 'o3', 'behavioral_signature': 'During the first 8-day observation window the user has logged data with perfect coverage, suggesting a high initial engagement-momentum typical of a motivated Foundation Builder. Sleep, activity and overall wellbeing scores are all clustered in the 0.82-0.87 range, indicating that basic lifestyle practices (bedtime regularity, daily movement) are already generating positive feedback. Readiness, however, lags at 0.67, hinting at either accumulated fatigue or limited recovery capacity. The pattern shows a user who follows through on simple, clearly defined tasks but may need guidance on pacing and recovery to avoid early burnout.', 'signature_confidence': 0.73, 'recommendations': ['Maintain current bedtime and wake-time within a 30-minute window for the next week.', 'Aim for ≥7,500 steps per day; on low-step days add an extra 5-minute stroll after dinner.', 'Introduce one recovery activity (e.g., 5-minute box breathing or guided relaxation) on any day readiness <0.65.', 'Log a brief nightly reflection (1–2 sentences) on energy and mood; this will enrich future pattern analysis.', 'Re-review metrics every Sunday evening to reinforce progress and adjust the coming week’s plan.'], 'recommendation_count': 5, 'primary_goal': {'goal': 'Build a sustainable daily routine that keeps activity, sleep and mental-wellbeing scores consistently above 0.80 while elevating readiness to at least 0.75.', 'timeline': '6 weeks', 'success_metrics': '• ≥5 days per week with Activity score ≥0.85\n• Average Sleep score ≥0.82 for 4 consecutive weeks\n• Rolling 7-day Readiness score ≥0.75 by week 6'}, 'personalized_strategy': {'motivation_drivers': 'Positive reinforcement from seeing high scores; desire for simple, doable actions that fit current lifestyle; early feelings of success building confidence.', 'habit_integration': '• Anchor a 10-minute morning stretch to an existing cue (e.g., after brushing teeth).\n• Schedule a 30-minute light-to-moderate walk immediately after lunch on workdays.\n• Fixed ‘digital sunset’ 60 minutes before bedtime to support sleep consistency.', 'barrier_mitigation': '• Use calendar reminders for the first 2 weeks to solidify timing cues.\n• If readiness drops below 0.65, swap walk for gentle mobility to preserve habit while allowing recovery.\n• Keep all new habits <40 minutes total per day to avoid overwhelm.'}, 'readiness_level': 'Medium', 'sophistication_assessment': {'score': 38, 'category': 'Beginner', 'justification': 'This is the user’s first logged analysis; there is no prior long-term pattern history. Data capture is excellent, yet the behaviors tracked (steps, floors, sleep cycles) are foundational rather than advanced biohacking metrics. The focus is still on establishing consistency rather than optimization.'}, 'data_insights': 'All core health domains except readiness are already in the high range (0.82-0.87), demonstrating that the user’s basic sleep and movement behaviors are effective. Readiness trending medium suggests that recovery capacity lags behind exertion—likely due to subtle stressors or insufficient restorative practices. No red-flag biomarkers appear in the single oxygen saturation (sleep) and respiratory rate readings. The user’s high data-capture rate signals a strong early adoption phase; sustaining this consistency will be the key determinant of long-term success.'}, 0.8, datetime.datetime(2025, 8, 13, 21, 8, 43, 411065, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 21, 8, 43, 411065, tzinfo=datetime.timezone.utc), 'memory_service')
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=id&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjj "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_memory_category"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_longterm_memory (
+                        user_id, memory_category, memory_data, confidence_score,
+                        created_at, last_updated, update_source
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 'health_preferences', {'_raw_analysis': {'date': '2025-08-13', 'archetype': 'Foundation Builder', 'content': "Certainly! Let's create a comprehensive nutrition plan for today tailored to the Foundation Builder archetype, focusing on simplicity, confidence-building, and alignment with your current health metrics.\n\n---\n\n### Daily Nutritional Targets\n- **Calories**: 1800-2000 kcal\n- **Protein**: 70-90g\n- **Carbohydrates**: 200-250g\n- **Fats**: 60-70g\n- **Fiber**: 25-30g\n- **Vitamins**: Ensure adequate intake of Vitamin D, B12, and Omega-3s\n\n### 7 Meal Blocks\n\n1. **Early Morning: Light Hydration/Preparation**\n   - **Hydration**: 1 glass of warm water with a slice of lemon\n   - **Nutrition Tip**: Start your day with hydration to kickstart metabolism and aid digestion.\n\n2. **Breakfast: Balanced Start**\n   - **Meal**: Oatmeal topped with a handful of mixed berries and a tablespoon of chia seeds\n   - **Protein**: 1 boiled egg\n   - **Nutrition Tip**: Oatmeal provides complex carbs for sustained energy, while berries add antioxidants. The egg offers a protein boost.\n\n3. **Morning Snack: Energy Maintenance**\n   - **Meal**: 1 small apple with a tablespoon of almond butter\n   - **Nutrition Tip**: Apples provide fiber and natural sugars for energy, while almond butter adds healthy fats and protein.\n\n4. **Lunch: Balanced Midday Nutrition**\n   - **Meal**: Grilled chicken salad with mixed greens, cherry tomatoes, cucumber, and a drizzle of olive oil and lemon juice\n   - **Carbs**: 1 whole grain roll or a small serving of quinoa\n   - **Nutrition Tip**: This meal balances protein, healthy fats, and complex carbs to keep you full and energized.\n\n5. **Afternoon Snack: Sustained Energy**\n   - **Meal**: Greek yogurt with a sprinkle of nuts and seeds\n   - **Nutrition Tip**: Greek yogurt provides probiotics and protein, while nuts and seeds add healthy fats and fiber.\n\n6. **Dinner: Recovery and Satisfaction**\n   - **Meal**: Baked salmon with a side of steamed broccoli and sweet potato mash\n   - **Nutrition Tip**: Salmon is rich in Omega-3s, supporting recovery and heart health. Sweet potatoes provide complex carbs and fiber.\n\n7. **Evening Snack: Sleep Preparation**\n   - **Meal**: Herbal tea (e.g., chamomile) and a small banana\n   - **Nutrition Tip**: The banana provides magnesium and potassium, aiding muscle relaxation and sleep quality.\n\n### Nutrition Tips\n- **Timing**: Aim to eat meals and snacks at regular intervals to maintain energy levels and prevent overeating.\n- **Portion Control**: Focus on portion sizes to avoid excess calorie intake, especially in snacks.\n- **Mindful Eating**: Take time to enjoy your meals without distractions to enhance digestion and satisfaction.\n\n### Health Data Integration\n- **Activity Metrics**: Align your carbohydrate intake with your activity levels to ensure adequate energy for movement.\n- **Sleep Metrics**: Support your sleep quality with evening snacks that promote relaxation.\n- **Readiness Metrics**: Incorporate recovery-supportive foods like Omega-3-rich salmon to enhance readiness over time.\n\nThis plan is designed to be practical, evidence-based, and easy to follow, ensuring you build confidence and consistency in your nutritional habits. Adjust portions and food choices based on personal preferences and any dietary restrictions you may have. Remember, the key is to maintain a balanced approach that supports your overall well-being and aligns with your current lifestyle.", 'model_used': 'gpt-4o', 'plan_type': 'comprehensive_nutrition', 'system': 'HolisticOS'}, '_extraction_timestamp': '2025-08-13T21:08:43.732172+00:00', '_analysis_type': 'nutrition_plan', '_source_model': 'gpt-4o', 'nutrition_content': "Certainly! Let's create a comprehensive nutrition plan for today tailored to the Foundation Builder archetype, focusing on simplicity, confidence-building, and alignment with your current health metrics.\n\n---\n\n### Daily Nutritional Targets\n- **Calories**: 1800-2000 kcal\n- **Protein**: 70-90g\n- **Carbohydrates**: 200-250g\n- **Fats**: 60-70g\n- **Fiber**: 25-30g\n- **Vitamins**: Ensure adequate intake of Vitamin D, B12, and Omega-3s\n\n### 7 Meal Blocks\n\n1. **Early Morning: Light Hydration/Preparation**\n   - **Hydration**: 1 glass of warm water with a slice of lemon\n   - **Nutrition Tip**: Start your day with hydration to kickstart metabolism and aid digestion.\n\n2. **Breakfast: Balanced Start**\n   - **Meal**: Oatmeal topped with a handful of mixed berries and a tablespoon of chia seeds\n   - **Protein**: 1 boiled egg\n   - **Nutrition Tip**: Oatmeal provides complex carbs for sustained energy, while berries add antioxidants. The egg offers a protein boost.\n\n3. **Morning Snack: Energy Maintenance**\n   - **Meal**: 1 small apple with a tablespoon of almond butter\n   - **Nutrition Tip**: Apples provide fiber and natural sugars for energy, while almond butter adds healthy fats and protein.\n\n4. **Lunch: Balanced Midday Nutrition**\n   - **Meal**: Grilled chicken salad with mixed greens, cherry tomatoes, cucumber, and a drizzle of olive oil and lemon juice\n   - **Carbs**: 1 whole grain roll or a small serving of quinoa\n   - **Nutrition Tip**: This meal balances protein, healthy fats, and complex carbs to keep you full and energized.\n\n5. **Afternoon Snack: Sustained Energy**\n   - **Meal**: Greek yogurt with a sprinkle of nuts and seeds\n   - **Nutrition Tip**: Greek yogurt provides probiotics and protein, while nuts and seeds add healthy fats and fiber.\n\n6. **Dinner: Recovery and Satisfaction**\n   - **Meal**: Baked salmon with a side of steamed broccoli and sweet potato mash\n   - **Nutrition Tip**: Salmon is rich in Omega-3s, supporting recovery and heart health. Sweet potatoes provide complex carbs and fiber.\n\n7. **Evening Snack: Sleep Preparation**\n   - **Meal**: Herbal tea (e.g., chamomile) and a small banana\n   - **Nutrition Tip**: The banana provides magnesium and potassium, aiding muscle relaxation and sleep quality.\n\n### Nutrition Tips\n- **Timing**: Aim to eat meals and snacks at regular intervals to maintain energy levels and prevent overeating.\n- **Portion Control**: Focus on portion sizes to avoid excess calorie intake, especially in snacks.\n- **Mindful Eating**: Take time to enjoy your meals without distractions to enhance digestion and satisfaction.\n\n### Health Data Integration\n- **Activity Metrics**: Align your carbohydrate intake with your activity levels to ensure adequate energy for movement.\n- **Sleep Metrics**: Support your sleep quality with evening snacks that promote relaxation.\n- **Readiness Metrics**: Incorporate recovery-supportive foods like Omega-3-rich salmon to enhance readiness over time.\n\nThis plan is designed to be practical, evidence-based, and easy to follow, ensuring you build confidence and consistency in your nutritional habits. Adjust portions and food choices based on personal preferences and any dietary restrictions you may have. Remember, the key is to maintain a balanced approach that supports your overall well-being and aligns with your current lifestyle.", 'content_length': 3339, 'includes_calorie_guidance': True, 'includes_protein_guidance': True, 'includes_meal_planning': True, 'plan_type': 'comprehensive_nutrition', 'plan_date': '2025-08-13', 'archetype': 'Foundation Builder', 'dynamic_date': '2025-08-13', 'dynamic_content': "Certainly! Let's create a comprehensive nutrition plan for today tailored to the Foundation Builder archetype, focusing on simplicity, confidence-building, and alignment with your current health metrics.\n\n---\n\n### Daily Nutritional Targets\n- **Calories**: 1800-2000 kcal\n- **Protein**: 70-90g\n- **Carbohydrates**: 200-250g\n- **Fats**: 60-70g\n- **Fiber**: 25-30g\n- **Vitamins**: Ensure adequate intake of Vitamin D, B12, and Omega-3s\n\n### 7 Meal Blocks\n\n1. **Early Morning: Light Hydration/Preparation**\n   - **Hydration**: 1 glass of warm water with a slice of lemon\n   - **Nutrition Tip**: Start your day with hydration to kickstart metabolism and aid digestion.\n\n2. **Breakfast: Balanced Start**\n   - **Meal**: Oatmeal topped with a handful of mixed berries and a tablespoon of chia seeds\n   - **Protein**: 1 boiled egg\n   - **Nutrition Tip**: Oatmeal provides complex carbs for sustained energy, while berries add antioxidants. The egg offers a protein boost.\n\n3. **Morning Snack: Energy Maintenance**\n   - **Meal**: 1 small apple with a tablespoon of almond butter\n   - **Nutrition Tip**: Apples provide fiber and natural sugars for energy, while almond butter adds healthy fats and protein.\n\n4. **Lunch: Balanced Midday Nutrition**\n   - **Meal**: Grilled chicken salad with mixed greens, cherry tomatoes, cucumber, and a drizzle of olive oil and lemon juice\n   - **Carbs**: 1 whole grain roll or a small serving of quinoa\n   - **Nutrition Tip**: This meal balances protein, healthy fats, and complex carbs to keep you full and energized.\n\n5. **Afternoon Snack: Sustained Energy**\n   - **Meal**: Greek yogurt with a sprinkle of nuts and seeds\n   - **Nutrition Tip**: Greek yogurt provides probiotics and protein, while nuts and seeds add healthy fats and fiber.\n\n6. **Dinner: Recovery and Satisfaction**\n   - **Meal**: Baked salmon with a side of steamed broccoli and sweet potato mash\n   - **Nutrition Tip**: Salmon is rich in Omega-3s, supporting recovery and heart health. Sweet potatoes provide complex carbs and fiber.\n\n7. **Evening Snack: Sleep Preparation**\n   - **Meal**: Herbal tea (e.g., chamomile) and a small banana\n   - **Nutrition Tip**: The banana provides magnesium and potassium, aiding muscle relaxation and sleep quality.\n\n### Nutrition Tips\n- **Timing**: Aim to eat meals and snacks at regular intervals to maintain energy levels and prevent overeating.\n- **Portion Control**: Focus on portion sizes to avoid excess calorie intake, especially in snacks.\n- **Mindful Eating**: Take time to enjoy your meals without distractions to enhance digestion and satisfaction.\n\n### Health Data Integration\n- **Activity Metrics**: Align your carbohydrate intake with your activity levels to ensure adequate energy for movement.\n- **Sleep Metrics**: Support your sleep quality with evening snacks that promote relaxation.\n- **Readiness Metrics**: Incorporate recovery-supportive foods like Omega-3-rich salmon to enhance readiness over time.\n\nThis plan is designed to be practical, evidence-based, and easy to follow, ensuring you build confidence and consistency in your nutritional habits. Adjust portions and food choices based on personal preferences and any dietary restrictions you may have. Remember, the key is to maintain a balanced approach that supports your overall well-being and aligns with your current lifestyle."}, 0.7, datetime.datetime(2025, 8, 13, 21, 8, 44, 54995, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 21, 8, 44, 54995, tzinfo=datetime.timezone.utc), 'memory_service')
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=id&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjj "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_memory_category"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_longterm_memory (
+                        user_id, memory_category, memory_data, confidence_score,
+                        created_at, last_updated, update_source
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 'successful_strategies', {'_raw_analysis': {'date': '2025-08-13', 'archetype': 'Foundation Builder', 'content': "Here's a comprehensive Foundation Builder routine plan tailored for today, utilizing the HolisticOS approach and aligned with your health data insights:\n\n### Morning Wakeup (6:00 AM - 8:00 AM)\n\n**6:00 AM - 6:15 AM: Hydration and Activation**\n- **Task:** Drink a glass of water immediately upon waking.\n- **Reasoning:** Hydration first thing in the morning kickstarts metabolism and aids in waking up the body after sleep.\n- **Integration:** Supports high sleep metrics by ensuring your body is replenished and ready for the day.\n\n**6:15 AM - 6:30 AM: Mindful Breathing**\n- **Task:** Engage in 5 minutes of box breathing (inhale for 4 seconds, hold for 4, exhale for 4, hold for 4).\n- **Reasoning:** This practice helps reduce stress and improve focus, aligning with your goal to boost readiness.\n- **Integration:** Encourages mental wellbeing, contributing to maintaining high mental wellbeing metrics.\n\n**6:30 AM - 7:00 AM: Light Stretching Routine**\n- **Task:** Perform a 10-minute stretching routine focusing on major muscle groups.\n- **Reasoning:** Stretching increases blood flow and flexibility, preparing your body for the day.\n- **Integration:** Anchored to the morning routine, this activity builds on the habit integration strategy.\n\n### Focus Block (9:00 AM - 12:00 PM)\n\n**9:00 AM - 11:00 AM: Peak Productivity Tasks**\n- **Task:** Tackle your most important tasks of the day during this period.\n- **Reasoning:** Cognitive performance is typically highest in the morning; leveraging this time can enhance productivity.\n- **Integration:** Aligns with high mental wellbeing and activity scores, ensuring you're working at your best.\n\n**11:00 AM - 11:15 AM: Active Break**\n- **Task:** Take a 15-minute walk or perform light movement exercises.\n- **Reasoning:** Short active breaks can help maintain energy levels and prevent mental fatigue.\n- **Integration:** Supports the goal of achieving at least 7,500 steps per day and maintains high activity metrics.\n\n### Afternoon Recharge (1:00 PM - 4:00 PM)\n\n**1:00 PM - 1:30 PM: Post-Lunch Walk**\n- **Task:** Engage in a 30-minute light-to-moderate walk.\n- **Reasoning:** Walking after meals aids digestion and maintains energy levels.\n- **Integration:** Scheduled as per habit integration strategy, reinforcing daily movement.\n\n**2:30 PM - 2:45 PM: Mindful Relaxation**\n- **Task:** Spend 5 minutes in guided relaxation or a brief meditation session.\n- **Reasoning:** This helps manage stress and supports recovery, crucial for improving readiness.\n- **Integration:** Aligns with the recommendation to introduce recovery activities when readiness is low.\n\n### Evening Winddown (8:00 PM - 10:00 PM)\n\n**8:00 PM - 8:30 PM: Digital Sunset**\n- **Task:** Begin a digital detox by turning off screens and engaging in a relaxing activity like reading.\n- **Reasoning:** Reducing screen time before bed improves sleep quality by minimizing blue light exposure.\n- **Integration:** Supports sleep consistency and high sleep metrics.\n\n**9:30 PM - 9:45 PM: Nightly Reflection**\n- **Task:** Write a brief reflection on your day's energy and mood.\n- **Reasoning:** Reflecting helps consolidate learning and provides valuable data for future pattern analysis.\n- **Integration:** Enriches future pattern analysis, aligning with personalized strategy recommendations.\n\nThis routine is designed to be simple, supportive, and confidence-building, aligning with your Foundation Builder archetype. By integrating these activities into your day, you can maintain high health scores while gradually improving your readiness metric.", 'model_used': 'gpt-4o', 'plan_type': 'comprehensive_routine', 'system': 'HolisticOS'}, '_extraction_timestamp': '2025-08-13T21:08:44.378072+00:00', '_analysis_type': 'routine_plan', '_source_model': 'gpt-4o', 'routine_content': "Here's a comprehensive Foundation Builder routine plan tailored for today, utilizing the HolisticOS approach and aligned with your health data insights:\n\n### Morning Wakeup (6:00 AM - 8:00 AM)\n\n**6:00 AM - 6:15 AM: Hydration and Activation**\n- **Task:** Drink a glass of water immediately upon waking.\n- **Reasoning:** Hydration first thing in the morning kickstarts metabolism and aids in waking up the body after sleep.\n- **Integration:** Supports high sleep metrics by ensuring your body is replenished and ready for the day.\n\n**6:15 AM - 6:30 AM: Mindful Breathing**\n- **Task:** Engage in 5 minutes of box breathing (inhale for 4 seconds, hold for 4, exhale for 4, hold for 4).\n- **Reasoning:** This practice helps reduce stress and improve focus, aligning with your goal to boost readiness.\n- **Integration:** Encourages mental wellbeing, contributing to maintaining high mental wellbeing metrics.\n\n**6:30 AM - 7:00 AM: Light Stretching Routine**\n- **Task:** Perform a 10-minute stretching routine focusing on major muscle groups.\n- **Reasoning:** Stretching increases blood flow and flexibility, preparing your body for the day.\n- **Integration:** Anchored to the morning routine, this activity builds on the habit integration strategy.\n\n### Focus Block (9:00 AM - 12:00 PM)\n\n**9:00 AM - 11:00 AM: Peak Productivity Tasks**\n- **Task:** Tackle your most important tasks of the day during this period.\n- **Reasoning:** Cognitive performance is typically highest in the morning; leveraging this time can enhance productivity.\n- **Integration:** Aligns with high mental wellbeing and activity scores, ensuring you're working at your best.\n\n**11:00 AM - 11:15 AM: Active Break**\n- **Task:** Take a 15-minute walk or perform light movement exercises.\n- **Reasoning:** Short active breaks can help maintain energy levels and prevent mental fatigue.\n- **Integration:** Supports the goal of achieving at least 7,500 steps per day and maintains high activity metrics.\n\n### Afternoon Recharge (1:00 PM - 4:00 PM)\n\n**1:00 PM - 1:30 PM: Post-Lunch Walk**\n- **Task:** Engage in a 30-minute light-to-moderate walk.\n- **Reasoning:** Walking after meals aids digestion and maintains energy levels.\n- **Integration:** Scheduled as per habit integration strategy, reinforcing daily movement.\n\n**2:30 PM - 2:45 PM: Mindful Relaxation**\n- **Task:** Spend 5 minutes in guided relaxation or a brief meditation session.\n- **Reasoning:** This helps manage stress and supports recovery, crucial for improving readiness.\n- **Integration:** Aligns with the recommendation to introduce recovery activities when readiness is low.\n\n### Evening Winddown (8:00 PM - 10:00 PM)\n\n**8:00 PM - 8:30 PM: Digital Sunset**\n- **Task:** Begin a digital detox by turning off screens and engaging in a relaxing activity like reading.\n- **Reasoning:** Reducing screen time before bed improves sleep quality by minimizing blue light exposure.\n- **Integration:** Supports sleep consistency and high sleep metrics.\n\n**9:30 PM - 9:45 PM: Nightly Reflection**\n- **Task:** Write a brief reflection on your day's energy and mood.\n- **Reasoning:** Reflecting helps consolidate learning and provides valuable data for future pattern analysis.\n- **Integration:** Enriches future pattern analysis, aligning with personalized strategy recommendations.\n\nThis routine is designed to be simple, supportive, and confidence-building, aligning with your Foundation Builder archetype. By integrating these activities into your day, you can maintain high health scores while gradually improving your readiness metric.", 'content_length': 3557, 'includes_morning_routine': True, 'includes_evening_routine': True, 'includes_exercise': True, 'includes_mindfulness': True, 'plan_type': 'comprehensive_routine', 'plan_date': '2025-08-13', 'archetype': 'Foundation Builder', 'dynamic_date': '2025-08-13', 'dynamic_content': "Here's a comprehensive Foundation Builder routine plan tailored for today, utilizing the HolisticOS approach and aligned with your health data insights:\n\n### Morning Wakeup (6:00 AM - 8:00 AM)\n\n**6:00 AM - 6:15 AM: Hydration and Activation**\n- **Task:** Drink a glass of water immediately upon waking.\n- **Reasoning:** Hydration first thing in the morning kickstarts metabolism and aids in waking up the body after sleep.\n- **Integration:** Supports high sleep metrics by ensuring your body is replenished and ready for the day.\n\n**6:15 AM - 6:30 AM: Mindful Breathing**\n- **Task:** Engage in 5 minutes of box breathing (inhale for 4 seconds, hold for 4, exhale for 4, hold for 4).\n- **Reasoning:** This practice helps reduce stress and improve focus, aligning with your goal to boost readiness.\n- **Integration:** Encourages mental wellbeing, contributing to maintaining high mental wellbeing metrics.\n\n**6:30 AM - 7:00 AM: Light Stretching Routine**\n- **Task:** Perform a 10-minute stretching routine focusing on major muscle groups.\n- **Reasoning:** Stretching increases blood flow and flexibility, preparing your body for the day.\n- **Integration:** Anchored to the morning routine, this activity builds on the habit integration strategy.\n\n### Focus Block (9:00 AM - 12:00 PM)\n\n**9:00 AM - 11:00 AM: Peak Productivity Tasks**\n- **Task:** Tackle your most important tasks of the day during this period.\n- **Reasoning:** Cognitive performance is typically highest in the morning; leveraging this time can enhance productivity.\n- **Integration:** Aligns with high mental wellbeing and activity scores, ensuring you're working at your best.\n\n**11:00 AM - 11:15 AM: Active Break**\n- **Task:** Take a 15-minute walk or perform light movement exercises.\n- **Reasoning:** Short active breaks can help maintain energy levels and prevent mental fatigue.\n- **Integration:** Supports the goal of achieving at least 7,500 steps per day and maintains high activity metrics.\n\n### Afternoon Recharge (1:00 PM - 4:00 PM)\n\n**1:00 PM - 1:30 PM: Post-Lunch Walk**\n- **Task:** Engage in a 30-minute light-to-moderate walk.\n- **Reasoning:** Walking after meals aids digestion and maintains energy levels.\n- **Integration:** Scheduled as per habit integration strategy, reinforcing daily movement.\n\n**2:30 PM - 2:45 PM: Mindful Relaxation**\n- **Task:** Spend 5 minutes in guided relaxation or a brief meditation session.\n- **Reasoning:** This helps manage stress and supports recovery, crucial for improving readiness.\n- **Integration:** Aligns with the recommendation to introduce recovery activities when readiness is low.\n\n### Evening Winddown (8:00 PM - 10:00 PM)\n\n**8:00 PM - 8:30 PM: Digital Sunset**\n- **Task:** Begin a digital detox by turning off screens and engaging in a relaxing activity like reading.\n- **Reasoning:** Reducing screen time before bed improves sleep quality by minimizing blue light exposure.\n- **Integration:** Supports sleep consistency and high sleep metrics.\n\n**9:30 PM - 9:45 PM: Nightly Reflection**\n- **Task:** Write a brief reflection on your day's energy and mood.\n- **Reasoning:** Reflecting helps consolidate learning and provides valuable data for future pattern analysis.\n- **Integration:** Enriches future pattern analysis, aligning with personalized strategy recommendations.\n\nThis routine is designed to be simple, supportive, and confidence-building, aligning with your Foundation Builder archetype. By integrating these activities into your day, you can maintain high health scores while gradually improving your readiness metric."}, 0.7, datetime.datetime(2025, 8, 13, 21, 8, 44, 710176, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 21, 8, 44, 710176, tzinfo=datetime.timezone.utc), 'memory_service')
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=id&user_id=eq.3 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_meta_memory"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_meta_memory (
+                        user_id, adaptation_patterns, learning_velocity, success_predictors,
+                        failure_patterns, agent_effectiveness, archetype_evolution, engagement_patterns,
+                        created_at, last_updated, analysis_window_start, analysis_window_end
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        adaptation_patterns = EXCLUDED.adaptation_patterns,
+                        learning_velocity = EXCLUDED.learning_velocity,    
+                        last_updated = EXCLUDED.last_updated,
+                        analysis_window_end = EXCLUDED.analysis_window_end 
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', {'agents_used': ['behavior_analysis', 'nutrition_plan', 'routine_plan'], 'complexity_provided': 'low', 'personalization_level': 'high', 'analysis_timestamp': '2025-08-13T21:08:44.918000+00:00'}, {'analysis_frequency': 'regular', 'adaptation_speed': 'moderate', 'retention_indicators': {}}, {}, {}, {}, {}, {}, datetime.datetime(2025, 8, 13, 21, 8, 44, 918012, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 21, 8, 44, 918012, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 7, 14, 21, 8, 44, 918012, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 13, 21, 8, 44, 918012, tzinfo=datetime.timezone.utc))
 INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Memory profile updated for 35pDPUIfAoRl2Y700bFkxPKYjjf2
 ✅ Memory profile updated with new insights
 INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
 INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
-INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Updated analysis time for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-10T20:09:58.319604+00:00
-✅ Updated analysis timestamp for 35pDPUIfAoRl2Y700bFkxPKYjjf2 to 2025-08-10T20:09:58.319604+00:00
-INFO:     127.0.0.1:63951 - "POST /api/analyze HTTP/1.1" 200 OK
-
-
-
-
-
-
-
-
-
-
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Updated analysis time for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-13T21:06:46.150405+00:00       
+✅ Updated analysis timestamp for 35pDPUIfAoRl2Y700bFkxPKYjjf2 to 2025-08-13T21:06:46.150405+00:00
+INFO:     127.0.0.1:54982 - "POST /api/analyze HTTP/1.1" 200 OK
