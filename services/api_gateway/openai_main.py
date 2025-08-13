@@ -177,6 +177,39 @@ async def initialize_agents():
         pass
 
 # ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+def get_score_actual_date(score) -> str:
+    """
+    Get actual data occurrence date from score_date_time, with fallback to created_at
+    
+    Args:
+        score: HealthScore object with score_date_time and created_at fields
+        
+    Returns:
+        str: Date in YYYY-MM-DD format representing when the data actually occurred
+    """
+    try:
+        # Prefer score_date_time (actual data occurrence date)
+        if hasattr(score, 'score_date_time') and score.score_date_time:
+            if isinstance(score.score_date_time, str):
+                # Handle string datetime formats
+                return datetime.fromisoformat(score.score_date_time.replace('Z', '+00:00')).strftime("%Y-%m-%d")
+            else:
+                # Handle datetime objects
+                return score.score_date_time.strftime("%Y-%m-%d")
+    except (ValueError, AttributeError) as e:
+        print(f"⚠️ Date parsing issue for score_date_time: {e}, falling back to created_at")
+    
+    # Fallback to created_at if score_date_time is unavailable/invalid
+    if hasattr(score, 'created_at') and score.created_at:
+        return score.created_at.strftime("%Y-%m-%d")
+    
+    # Last resort fallback
+    return datetime.now().strftime("%Y-%m-%d")
+
+# ============================================================================
 # API ENDPOINTS
 # ============================================================================
 
@@ -584,7 +617,16 @@ MEMORY-ENHANCED CONTEXT:
 - Recent Pattern Analysis: {len(memory_context.recent_patterns)} patterns tracked
 - Historical Analysis Count: {len(memory_context.analysis_history)}"""
             else:
-                memory_summary = f"""
+                # Check if it's actually a follow-up despite no longterm memory yet
+                if memory_context.analysis_mode == "follow_up":
+                    memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: FOLLOW-UP (Building memory profile)
+- User Memory Profile Available: PARTIAL (Previous analysis detected)
+- Days Since Last Analysis: {memory_context.days_to_fetch}
+- Analysis History: {len(memory_context.analysis_history)} previous analyses"""
+                else:
+                    memory_summary = f"""
 MEMORY-ENHANCED CONTEXT:
 - Analysis Mode: {memory_context.analysis_mode.upper()} (New user)
 - User Memory Profile Available: NO (Building initial memory)"""
@@ -746,7 +788,7 @@ Please provide a detailed analysis that demonstrates the {archetype} approach to
                 "behavior_analysis_filtered_data": {
                     "activity_sleep_readiness_scores": [
                         {
-                            "date": score.created_at.strftime("%Y-%m-%d") if hasattr(score, 'created_at') else "unknown",
+                            "date": get_score_actual_date(score) if hasattr(score, 'created_at') else "unknown",
                             "type": score.type,
                             "score": score.score,
                             "state": score.data.get("state", "unknown") if score.data else "unknown"
@@ -859,7 +901,7 @@ async def prepare_behavior_agent_data(user_context, user_context_summary: str) -
                 },
                 "activity_patterns": [
                     {
-                        "date": score.created_at.strftime("%Y-%m-%d"),
+                        "date": get_score_actual_date(score),
                         "type": score.type,
                         "score": score.score,
                         "state": score.data.get("state", "unknown") if score.data else "unknown"
@@ -901,7 +943,7 @@ async def prepare_nutrition_agent_data(user_context, behavior_analysis: dict) ->
         nutrition_relevant_data = {
             "activity_levels": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "activity_score": score.score,
                     "state": score.data.get("state", "unknown") if score.data else "unknown"
                 }
@@ -910,7 +952,7 @@ async def prepare_nutrition_agent_data(user_context, behavior_analysis: dict) ->
             
             "sleep_quality": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "sleep_score": score.score,
                     "state": score.data.get("state", "unknown") if score.data else "unknown"
                 }
@@ -919,7 +961,7 @@ async def prepare_nutrition_agent_data(user_context, behavior_analysis: dict) ->
             
             "energy_indicators": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "readiness_score": score.score,
                     "state": score.data.get("state", "unknown") if score.data else "unknown"
                 }
@@ -961,7 +1003,7 @@ async def prepare_routine_agent_data(user_context, behavior_analysis: dict) -> d
         routine_relevant_data = {
             "sleep_patterns": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "sleep_score": score.score,
                     "sleep_state": score.data.get("state", "unknown") if score.data else "unknown",
                     "factors": score.data.get("factors", []) if score.data else []
@@ -971,7 +1013,7 @@ async def prepare_routine_agent_data(user_context, behavior_analysis: dict) -> d
             
             "activity_patterns": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "activity_score": score.score,
                     "activity_state": score.data.get("state", "unknown") if score.data else "unknown",
                     "factors": score.data.get("factors", []) if score.data else []
@@ -981,7 +1023,7 @@ async def prepare_routine_agent_data(user_context, behavior_analysis: dict) -> d
             
             "recovery_readiness": [
                 {
-                    "date": score.created_at.strftime("%Y-%m-%d"),
+                    "date": get_score_actual_date(score),
                     "readiness_score": score.score,
                     "readiness_state": score.data.get("state", "unknown") if score.data else "unknown"
                 }
@@ -1019,7 +1061,7 @@ async def format_health_data_for_ai(user_context) -> str:
                 recent_scores[score_type] = []
             recent_scores[score_type].append({
                 'score': score.score,
-                'date': score.created_at.strftime('%Y-%m-%d'),
+                'date': get_score_actual_date(score),
                 'state': score.data.get('state', 'unknown') if hasattr(score, 'data') and score.data else 'unknown'
             })
         

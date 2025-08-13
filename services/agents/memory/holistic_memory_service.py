@@ -534,28 +534,76 @@ class HolisticMemoryService:
         Returns: (analysis_type, days_to_fetch)
         """
         try:
-            # Get recent analysis history
+            # Get recent analysis history from holistic_analysis_results table
             recent_analyses = await self.get_analysis_history(user_id, limit=5)
             
-            if not recent_analyses:
+            # Also check profiles.last_analysis_at as a more reliable source
+            last_analysis_from_profile = None
+            try:
+                # Import at runtime to avoid circular dependencies
+                import sys
+                import os
+                # Add parent path to import from services
+                parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                if parent_dir not in sys.path:
+                    sys.path.insert(0, parent_dir)
+                from services.simple_analysis_tracker import SimpleAnalysisTracker
+                
+                tracker = SimpleAnalysisTracker()
+                last_analysis_from_profile = await tracker.get_last_analysis_time(user_id)
+                if last_analysis_from_profile:
+                    print(f"📊 PROFILE_CHECK: Found last_analysis_at = {last_analysis_from_profile.isoformat()}")
+            except Exception as profile_error:
+                print(f"⚠️ PROFILE_CHECK: Could not check profiles table: {profile_error}")
+            
+            # Determine the most recent analysis timestamp from both sources
+            last_analysis_date = None
+            source = "none"
+            
+            if recent_analyses and last_analysis_from_profile:
+                # Both sources have data - use the more recent one
+                if recent_analyses[0].created_at > last_analysis_from_profile:
+                    last_analysis_date = recent_analyses[0].created_at
+                    source = "analysis_results"
+                else:
+                    last_analysis_date = last_analysis_from_profile
+                    source = "profiles"
+                print(f"🔍 ANALYSIS_MODE: Using {source} table (more recent)")
+            elif recent_analyses:
+                # Only analysis history available
+                last_analysis_date = recent_analyses[0].created_at
+                source = "analysis_results"
+                print(f"📋 ANALYSIS_MODE: Using analysis_results table (profiles empty)")
+            elif last_analysis_from_profile:
+                # Only profile timestamp available - THIS IS THE KEY FIX
+                last_analysis_date = last_analysis_from_profile
+                source = "profiles"
+                print(f"✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)")
+            
+            if not last_analysis_date:
                 print(f"🆕 ANALYSIS_MODE: New user - initial analysis (7 days data)")
                 return ("initial", 7)  # New user: 7 days data
             
-            last_analysis_date = recent_analyses[0].created_at
-            days_since_last = (datetime.now(timezone.utc) - last_analysis_date).days
+            # Calculate time since last analysis for logging
+            time_since_last = datetime.now(timezone.utc) - last_analysis_date
+            days_since_last = time_since_last.days
+            hours_since_last = time_since_last.total_seconds() / 3600
+            minutes_since_last = time_since_last.total_seconds() / 60
             
+            print(f"⏱️ ANALYSIS_MODE: Last analysis was {minutes_since_last:.1f} minutes ago ({hours_since_last:.1f} hours, {days_since_last} days) from {source}")
+            
+            # Simple logic: If ANY previous analysis exists, next one is ALWAYS follow-up
+            # Only exception: very long gaps (2+ weeks) treated as fresh start
             if days_since_last >= 14:
-                print(f"⏰ ANALYSIS_MODE: Long gap ({days_since_last} days) - initial analysis")
-                return ("initial", 7)  # Long gap: treat as new
-            elif days_since_last >= 1:
-                print(f"🔄 ANALYSIS_MODE: Recent user - follow-up analysis (1 day + memory)")
-                return ("follow_up", 1)  # Recent: use 1 day + memory
+                print(f"⏰ ANALYSIS_MODE: Very long gap ({days_since_last} days) - treating as fresh initial analysis")
+                return ("initial", 7)  # Only very long gaps get initial treatment
             else:
-                print(f"⚡ ANALYSIS_MODE: Same day - adaptation analysis")
-                return ("adaptation", 1)  # Same day: adaptation only
+                print(f"🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)")
+                return ("follow_up", 1)  # ANY previous analysis = follow-up mode
                 
         except Exception as e:
             logger.error(f"[ANALYSIS_MODE_ERROR] Failed for {user_id}: {e}")
+            print(f"❌ ANALYSIS_MODE_ERROR: {e}")
             # Default to initial on error
             return ("initial", 7)
     

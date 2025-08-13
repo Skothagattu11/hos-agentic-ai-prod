@@ -476,7 +476,8 @@ class UserDataService:
         
         if not last_analysis:
             # First analysis - get 7 days baseline
-            logger.info(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days")
+            logger.info(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days baseline")
+            print(f"📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline")
             result = await self.get_user_health_data(user_id, days=7)
             
             # For first analysis, calculate latest timestamp from the fetched data
@@ -504,8 +505,10 @@ class UserDataService:
         days_span = max(1, int(hours_since / 24) + 1)
         
         logger.info(f"[ANALYSIS_DATA] Incremental analysis for {user_id}")
-        logger.info(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago")
-        logger.info(f"[ANALYSIS_DATA] Fetching data from {last_analysis.isoformat()} to now")
+        logger.info(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago at {last_analysis.isoformat()}")
+        logger.info(f"[ANALYSIS_DATA] Fetching incremental data from {last_analysis.isoformat()} to now")
+        print(f"📊 INCREMENTAL_SYNC: Last analysis was {hours_since:.1f} hours ago")
+        print(f"📊 INCREMENTAL_SYNC: Fetching new data since {last_analysis.strftime('%Y-%m-%d %H:%M')}")
         
         try:
             # Get ALL data since last analysis (true incremental)
