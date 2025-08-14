@@ -117,16 +117,10 @@ class OnDemandAnalysisService:
             new_data_count = await self._count_new_data_points(user_id, last_analysis)
             metadata["new_data_points"] = new_data_count
             
-<<<<<<< HEAD
-=======
-            # CTO DEBUG: Log data counting details for debugging
-            logger.info(f"[ONDEMAND_DEBUG] User {user_id[:8]}... data count check:")
-            logger.info(f"  - Last analysis: {last_analysis.isoformat()}")
-            logger.info(f"  - Time since: {hours_since:.1f} hours")
-            logger.info(f"  - New data points found: {new_data_count}")
-            logger.info(f"  - Threshold will be: calculating...")
+            # Minimal logging for debugging
+            logger.debug(f"[ONDEMAND] User {user_id[:8]}... - {new_data_count} new points, {hours_since:.1f}h since last")
             
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+
             # Assess memory quality and calculate threshold
             memory_quality = await self._assess_memory_quality(user_id)
             metadata["memory_quality"] = memory_quality
@@ -157,23 +151,23 @@ class OnDemandAnalysisService:
         try:
             db = await self.user_service._ensure_db_connection()
             
-            # Count new scores
+            # Count new scores - Fix datetime comparison
             scores_result = db.client.table("scores").select("id", count="exact")\
                 .eq("profile_id", user_id)\
-                .gt("created_at", since_timestamp.isoformat())\
+                .gte("created_at", since_timestamp.isoformat())\
                 .execute()
-            scores_count = scores_result.count if hasattr(scores_result, 'count') else len(scores_result.data)
+            scores_count = scores_result.count if hasattr(scores_result, 'count') else len(scores_result.data if scores_result.data else [])
             
-            # Count new biomarkers
+            # Count new biomarkers - Fix datetime comparison
             biomarkers_result = db.client.table("biomarkers").select("id", count="exact")\
                 .eq("profile_id", user_id)\
-                .gt("created_at", since_timestamp.isoformat())\
+                .gte("created_at", since_timestamp.isoformat())\
                 .execute()
-            biomarkers_count = biomarkers_result.count if hasattr(biomarkers_result, 'count') else len(biomarkers_result.data)
+            biomarkers_count = biomarkers_result.count if hasattr(biomarkers_result, 'count') else len(biomarkers_result.data if biomarkers_result.data else [])
             
             total_count = scores_count + biomarkers_count
             
-            logger.info(f"[ONDEMAND] User {user_id[:8]}... has {total_count} new data points since {since_timestamp.isoformat()}")
+            logger.debug(f"[ONDEMAND] User {user_id[:8]}... has {total_count} new data points")
             return total_count
             
         except Exception as e:
@@ -262,7 +256,7 @@ class OnDemandAnalysisService:
         # Ensure reasonable bounds
         threshold = max(10, min(100, threshold))  # Between 10 and 100
         
-        logger.debug(f"[ONDEMAND] Calculated threshold for {user_id[:8]}...: {threshold} (memory: {memory_quality.value})")
+        logger.debug(f"[ONDEMAND] Threshold: {threshold} (memory: {memory_quality.value})")
         
         return threshold
     

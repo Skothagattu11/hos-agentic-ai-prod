@@ -15,7 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../../'))
 from shared_libs.event_system.base_agent import BaseAgent, AgentEvent, AgentResponse
 from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
 from shared_libs.data_models.base_models import UserProfileContext
-from shared_libs.utils.existing_behavior_agent import BehaviorAnalysisAgent
+# from shared_libs.utils.existing_behavior_agent import BehaviorAnalysisAgent  # Disabled - using OpenAI direct
 
 class HolisticBehaviorAgent(BaseAgent):
     """Enhanced Behavior Analysis Agent with HolisticOS capabilities"""

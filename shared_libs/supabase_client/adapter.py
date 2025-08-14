@@ -347,10 +347,16 @@ class SupabaseAsyncPGAdapter:
         columns_part = query[6:from_pos].strip()  # Skip "SELECT"
         result['columns'] = columns_part if columns_part != '*' else '*'
         
-        # Extract table name
+        # Extract table name - Handle JOIN clauses by taking only the first table
         table_start = from_pos + 6
-        table_end = self._find_next_keyword_pos(query_upper, table_start, [' WHERE ', ' ORDER BY ', ' LIMIT ', ' GROUP BY '])
-        result['table'] = query[table_start:table_end].strip()
+        table_end = self._find_next_keyword_pos(query_upper, table_start, [' WHERE ', ' ORDER BY ', ' LIMIT ', ' GROUP BY ', ' LEFT JOIN ', ' RIGHT JOIN ', ' INNER JOIN ', ' JOIN '])
+        full_table_clause = query[table_start:table_end].strip()
+        
+        # If it contains JOIN, only take the first table name
+        if ' JOIN ' in full_table_clause.upper():
+            result['table'] = full_table_clause.split()[0]  # Take only first word (table name)
+        else:
+            result['table'] = full_table_clause
         
         # Extract WHERE clause
         where_pos = query_upper.find(' WHERE ')
@@ -449,7 +455,7 @@ class SupabaseAsyncPGAdapter:
         return min_pos
     
     def _parse_where_clause(self, where_clause: str) -> list:
-        """Parse WHERE clause into conditions for Supabase - Fixed boundary detection"""
+        """Parse WHERE clause into conditions for Supabase - Fixed user ID truncation"""
         conditions = []
         
         # Clean the where clause - remove any ORDER BY, LIMIT, GROUP BY that leaked in
@@ -472,24 +478,33 @@ class SupabaseAsyncPGAdapter:
                 conditions.append({
                     'column': column.strip(),
                     'operator': 'gte',
-                    'value': value.strip().replace("'", "")
+                    'value': self._clean_where_value(value.strip())
                 })
             elif '<=' in part:
                 column, value = part.split('<=', 1)
                 conditions.append({
                     'column': column.strip(),
                     'operator': 'lte', 
-                    'value': value.strip().replace("'", "")
+                    'value': self._clean_where_value(value.strip())
                 })
             elif '=' in part:
                 column, value = part.split('=', 1)
                 conditions.append({
                     'column': column.strip(),
                     'operator': 'eq',
-                    'value': value.strip().replace("'", "")
+                    'value': self._clean_where_value(value.strip())
                 })
         
         return conditions
+
+    def _clean_where_value(self, value: str) -> str:
+        """Properly clean WHERE clause values without truncating - fixes user ID issue"""
+        # Remove surrounding quotes but preserve the full value
+        if value.startswith("'") and value.endswith("'"):
+            return value[1:-1]  # Remove surrounding single quotes
+        elif value.startswith('"') and value.endswith('"'):
+            return value[1:-1]  # Remove surrounding double quotes
+        return value  # Return as-is if no quotes
 
     def _create_analysis_memory_insert_data(self, args: tuple) -> Dict[str, Any]:
         """Create data dict for analysis_memory table INSERT"""

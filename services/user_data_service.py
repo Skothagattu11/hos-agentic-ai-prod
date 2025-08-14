@@ -53,13 +53,42 @@ class UserDataService:
                 raise
         return self.db_adapter
     
+    def _parse_datetime_field(self, dt_field) -> datetime:
+        """Parse datetime field from database - handles both string and datetime objects"""
+        if dt_field is None:
+            return None
+        
+        if isinstance(dt_field, datetime):
+            # Already a datetime object
+            return dt_field
+        
+        if isinstance(dt_field, str):
+            try:
+                # Handle various datetime string formats from Supabase
+                if dt_field.endswith('+00'):
+                    # Format: "2025-08-14 16:36:21.35416+00" 
+                    dt_field = dt_field + ":00"  # Convert to proper timezone format
+                elif dt_field.endswith('Z'):
+                    # Format: "2025-08-14T16:36:21.354160Z"
+                    dt_field = dt_field[:-1] + "+00:00"
+                elif not dt_field.endswith('+00:00') and 'T' in dt_field:
+                    # Format: "2025-08-14T16:36:21.354160" (no timezone)
+                    dt_field = dt_field + "+00:00"
+                
+                return datetime.fromisoformat(dt_field)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"[DATETIME_PARSE] Failed to parse datetime '{dt_field}': {e}")
+                return None
+        
+        return dt_field  # Return as-is if not string or datetime
+    
     def _get_date_range(self, days: int = None) -> tuple[datetime, datetime]:
         """Simple date range calculation - clean and debuggable"""
         days = days or self.default_days
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
         
-        logger.info(f"[DATE_RANGE] Fetching {days} days: {start_date.date()} to {end_date.date()}")
+        logger.debug(f"[DATE_RANGE] Fetching {days} days")
         return start_date, end_date
 
     async def fetch_user_scores(self, user_id: str, days: int = None) -> List[Dict[str, Any]]:
@@ -82,7 +111,7 @@ class UserDataService:
                 LIMIT $2
             """
             
-            logger.info(f"[SCORES] Fetching for user {user_id} (simplified query)")
+            logger.debug(f"[SCORES] Fetching for user {user_id[:8]}...")
             rows = await db.fetch(query, user_id, self.max_records)
             
             # Simple data transformation - no over-engineering
@@ -105,7 +134,7 @@ class UserDataService:
                     continue
             
             duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"[SCORES] Retrieved {len(scores)} records in {duration:.2f}s")
+            logger.debug(f"[SCORES] Retrieved {len(scores)} records in {duration:.2f}s")
             
             return scores
             
@@ -130,7 +159,7 @@ class UserDataService:
                 LIMIT $2
             """
             
-            logger.info(f"[BIOMARKERS] Fetching for user {user_id} (simplified query)")
+            logger.debug(f"[BIOMARKERS] Fetching for user {user_id[:8]}...")
             rows = await db.fetch(query, user_id, self.max_records)
             
             biomarkers = []
@@ -153,7 +182,7 @@ class UserDataService:
                     continue
             
             duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"[BIOMARKERS] Retrieved {len(biomarkers)} records in {duration:.2f}s")
+            logger.debug(f"[BIOMARKERS] Retrieved {len(biomarkers)} records in {duration:.2f}s")
             
             return biomarkers
             
@@ -180,7 +209,7 @@ class UserDataService:
                 LIMIT $2
             """
             
-            logger.info(f"[ARCHETYPES] Fetching for user {user_id} (simplified query)")
+            logger.debug(f"[ARCHETYPES] Fetching for user {user_id[:8]}...")
             rows = await db.fetch(query, user_id, self.max_records)
             
             # Simple deduplication logic - easy to understand and debug
@@ -211,7 +240,7 @@ class UserDataService:
             
             archetypes = list(archetypes_by_key.values())
             duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"[ARCHETYPES] Retrieved {len(archetypes)} unique archetypes in {duration:.2f}s")
+            logger.debug(f"[ARCHETYPES] Retrieved {len(archetypes)} archetypes in {duration:.2f}s")
             
             return archetypes
             
@@ -363,42 +392,66 @@ class UserDataService:
     
     # Simplified Incremental Sync - True incremental from last analysis to now
     async def fetch_data_since(self, user_id: str, since_timestamp: datetime) -> tuple[List[Dict], List[Dict], List[Dict], datetime]:
-        """Fetch ALL data from timestamp to now - true incremental"""
+        """Fetch ALL data from timestamp to now - true incremental using Supabase native API"""
         try:
             db = await self._ensure_db_connection()
             
-            # Get ALL scores since last analysis
-            scores_query = """
-                SELECT id, profile_id, type, score, data, 
-                       score_date_time, created_at, updated_at
-                FROM scores 
-                WHERE profile_id = $1 
-                  AND created_at > $2
-                ORDER BY created_at DESC
-                LIMIT $3
-            """
-            
-            # Get ALL biomarkers since last analysis
-            biomarkers_query = """
-                SELECT id, profile_id, category, type, data,
-                       start_date_time, end_date_time, created_at, updated_at
-                FROM biomarkers 
-                WHERE profile_id = $1 
-                  AND created_at > $2
-                ORDER BY created_at DESC
-                LIMIT $3
-            """
-            
             logger.info(f"[INCREMENTAL] Fetching data for {user_id} since {since_timestamp.isoformat()}")
             
-            # Parallel fetch for efficiency
-            scores_task = db.fetch(scores_query, user_id, since_timestamp, self.max_records)
-            biomarkers_task = db.fetch(biomarkers_query, user_id, since_timestamp, self.max_records)
-            archetypes_task = self.fetch_user_archetypes(user_id)
+            # Use Supabase native API for more reliable queries
+            from supabase import create_client
+            import os
             
-            scores_rows, biomarkers_rows, archetypes = await asyncio.gather(
-                scores_task, biomarkers_task, archetypes_task
-            )
+            # Try Supabase native API first, fallback to SQL adapter
+            try:
+                supabase_url = os.getenv('SUPABASE_URL')
+                supabase_key = os.getenv('SUPABASE_KEY') 
+                
+                if supabase_url and supabase_key:
+                    supabase_client = create_client(supabase_url, supabase_key)
+                    
+                    # Fetch scores using native Supabase API
+                    scores_response = supabase_client.table('scores')\
+                        .select('*')\
+                        .eq('profile_id', user_id)\
+                        .gte('created_at', since_timestamp.isoformat())\
+                        .order('created_at', desc=True)\
+                        .limit(self.max_records)\
+                        .execute()
+                    
+                    # Fetch biomarkers using native Supabase API  
+                    biomarkers_response = supabase_client.table('biomarkers')\
+                        .select('*')\
+                        .eq('profile_id', user_id)\
+                        .gte('created_at', since_timestamp.isoformat())\
+                        .order('created_at', desc=True)\
+                        .limit(self.max_records)\
+                        .execute()
+                    
+                    scores_rows = scores_response.data
+                    biomarkers_rows = biomarkers_response.data
+                    logger.info(f"[INCREMENTAL] Using Supabase native API")
+                    
+                else:
+                    # Fallback to SQL adapter
+                    raise Exception("Supabase credentials not available, using SQL fallback")
+                    
+            except Exception as e:
+                logger.warning(f"[INCREMENTAL] Supabase native API failed: {e}, falling back to SQL")
+                # Fallback to fixed SQL queries
+                scores_query = "SELECT id, profile_id, type, score, data, score_date_time, created_at, updated_at FROM scores WHERE profile_id = $1 AND created_at >= $2 ORDER BY created_at DESC LIMIT $3"
+                biomarkers_query = "SELECT id, profile_id, category, type, data, start_date_time, end_date_time, created_at, updated_at FROM biomarkers WHERE profile_id = $1 AND created_at >= $2 ORDER BY created_at DESC LIMIT $3"
+                
+                # Parallel fetch for efficiency
+                scores_task = db.fetch(scores_query, user_id, since_timestamp, self.max_records)
+                biomarkers_task = db.fetch(biomarkers_query, user_id, since_timestamp, self.max_records)
+                
+                scores_rows, biomarkers_rows = await asyncio.gather(
+                    scores_task, biomarkers_task
+                )
+            
+            # Get archetypes (always use existing method)
+            archetypes = await self.fetch_user_archetypes(user_id)
             
             # Process scores
             scores = []
@@ -410,9 +463,9 @@ class UserDataService:
                         'type': row['type'],
                         'score': float(row['score']),
                         'data': row['data'] if isinstance(row['data'], dict) else {},
-                        'score_date_time': row['score_date_time'],
-                        'created_at': row['created_at'],
-                        'updated_at': row['updated_at']
+                        'score_date_time': self._parse_datetime_field(row['score_date_time']),
+                        'created_at': self._parse_datetime_field(row['created_at']),
+                        'updated_at': self._parse_datetime_field(row['updated_at'])
                     }
                     scores.append(score_data)
                 except Exception as e:
@@ -428,10 +481,10 @@ class UserDataService:
                         'category': row['category'],
                         'type': row['type'],
                         'data': row['data'] if isinstance(row['data'], dict) else {},
-                        'start_date_time': row['start_date_time'],
-                        'end_date_time': row['end_date_time'],
-                        'created_at': row['created_at'],
-                        'updated_at': row['updated_at']
+                        'start_date_time': self._parse_datetime_field(row['start_date_time']),
+                        'end_date_time': self._parse_datetime_field(row['end_date_time']),
+                        'created_at': self._parse_datetime_field(row['created_at']),
+                        'updated_at': self._parse_datetime_field(row['updated_at'])
                     }
                     biomarkers.append(biomarker_data)
                 except Exception as e:
@@ -478,6 +531,12 @@ class UserDataService:
             # First analysis - get 7 days baseline
             logger.info(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days baseline")
             print(f"📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline")
+            
+            # CRITICAL FIX: Update analysis timestamp BEFORE fetching data
+            analysis_start_time = datetime.now(timezone.utc)
+            await tracker.update_analysis_time(user_id, analysis_start_time)
+            logger.info(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
+            
             result = await self.get_user_health_data(user_id, days=7)
             
             # For first analysis, calculate latest timestamp from the fetched data
@@ -511,6 +570,11 @@ class UserDataService:
         print(f"📊 INCREMENTAL_SYNC: Fetching new data since {last_analysis.strftime('%Y-%m-%d %H:%M')}")
         
         try:
+            # CRITICAL FIX: Update analysis timestamp BEFORE fetching incremental data
+            analysis_start_time = datetime.now(timezone.utc)
+            await tracker.update_analysis_time(user_id, analysis_start_time)
+            logger.info(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
+            
             # Get ALL data since last analysis (true incremental)
             scores, biomarkers, archetypes, latest_data_timestamp = await self.fetch_data_since(user_id, last_analysis)
             
@@ -520,26 +584,57 @@ class UserDataService:
                 # Check if last_analysis is beyond all existing data (invalid timestamp scenario)
                 db = await self._ensure_db_connection()
                 
-<<<<<<< HEAD
-                # Get the actual latest data timestamp from database
-                actual_latest_query = """
-                    SELECT 
-                        GREATEST(
-                            COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp),
-                            COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)
-                        ) as actual_latest_timestamp
-                    FROM profiles 
-                    LEFT JOIN scores ON scores.profile_id = profiles.id
-                    LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
-                    WHERE profiles.id = $1
-                """
-=======
-                # Get the actual latest data timestamp from database - Fixed SQL parsing
-                actual_latest_query = "SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1"
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
-                
-                actual_latest_result = await db.fetch(actual_latest_query, user_id)
-                actual_latest_timestamp = actual_latest_result[0]['actual_latest_timestamp'] if actual_latest_result else datetime(1970, 1, 1, tzinfo=timezone.utc)
+                # Get the actual latest data timestamp using Supabase native API - no complex SQL
+                try:
+                    # Use Supabase native API to get latest timestamps
+                    from supabase import create_client
+                    import os
+                    
+                    supabase_url = os.getenv('SUPABASE_URL')
+                    supabase_key = os.getenv('SUPABASE_KEY')
+                    
+                    if supabase_url and supabase_key:
+                        supabase_client = create_client(supabase_url, supabase_key)
+                        
+                        # Get latest score timestamp
+                        latest_score = supabase_client.table('scores')\
+                            .select('created_at')\
+                            .eq('profile_id', user_id)\
+                            .order('created_at', desc=True)\
+                            .limit(1)\
+                            .execute()
+                        
+                        # Get latest biomarker timestamp  
+                        latest_biomarker = supabase_client.table('biomarkers')\
+                            .select('created_at')\
+                            .eq('profile_id', user_id)\
+                            .order('created_at', desc=True)\
+                            .limit(1)\
+                            .execute()
+                        
+                        # Find the latest timestamp
+                        actual_latest_timestamp = datetime(1970, 1, 1, tzinfo=timezone.utc)
+                        
+                        if latest_score.data:
+                            score_time = self._parse_datetime_field(latest_score.data[0]['created_at'])
+                            if score_time:
+                                actual_latest_timestamp = max(actual_latest_timestamp, score_time)
+                        
+                        if latest_biomarker.data:
+                            biomarker_time = self._parse_datetime_field(latest_biomarker.data[0]['created_at'])
+                            if biomarker_time:
+                                actual_latest_timestamp = max(actual_latest_timestamp, biomarker_time)
+                        
+                        logger.info(f"[STALE_CHECK] Using Supabase native API for timestamp check")
+                        
+                    else:
+                        # Fallback - use current time if credentials not available
+                        actual_latest_timestamp = datetime.now(timezone.utc)
+                        logger.warning(f"[STALE_CHECK] Supabase credentials not available, using current time")
+                        
+                except Exception as e:
+                    logger.error(f"[STALE_CHECK] Failed to get actual latest timestamp: {e}")
+                    actual_latest_timestamp = datetime.now(timezone.utc)
                 
                 # If last_analysis is in the future relative to actual data, reset to initial analysis
                 if last_analysis > actual_latest_timestamp:

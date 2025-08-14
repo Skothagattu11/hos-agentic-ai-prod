@@ -8,12 +8,6 @@ python-dotenv
 structlog
 pytest
 pytest-asyncio
-agents
 openai
 typing-extensions
-<<<<<<< HEAD
-tensorflow
-aiohttp
-=======
-tensorflow
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+

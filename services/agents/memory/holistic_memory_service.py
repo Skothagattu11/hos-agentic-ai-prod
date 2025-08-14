@@ -515,11 +515,21 @@ class HolisticMemoryService:
             
             history = []
             for row in rows:
+                # Parse JSON string to object if needed - CTO Fix for shared analysis
+                analysis_result = row['analysis_result']
+                if isinstance(analysis_result, str):
+                    try:
+                        import json
+                        analysis_result = json.loads(analysis_result)
+                    except (json.JSONDecodeError, TypeError):
+                        logger.warning(f"[ANALYSIS_HISTORY] Failed to parse JSON analysis_result for {row['id']}")
+                        # Keep as string if parsing fails
+                        
                 history.append(AnalysisHistory(
                     analysis_id=str(row['id']),
                     user_id=row['user_id'],
                     analysis_type=row['analysis_type'],
-                    analysis_result=row['analysis_result'],
+                    analysis_result=analysis_result,
                     created_at=row['created_at'],
                     archetype_used=row['archetype']
                 ))

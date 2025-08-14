@@ -16,14 +16,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. **Import Errors Resolved (HTTP 500 → ✅)**
    ```python
    # Fixed in /services/api_gateway/openai_main.py:
-<<<<<<< HEAD
-   # OLD: from services.agents.routine_plan_agent import run_routine_planning_gpt4o
-   # NEW: from services.agents.routine.main import run_routine_planning_gpt4o
-=======
    # The on-demand endpoints were trying to import non-existent functions
    # Solution: Use existing working functions run_routine_planning_4o and run_nutrition_planning_4o
    # These functions are already in openai_main.py and work perfectly in /api/analyze endpoint
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+
    ```
 
 2. **Memory Constraint Violations Resolved (409 Conflicts → ✅)**
@@ -36,23 +32,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **Solution**: Implemented OnDemandAnalysisService with smart thresholds
    - **Result**: Analysis only triggers when routine/nutrition plans requested
 
-<<<<<<< HEAD
-**🧠 NEW ARCHITECTURE: On-Demand Analysis System**
-
-```python
-# NEW FILE: /services/ondemand_analysis_service.py
-class OnDemandAnalysisService:
-    async def should_run_analysis(self, user_id: str) -> Tuple[AnalysisDecision, Dict]:
-        # Smart threshold logic:
-        # - Rich memory: 35 points threshold
-        # - Developing memory: 42 points threshold  
-        # - Sparse memory: 60 points threshold
-        
-        # Three-tier response system:
-        # - FRESH_ANALYSIS: New analysis needed
-        # - MEMORY_ENHANCED_CACHE: Use enhanced cached results
-        # - STALE_FORCE_REFRESH: Force refresh despite cache
-=======
 **🧠 NEW ARCHITECTURE: Independent Endpoint System**
 
 ```python
@@ -78,7 +57,7 @@ class OnDemandAnalysisService:
     async def should_run_analysis(self, user_id: str) -> AnalysisDecision:
         # Simple constraint: 50+ new data points = fresh analysis
         # Otherwise use cached analysis from memory system
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+
 ```
 
 **📊 SYSTEM STATUS VERIFIED:**
@@ -384,12 +363,9 @@ python start_openai.py
 ### Key Files Modified in Phase 4.2 Session:
 
 1. **`/services/api_gateway/openai_main.py`**
-<<<<<<< HEAD
-   - Fixed import paths: `routine.main` and `nutrition.main`
-=======
    - Fixed routine/nutrition on-demand endpoints to use existing working functions
    - Functions `run_routine_planning_4o` and `run_nutrition_planning_4o` already exist and work
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+
    - Updated PlanGenerationRequest model (removed user_id field)
    - Enhanced system_info endpoint with Phase 4.2 indicators
    - Updated scheduler status to reflect on-demand system
@@ -451,18 +427,6 @@ AnalysisDecision = Enum("AnalysisDecision", [
 
 ### Issues Resolved This Session:
 1. ✅ Import path errors causing HTTP 500 on routine/nutrition generation
-<<<<<<< HEAD
-2. ✅ Memory constraint violations (409 conflicts) in database operations
-3. ✅ Automatic scheduler replaced with user-preferred on-demand system
-4. ✅ Phase 4.2 feature detection enhanced in test script
-5. ✅ PlanGenerationRequest model validation errors (HTTP 422)
-
-### Ready for Next Session:
-- System is fully operational with Phase 4.2 memory-enhanced features
-- All critical bugs resolved and verified
-- On-demand analysis architecture successfully implemented
-- Test suite updated for comprehensive Phase 4.2 validation
-=======
    - **Root Cause**: On-demand endpoints tried to import non-existent functions
    - **Solution**: Used existing `run_routine_planning_4o` and `run_nutrition_planning_4o` functions
    - **Evidence**: `/api/analyze` endpoint works perfectly, uses same functions
@@ -509,7 +473,7 @@ GET  /api/scheduler/status                   <- Updated to reflect new architect
 ```
 
 **TESTING READY:** All endpoints should work independently while respecting the 50-item constraint.
->>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
+
 
 ## Resources
 
