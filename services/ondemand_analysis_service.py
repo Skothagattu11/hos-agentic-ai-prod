@@ -117,6 +117,16 @@ class OnDemandAnalysisService:
             new_data_count = await self._count_new_data_points(user_id, last_analysis)
             metadata["new_data_points"] = new_data_count
             
+<<<<<<< HEAD
+=======
+            # CTO DEBUG: Log data counting details for debugging
+            logger.info(f"[ONDEMAND_DEBUG] User {user_id[:8]}... data count check:")
+            logger.info(f"  - Last analysis: {last_analysis.isoformat()}")
+            logger.info(f"  - Time since: {hours_since:.1f} hours")
+            logger.info(f"  - New data points found: {new_data_count}")
+            logger.info(f"  - Threshold will be: calculating...")
+            
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
             # Assess memory quality and calculate threshold
             memory_quality = await self._assess_memory_quality(user_id)
             metadata["memory_quality"] = memory_quality

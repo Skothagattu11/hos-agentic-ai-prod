@@ -1,3 +1,4 @@
+<<<<<<< HEAD
  [ROUTINE_GENERATE] Processing routine request for user 35pDPUIf...      
 ❌ [ROUTINE_GENERATE_ERROR] Failed to generate routine for 35pDPUIfAoRl2Y700bFkxPKYjjf2: No module named 'services.agents.routine_plan_agent'
 INFO:     127.0.0.1:54887 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/routine/generate HTTP/1.1" 500 Internal Server Error
@@ -245,3 +246,708 @@ INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/
 INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Updated analysis time for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-13T21:06:46.150405+00:00       
 ✅ Updated analysis timestamp for 35pDPUIfAoRl2Y700bFkxPKYjjf2 to 2025-08-13T21:06:46.150405+00:00
 INFO:     127.0.0.1:54982 - "POST /api/analyze HTTP/1.1" 200 OK
+=======
+(venv) PS C:\dev_skoth\health-agent-main\holisticos-mvp> python start_openai.py
+🚀 Starting HolisticOS OpenAI API...
+✅ Environment ready - Starting server on http://localhost:8001
+   Docs: http://localhost:8001/docs
+   Health: http://localhost:8001/api/health
+==================================================
+INFO:     Will watch for changes in these directories: ['C:\\dev_skoth\\health-agent-main\\holisticos-mvp']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [20060] using StatReload
+✅ [INTEGRATION] Health data endpoints added successfully
+📡 [ENDPOINTS] Real user data endpoints now available:
+INFO:     Started server process [39864]
+INFO:     Waiting for application startup.
+🚀 Initializing HolisticOS Multi-Agent System...
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=holistic_orchestrator agent_type=orchestrator system_prompt_length=5320
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=memory_management_agent agent_type=memory_management system_prompt_length=7499
+INFO:services.agents.memory.main:Initialized HolisticMemoryAgent with system prompt length: 7499
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=insights_generation_agent agent_type=insights_generation system_prompt_length=11002
+INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771
+INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
+2025-08-14 12:46:18 [info     ] Direct agent instances created successfully
+ agent_id=holistic_orchestrator agent_type=orchestrator
+2025-08-14 12:46:18 [info     ] HolisticOS Multi-Agent Orchestrator initialized with 6 agents agent_id=holistic_orchestrator agent_type=orchestrator  
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=memory_management_agent agent_type=memory_management system_prompt_length=7499
+INFO:services.agents.memory.main:Initialized HolisticMemoryAgent with system prompt length: 7499
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=insights_generation_agent agent_type=insights_generation system_prompt_length=11002
+INFO:services.agents.insights.main:Initialized HolisticInsightsAgent with system prompt length: 11002
+2025-08-14 12:46:18 [info     ] Agent initialized              agent_id=adaptation_engine_agent agent_type=adaptation_engine system_prompt_length=13771
+INFO:services.agents.adaptation.main:Initialized HolisticAdaptationEngine with system prompt length: 13771
+✅ Using on-demand behavior analysis (automatic scheduler disabled)        
+✅ All agents initialized successfully
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51182 - "GET / HTTP/1.1" 200 OK
+🧠 [BEHAVIOR_ANALYZE] Starting behavior analysis for user 35pDPUIf...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.ondemand_analysis_service:[ONDEMAND] Initialized on-demand analysis service
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+📊 [BEHAVIOR_ANALYZE] Analysis decision: fresh_analysis
+   • New data points: 0
+   • Threshold: 50
+   • Memory quality: sparse
+   • Reason: No previous analysis found - initial analysis required        
+🚀 [BEHAVIOR_ANALYZE] Running fresh behavior analysis...
+🧠 [BEHAVIOR_WRAPPER] Starting behavior analysis for 35pDPUIf...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] First analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2, fetching 7 days baseline
+📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline 
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1268ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 798ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1266ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.58s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Initial analysis completed in 2.64s
+INFO:services.user_data_service:[ANALYSIS_DATA] Latest data found: 2025-08-14T14:50:10.088698+00:00
+🧠 Running standalone behavior analysis with o3 model...
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+✅ [BEHAVIOR_WRAPPER] Behavior analysis completed successfully
+   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/1_behavior_analysis_20250814_124714.txt
+🔍 MEMORY DEBUG: Starting store_analysis_result for behavior_analysis      
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '58786758-0838-492c-86cc-057b03d47ac2', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'behavior_analysis', 'archetype': 'Foundation Builder', 'analysis_result': {'status': 'success', 'model_used': 'o3', 'data_quality': '2025-08-14 14:50:10.088698+00:00', 'archetype_used': 'Foundation Builder', 'behavior_analysis': {'model_used': 'o3', 'primary_goal': {'goal': 'Establish reliable daily movement and sleep-hygiene foundations to reduce fatigue and prepare for gradual weight-management work.', 'timeline': 'First 12 weeks', 'success_metrics': '• ≥7 000 steps on ≥5 days/wk for 4 consecutive weeks\n• Average nightly sleep ≥7 h with bedtime variation <30 min on weekdays\n• ≥90 % completion rate for simple hydration + breakfast check-ins'}, 'analysis_type': 'comprehensive_behavior', 'data_insights': 'Steps average 4 900/day (weekday 5 600 vs weekend 3 800), indicating opportunity for low-effort weekend movement boosts. Sleep averages 6 h 40 m with high bedtime variance, suggesting sleep duration may be limited by inconsistent onset rather than early waking. HRV has trended +2 ms over the last 4 weeks and RHR ‑1 bpm, supporting readiness for modest activity increases. Breakfast is skipped on 4 of 7 days, correlating with mid-morning energy dips flagged in subjective logs. Hydration is consistently 600 mL below guidelines, a likely contributor to reported afternoon fatigue. Early-week stress events coincide with lowest HRV readings, pointing to work-related triggers that may benefit from brief midday breathing exercises.', 'readiness_level': 'Medium', 'recommendations': ['Add a 10-minute walk immediately after breakfast every weekday; increase duration by 2 minutes each week until 20 minutes is comfortable.', 'Set a consistent 23:45 lights-out alarm and place phone outside bedroom to tighten bedtime window.', 'Prepare a simple grab-and-go breakfast (overnight oats or yogurt + fruit) the night before on Sundays-Thursdays.', 'Increase daily water intake target to 2 L by filling a 1 L bottle twice; log completion in the app at lunch and 18:00.', 'Block a 30-minute active outing on Saturdays (park stroll, light bike ride) and invite a friend/family member for accountability.', 'Perform a 5-minute evening wind-down stretch routine on YouTube before screen cutoff to enhance sleep onset.', 'Review weekly progress every Sunday at 19:00; celebrate streaks of ≥5 goal-days with a non-food reward (e.g., new playlist).', 'Enable app push-reminders for unlogged days after 20:00 to reduce missing data and reinforce routine.'], 'behavioral_signature': {'signature': 'The user shows emerging but fragile health-habit foundations: weekday-biased tracking adherence (≈80 % of logged data occurs Mon-Fri), with morning check-ins completed between 07:00-09:00 and an evening engagement drop-off after 20:00. Physical-activity logs reveal a low-but-stable step baseline (≈4 900 steps/day) with clear weekday > weekend disparity (-1 800 steps on Sat/Sun). Sleep patterns indicate late, inconsistent bedtimes (median 00:30, SD 55 min) and modest sleep debt (avg 6 h 40 m), offset by weekend oversleep (+90 m). Nutritional tracking is partial (food logs on 65 % of days) with frequent breakfast omission (4×/wk) and hydration below guideline (1.4 L/day). Physiological recovery markers (RHR 72 bpm, HRV 34 ms) are neutral-to-improving, suggesting capacity for gentle load increase. Overall, behavior exhibits starter-level consistency punctuated by environmental disruptions (work stress spikes early-week) and limited evening energy.', 'confidence': 0.72}, 'personalized_strategy': {'habit_integration': 'Anchor 10-min morning walk to existing commute start; set fixed digital sunset routine (screens dimmed 23:30) to cue bedtime; place filled water bottle at desk each morning to prompt sipping.', 'barrier_mitigation': 'Pre-plan weekend activity (e.g., Saturday park walk) to counter step drop; use 2-minute rule for overwhelmed evenings (stretch or brief mobility instead of full workout); schedule calendar reminders for breakfast prep to avoid last-minute skipping.', 'motivation_drivers': 'Positive reinforcement from visible streaks, feeling more energized for family time, and small tangible wins (e.g., closing activity ring).'}, 'sophistication_assessment': {'score': 35, 'category': 'Beginner', 'justification': 'User logs core metrics but at uneven frequency, relies on default goal settings, and has not yet integrated advanced tracking or periodized routines. Habit strength is nascent and easily disrupted by schedule changes.'}}}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:47:16.486073+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}
+📊 MEMORY: Stored behavior_analysis analysis for user 35pDPUIf... ID: 58786758-0838-492c-86cc-057b03d47ac2
+✅ [BEHAVIOR_ANALYZE] Fresh analysis completed and stored
+INFO:     127.0.0.1:51184 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/behavior/analyze HTTP/1.1" 200 OK
+🧠 [BEHAVIOR_ANALYZE] Starting behavior analysis for user 35pDPUIf...      
+📊 [BEHAVIOR_ANALYZE] Analysis decision: fresh_analysis
+   • New data points: 0
+   • Threshold: 50
+   • Memory quality: sparse
+   • Reason: Force refresh requested by user
+🚀 [BEHAVIOR_ANALYZE] Running fresh behavior analysis...
+🧠 [BEHAVIOR_WRAPPER] Starting behavior analysis for 35pDPUIf...
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] First analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2, fetching 7 days baseline
+📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline 
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 908ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 2019ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1716ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 2.19s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Initial analysis completed in 3.88s
+INFO:services.user_data_service:[ANALYSIS_DATA] Latest data found: 2025-08-14T14:50:10.088698+00:00
+🧠 Running standalone behavior analysis with o3 model...
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+✅ [BEHAVIOR_WRAPPER] Behavior analysis completed successfully
+   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/1_behavior_analysis_20250814_124742.txt
+🔍 MEMORY DEBUG: Starting store_analysis_result for behavior_analysis      
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '1056bc77-58cb-4b0b-80a5-0b08807638a9', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'behavior_analysis', 'archetype': 'Foundation Builder', 'analysis_result': {'status': 'success', 'model_used': 'o3', 'data_quality': '2025-08-14 14:50:10.088698+00:00', 'archetype_used': 'Foundation Builder', 'behavior_analysis': {'model_used': 'o3', 'primary_goal': {'goal': 'Establish consistent daily health routine focusing on movement, regular meals, and sufficient sleep.', 'timeline': 'First stable routine within 6-8 weeks; consolidation by month 3.', 'success_metrics': '≥5 tracked days/week for core metrics; average 7,000+ steps/day; ≥7 h sleep on 70 % of nights; completion of simple meal log on ≥4 days/week.'}, 'analysis_type': 'comprehensive_behavior', 'data_insights': 'Dataset shows 56 % overall logging adherence over past 30 days, with higher reliability on automated metrics (steps, sleep) than manual (nutrition 38 %, mood 42 %). Median step count is 6,200 with upward trend of +4 %/week. Sleep duration averages 6 h 45 min on weekdays and 7 h 30 min on weekends, suggesting opportunity to standardise bedtime. Mood scores correlate positively (r ≈ 0.34) with nights >7 h sleep. Missed logs cluster on Mondays and during high-workload days (calendar tags), highlighting situational barriers.', 'readiness_level': 'Medium', 'recommendations': ['Set one consistent ‘Daily Core’ checklist (steps, sleep, water) and aim for a 5-day streak before adding new metrics.', 'Shift logging window to within 30 min of evening routine trigger (e.g., after tooth-brushing) to leverage contextual cueing.', 'Use phone lock-screen widget to display step count progress throughout day to nudge movement.', 'Implement a Friday 5-minute review: glance at weekly graphs, note one win and one improvement area.', 'Introduce low-friction breakfast prep the night before to improve nutrition consistency.', 'Schedule a 10-min light stretch break during mid-afternoon slump to boost energy and reinforce movement habit.'], 'behavioral_signature': {'signature': 'User shows early-stage, exploratory engagement characterised by (1) irregular but gradually improving logging frequency (3–4 days/week), (2) preference for evening entries (18:00-22:00), (3) reliance on reminders to complete logs, and (4) higher completion rates for passive-capture metrics (steps, sleep) than for active self-reports (mood, nutrition). Overall pattern fits a Foundation Builder who is still building confidence and basic routine adherence.', 'confidence': 0.46}, 'personalized_strategy': {'habit_integration': 'Anchor logs to existing evening wind-down (after dinner); use ‘one-tap’ passive capture devices where possible; start with micro-commitments (2-min prep for next day lunch, 5-min stretch).', 'barrier_mitigation': 'Pre-schedule reminders at preferred times; prepare back-up options for busy days (e.g., 10-min walk); simplify food logging with photo capture; weekly reflection prompts to prevent all-or-nothing drop-offs.', 'motivation_drivers': 'Positive feedback loops, visible streaks, social encouragement from close contacts, and tangible short-term benefits (better energy next day).'}, 'sophistication_assessment': {'score': 27, 'category': 'Beginner', 'justification': 'Limited metric variety, inconsistent manual inputs, and dependence on in-app nudges indicate early-stage self-tracking skills. User demonstrates willingness to engage but has not yet developed automatic habits or data interpretation proficiency.'}}}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:47:43.62126+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}    
+📊 MEMORY: Stored behavior_analysis analysis for user 35pDPUIf... ID: 1056bc77-58cb-4b0b-80a5-0b08807638a9
+✅ [BEHAVIOR_ANALYZE] Fresh analysis completed and stored
+INFO:     127.0.0.1:51184 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/behavior/analyze HTTP/1.1" 200 OK
+🔄 [ROUTINE_GENERATE] Processing routine request for user 35pDPUIf...
+📞 [ROUTINE_GENERATE] Getting shared behavior analysis...
+🧠 [SHARED_ANALYSIS] Checking behavior analysis for 35pDPUIf...
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🚀 [SHARED_ANALYSIS] Running fresh behavior analysis (0 new points)        
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🆕 ANALYSIS_MODE: New user - initial analysis (7 days data)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory "HTTP/2 201 Created"
+📋 MEMORY_CONTEXT: initial mode, 7 days, 2 focus areas
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] No previous analysis found for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] First analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2, fetching 7 days baseline
+📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline 
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1627ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 929ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1537ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.96s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Initial analysis completed in 3.88s
+INFO:services.user_data_service:[ANALYSIS_DATA] Latest data found: 2025-08-14T14:50:10.088698+00:00
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing behavior_analysis prompt with memory context for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/1_behavior_analysis_20250814_124818.txt
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from behavior_analysis analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2       
+🔍 MEMORY DEBUG: Starting store_analysis_result for behavior_analysis      
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '796732c1-ee9b-43ba-971f-84e7a24acf89', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'behavior_analysis', 'archetype': 'Foundation Builder', 'analysis_result': {'model_used': 'o3', 'primary_goal': {'goal': 'Establish a reliable, low-friction daily activity routine while maintaining current high sleep quality.', 'timeline': 'Next 8 weeks', 'success_metrics': '• Raise Activity Score from 0.54 → ≥0.65\n• Log ≥5 activity sessions per week (≥15 min each)\n• Maintain Sleep Score ≥0.80 and Sleep Efficiency ≥85 %'}, 'analysis_type': 'comprehensive_behavior', 'data_insights': 'Sleep metrics are the strongest domain: latency low, interruptions minimal, and efficiency high, correlating with a Resting HR in the healthy range. Mental Wellbeing trends improve on nights with the longest Sleep Duration, supporting sleep-mood linkage. Activity data are limited (3 sessions) and show variability in timing, hinting at lack of routine rather than capacity constraint. No red-flag biomarkers observed, but single-point readings limit certainty; progressive data collection is needed to verify baseline vitals. Overall readiness (0.77) suggests capacity to take on light daily activity without recovery risk.', 'readiness_level': 'Medium', 'recommendations': ['Schedule a consistent 10-15 min morning walk on ≥5 days this week and log it in the app.', 'Add a 5-min bedtime stretch or breathing exercise nightly to reinforce sleep quality.', 'Set a bedtime alarm 30 min before desired sleep start to preserve current sleep metrics.', 'Enable step-count or heart-rate auto-import to enrich activity data and reduce manual logging friction.', 'Conduct a short Sunday review: note how activity affected mood/readiness and set specific targets for the next week.'], 'behavioral_signature': {'signature': 'User shows strong baseline engagement with sleep hygiene (Sleep Score 0.81, minimal latency and high efficiency) and a willingness to record health data (100 % data coverage, EXCELLENT quality). Activity behavior is currently sparse (3 logged sessions, Activity Score 0.54) and appears reactive rather than routine, suggesting the user is still experimenting with where exercise fits into daily life. Mental-wellbeing scores trend mid-range (0.74) and follow sleep quality, indicating restorative sleep is already a primary regulator of mood. Overall pattern fits a classic Foundation Builder: solid starting point in one domain (sleep) with opportunity to scaffold simple, confidence-building routines in movement and daily stress management.', 'confidence': 0.62}, 'personalized_strategy': {'habit_integration': '1. Anchor a 10-15 min brisk walk immediately after the most consistent daily cue (e.g., finishing breakfast).\n2. Pair a 5-min evening stretch with the existing bedtime routine to reinforce sleep quality and add gentle mobility.\n3. Use a weekly ‘habit check-in’ Sunday evening to review Activity Score and plan the coming week.', 'barrier_mitigation': '• Time scarcity: keep sessions <15 min to reduce perceived time cost.\n• Weather/Environment: create an indoor backup (body-weight circuit or walking video) for bad weather days.\n• Motivation dips: set a visible tracker (phone widget or wall calendar) that rewards streaks of ≥3 consecutive active days.', 'motivation_drivers': 'Quick wins that produce tangible energy boosts; positive feedback from consistent tracking; desire for simple, sustainable habits rather than drastic overhauls.'}, 'sophistication_assessment': {'score': 32, 'category': 'Beginner', 'justification': 'New HolisticOS user with only one week of measurements, limited biomarker depth (single readings per metric), and early-stage habit experimentation. Demonstrates basic tracking competence but has not yet integrated structured activity or multi-domain optimization.'}}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:48:19.537875+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}
+📊 MEMORY: Stored behavior_analysis analysis for user 35pDPUIf... ID: 796732c1-ee9b-43ba-971f-84e7a24acf89
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: 796732c1-ee9b-43ba-971f-84e7a24acf89
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Updating memory profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=id&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjj "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory "HTTP/2 201 Created"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=id&user_id=eq.3 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Memory profile updated for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Updated analysis time for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00       
+✅ [SHARED_ANALYSIS] Fresh behavior analysis completed for 35pDPUIf        
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Cleanup completed   
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Service cleaned up
+✅ [ROUTINE_GENERATE] Got shared behavior analysis (shared)
+   • Analysis source: Shared behavior analysis service
+   • Eliminates duplicate OpenAI calls
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 2.0 hours ago at 2025-08-14T14:50:10.088698+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-14T14:50:10.088698+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 2.0 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-14 14:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-14T14:50:10.088698+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.21s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-14 14:50:10.088698+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles%20LEFT%20JOIN%20scores%20ON%20scores.profile_id%20=%20profiles.id%20LEFT%20JOIN%20biomarkers%20ON%20biomarkers.profile_id%20=%20profiles.id?select=GREATEST%28COALESCE%28MAX%28scores.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%2CCOALESCE%28MAX%28biomarkers.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%29asactual_latest_timestamp&profiles.id=eq.3 "HTTP/2 400 Bad Request"
+[ERROR] Query fetch failed: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+[DEBUG] Original Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id        
+[DEBUG] Processed Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1123ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1684ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 1056ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.84s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing routine_planning prompt with memory context for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+🏃 [MEMORY_ENHANCED] Starting memory-enhanced routine generation for 35pDPUIf...
+📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...    
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+📊 PROFILE_CHECK: Found last_analysis_at = 2025-08-14T14:50:10.088698+00:00
+✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)
+⏱️ ANALYSIS_MODE: Last analysis was 118.4 minutes ago (2.0 hours, 0 days) ffrom profiles
+🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory "HTTP/2 201 Created"
+📋 MEMORY_CONTEXT: follow_up mode, 1 days, 4 focus areas
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 2.0 hours ago at 2025-08-14T14:50:10.088698+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-14T14:50:10.088698+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 2.0 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-14 14:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-14T14:50:10.088698+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.30s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-14 14:50:10.088698+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles%20LEFT%20JOIN%20scores%20ON%20scores.profile_id%20=%20profiles.id%20LEFT%20JOIN%20biomarkers%20ON%20biomarkers.profile_id%20=%20profiles.id?select=GREATEST%28COALESCE%28MAX%28scores.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%2CCOALESCE%28MAX%28biomarkers.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%29asactual_latest_timestamp&profiles.id=eq.3 "HTTP/2 400 Bad Request"
+[ERROR] Query fetch failed: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+[DEBUG] Original Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id        
+[DEBUG] Processed Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1536ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 887ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1406ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.85s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🗓️ [MEMORY_ENHANCED] Using 1 days of data for routine (mode: follow_up)    
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+🧠 MEMORY_ENHANCED: Prompt enhanced with 2 memory elements
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced routine_plan prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+5653 chars)
+
+count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🗓️ [MEMORY_ENHANCED] Using 1 days of data for routine (mode: follow_up)    
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+🧠 MEMORY_ENHANCED: Prompt enhanced with 2 memory elements
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced routine_plan prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+5653 chars)
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+💾 [MEMORY_ENHANCED] Storing routine plan insights in memory...
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from routine_plan analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🔍 MEMORY DEBUG: Starting store_analysis_result for routine_plan
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '6f7cd9de-0d7f-4701-bfd1-d85c28115f0c', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'routine_plan', 'archetype': 'Foundation Builder', 'analysis_result': {'date': '2025-08-14', 'system': 'HolisticOS', 'content': "**Comprehensive Foundation Builder Routine Plan for Today**\n\n**Morning Wakeup (6:00 AM - 8:00 AM)**\n\n- **6:00 AM - 6:15 AM: Hydration and Light Activation**\n  - **Task:** Drink a glass of water upon waking to rehydrate after sleep.\n  - **Reasoning:** Hydration is crucial after a night's sleep to kickstart metabolism and cognitive function.\n  - **Customization:** This aligns with your high sleep efficiency, ensuring you start the day refreshed.\n\n- **6:15 AM - 6:30 AM: Morning Mindfulness**\n  - **Task:** Engage in a 5-minute mindfulness meditation or breathing exercise.\n  - **Reasoning:** Mindfulness practices can enhance mood and focus, setting a positive tone for the day.\n  - **Customization:** This supports your mental wellbeing trend, which is linked to sleep quality.\n\n- **6:30 AM - 6:45 AM: Brisk Walk**\n  - **Task:** Take a 10-15 minute brisk walk, ideally after breakfast.\n  - **Reasoning:** Morning walks improve circulation, energy levels, and help establish a consistent routine.\n  - **Customization:** This aligns with the recommendation to log ≥5 activity sessions per week and supports your goal of raising the Activity Score.\n\n**Focus Block (9:00 AM - 12:00 PM)**\n\n- **9:00 AM - 10:30 AM: Peak Productivity Task**\n  - **Task:** Focus on a high-priority task that requires concentration.\n  - **Reasoning:** Morning is often the most productive time for cognitive tasks due to natural circadian rhythms.\n  - **Customization:** Utilize your readiness level (0.77) to tackle challenging tasks when your energy is optimal.\n\n- **10:30 AM - 10:45 AM: Short Break**\n  - **Task:** Take a 15-minute break to stretch or walk.\n  - **Reasoning:** Regular breaks prevent cognitive fatigue and maintain productivity.\n  - **Customization:** Incorporate light activity to gradually build a movement routine.\n\n- **10:45 AM - 12:00 PM: Continue Focus Tasks**\n  - **Task:** Resume work on remaining tasks or new priorities.\n  - **Reasoning:** Sustained focus with breaks enhances productivity and task completion.\n  - **Customization:** Aligns with your archetype's need for structured, consistent routines.\n\n**Afternoon Recharge (1:00 PM - 4:00 PM)**\n\n- **1:00 PM - 1:30 PM: Lunch and Light Activity**\n  - **Task:** Enjoy a balanced lunch followed by a brief walk or stretching.\n  - **Reasoning:** Post-lunch activity aids digestion and prevents afternoon energy slumps.\n  - **Customization:** Supports the goal of integrating simple, sustainable habits.\n\n- **2:00 PM - 3:00 PM: Creative or Low-Intensity Task**\n  - **Task:** Engage in creative work or low-intensity tasks.\n  - **Reasoning:** Afternoon energy dips can be countered with less demanding tasks.\n  - **Customization:** Aligns with your current activity pattern and readiness to maintain engagement.\n\n- **3:00 PM - 3:15 PM: Short Refresh Break**\n  - **Task:** Take a break for a healthy snack or hydration.\n  - **Reasoning:** Mid-afternoon breaks replenish energy and improve focus.\n  - **Customization:** Reinforces hydration and energy maintenance strategies.\n\n**Evening Winddown (8:00 PM - 10:00 PM)**\n\n- **8:00 PM - 8:30 PM: Evening Stretch or Breathing Exercise**\n  - **Task:** Perform a 5-minute stretching routine or breathing exercise.\n  - **Reasoning:** Evening stretches promote relaxation and prepare the body for restful sleep.\n  - **Customization:** Reinforces your high sleep quality and supports the goal of maintaining sleep metrics.\n\n- **8:30 PM - 9:00 PM: Light Reading or Relaxation**\n  - **Task:** Engage in light reading or a calming activity.\n  - **Reasoning:** Reduces screen time and mental stimulation before bed, enhancing sleep quality.\n  - **Customization:** Supports mental wellbeing by offering a calming transition to sleep.\n\n- **9:30 PM: Set Bedtime Alarm and Prepare for Sleep**\n  - **Task:** Set a bedtime alarm 30 minutes before desired sleep time.\n  - **Reasoning:** A consistent sleep schedule preserves sleep quality and efficiency.\n  - **Customization:** Aligns with your goal to maintain a Sleep Score ≥0.80.\n\nThis routine plan is designed to build confidence and establish a reliable daily structure, leveraging your strong sleep patterns and focusing on gradual activity integration. The plan supports your primary goal of creating a low-friction daily activity routine while maintaining high sleep quality.", 'archetype': 'Foundation Builder', 'plan_type': 'comprehensive_routine', 'model_used': 'gpt-4o'}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:49:07.09261+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}     
+📊 MEMORY: Stored routine_plan analysis for user 35pDPUIf... ID: 6f7cd9de-0d7f-4701-bfd1-d85c28115f0c
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: 6f7cd9de-0d7f-4701-bfd1-d85c28115f0c
+✅ [MEMORY_ENHANCED] Routine plan insights stored successfully
+💾 [MEMORY_ENHANCED] Storing complete routine plan in database...
+🔍 MEMORY DEBUG: Starting store_analysis_result for routine_plan
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': '465742a5-a3e5-42a3-bcb5-b0b6f4daadde', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'routine_plan', 'archetype': 'Foundation Builder', 'analysis_result': {'date': '2025-08-14', 'system': 'HolisticOS', 'content': "**Comprehensive Foundation Builder Routine Plan for Today**\n\n**Morning Wakeup (6:00 AM - 8:00 AM)**\n\n- **6:00 AM - 6:15 AM: Hydration and Light Activation**\n  - **Task:** Drink a glass of water upon waking to rehydrate after sleep.\n  - **Reasoning:** Hydration is crucial after a night's sleep to kickstart metabolism and cognitive function.\n  - **Customization:** This aligns with your high sleep efficiency, ensuring you start the day refreshed.\n\n- **6:15 AM - 6:30 AM: Morning Mindfulness**\n  - **Task:** Engage in a 5-minute mindfulness meditation or breathing exercise.\n  - **Reasoning:** Mindfulness practices can enhance mood and focus, setting a positive tone for the day.\n  - **Customization:** This supports your mental wellbeing trend, which is linked to sleep quality.\n\n- **6:30 AM - 6:45 AM: Brisk Walk**\n  - **Task:** Take a 10-15 minute brisk walk, ideally after breakfast.\n  - **Reasoning:** Morning walks improve circulation, energy levels, and help establish a consistent routine.\n  - **Customization:** This aligns with the recommendation to log ≥5 activity sessions per week and supports your goal of raising the Activity Score.\n\n**Focus Block (9:00 AM - 12:00 PM)**\n\n- **9:00 AM - 10:30 AM: Peak Productivity Task**\n  - **Task:** Focus on a high-priority task that requires concentration.\n  - **Reasoning:** Morning is often the most productive time for cognitive tasks due to natural circadian rhythms.\n  - **Customization:** Utilize your readiness level (0.77) to tackle challenging tasks when your energy is optimal.\n\n- **10:30 AM - 10:45 AM: Short Break**\n  - **Task:** Take a 15-minute break to stretch or walk.\n  - **Reasoning:** Regular breaks prevent cognitive fatigue and maintain productivity.\n  - **Customization:** Incorporate light activity to gradually build a movement routine.\n\n- **10:45 AM - 12:00 PM: Continue Focus Tasks**\n  - **Task:** Resume work on remaining tasks or new priorities.\n  - **Reasoning:** Sustained focus with breaks enhances productivity and task completion.\n  - **Customization:** Aligns with your archetype's need for structured, consistent routines.\n\n**Afternoon Recharge (1:00 PM - 4:00 PM)**\n\n- **1:00 PM - 1:30 PM: Lunch and Light Activity**\n  - **Task:** Enjoy a balanced lunch followed by a brief walk or stretching.\n  - **Reasoning:** Post-lunch activity aids digestion and prevents afternoon energy slumps.\n  - **Customization:** Supports the goal of integrating simple, sustainable habits.\n\n- **2:00 PM - 3:00 PM: Creative or Low-Intensity Task**\n  - **Task:** Engage in creative work or low-intensity tasks.\n  - **Reasoning:** Afternoon energy dips can be countered with less demanding tasks.\n  - **Customization:** Aligns with your current activity pattern and readiness to maintain engagement.\n\n- **3:00 PM - 3:15 PM: Short Refresh Break**\n  - **Task:** Take a break for a healthy snack or hydration.\n  - **Reasoning:** Mid-afternoon breaks replenish energy and improve focus.\n  - **Customization:** Reinforces hydration and energy maintenance strategies.\n\n**Evening Winddown (8:00 PM - 10:00 PM)**\n\n- **8:00 PM - 8:30 PM: Evening Stretch or Breathing Exercise**\n  - **Task:** Perform a 5-minute stretching routine or breathing exercise.\n  - **Reasoning:** Evening stretches promote relaxation and prepare the body for restful sleep.\n  - **Customization:** Reinforces your high sleep quality and supports the goal of maintaining sleep metrics.\n\n- **8:30 PM - 9:00 PM: Light Reading or Relaxation**\n  - **Task:** Engage in light reading or a calming activity.\n  - **Reasoning:** Reduces screen time and mental stimulation before bed, enhancing sleep quality.\n  - **Customization:** Supports mental wellbeing by offering a calming transition to sleep.\n\n- **9:30 PM: Set Bedtime Alarm and Prepare for Sleep**\n  - **Task:** Set a bedtime alarm 30 minutes before desired sleep time.\n  - **Reasoning:** A consistent sleep schedule preserves sleep quality and efficiency.\n  - **Customization:** Aligns with your goal to maintain a Sleep Score ≥0.80.\n\nThis routine plan is designed to build confidence and establish a reliable daily structure, leveraging your strong sleep patterns and focusing on gradual activity integration. The plan supports your primary goal of creating a low-friction daily activity routine while maintaining high sleep quality.", 'archetype': 'Foundation Builder', 'plan_type': 'comprehensive_routine', 'model_used': 'gpt-4o'}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:49:08.350991+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}    
+📊 MEMORY: Stored routine_plan analysis for user 35pDPUIf... ID: 465742a5-a3e5-42a3-bcb5-b0b6f4daadde
+✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: 465742a5-a3e5-42a3-bcb5-b0b6f4daadde
+📝 Analysis logged: logs/input_1.txt, logs/output_1.txt
+📝 [MEMORY_ENHANCED] Complete standalone analysis logged to files 1        
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Service cleaned up
+✅ [MEMORY_ENHANCED] Memory-enhanced routine generation completed for 35pDPUIf
+INFO:     127.0.0.1:51256 - "POST /api/user/35pDPUIfAoRl2Y700bFkxPKYjjf2/routine/generate HTTP/1.1" 200 OK
+🔄 [NUTRITION_GENERATE] Processing nutrition request for user 35pDPUIf...
+📞 [NUTRITION_GENERATE] Getting shared behavior analysis...
+🧠 [SHARED_ANALYSIS] Checking behavior analysis for 35pDPUIf...
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&created_at=gt.2025-08-14T14%3A50%3A10.088698%2B00%3A00 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&created_at=gt.2025-08-14T14%3A50%3A10.088698%2B00%3A00 "HTTP/2 200 OK"
+INFO:services.ondemand_analysis_service:[ONDEMAND] User 35pDPUIf... has 105 new data points since 2025-08-14T14:50:10.088698+00:00
+INFO:services.ondemand_analysis_service:[ONDEMAND_DEBUG] User 35pDPUIf... data count check:
+INFO:services.ondemand_analysis_service:  - Last analysis: 2025-08-14T14:50:10.088698+00:00
+INFO:services.ondemand_analysis_service:  - Time since: 2.0 hours
+INFO:services.ondemand_analysis_service:  - New data points found: 105     
+INFO:services.ondemand_analysis_service:  - Threshold will be: calculating...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+🚀 [SHARED_ANALYSIS] Running fresh behavior analysis (105 new points)
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+📊 PROFILE_CHECK: Found last_analysis_at = 2025-08-14T14:50:10.088698+00:00
+✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)
+⏱️ ANALYSIS_MODE: Last analysis was 119.1 minutes ago (2.0 hours, 0 days) ffrom profiles
+🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory "HTTP/2 201 Created"
+📋 MEMORY_CONTEXT: follow_up mode, 1 days, 4 focus areas
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 2.0 hours ago at 2025-08-14T14:50:10.088698+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-14T14:50:10.088698+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 2.0 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-14 14:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-14T14:50:10.088698+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.13s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-14 14:50:10.088698+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles%20LEFT%20JOIN%20scores%20ON%20scores.profile_id%20=%20profiles.id%20LEFT%20JOIN%20biomarkers%20ON%20biomarkers.profile_id%20=%20profiles.id?select=GREATEST%28COALESCE%28MAX%28scores.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%2CCOALESCE%28MAX%28biomarkers.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%29asactual_latest_timestamp&profiles.id=eq.3 "HTTP/2 400 Bad Request"
+[ERROR] Query fetch failed: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+[DEBUG] Original Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id        
+[DEBUG] Processed Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 700ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1761ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1466ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.94s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing behavior_analysis prompt with memory context for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+   📋 Agent handoff logged: behavior_analysis → logs/agent_handoffs/2_behavior_analysis_20250814_124948.txt
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Storing insights from behavior_analysis analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2       
+🔍 MEMORY DEBUG: Starting store_analysis_result for behavior_analysis      
+🔍 MEMORY DEBUG: DB connection established: <class 'shared_libs.supabase_client.adapter.SupabaseAsyncPGAdapter'>
+🔍 MEMORY DEBUG: Executing SQL insert...
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results "HTTP/2 201 Created"
+🔍 MEMORY DEBUG: SQL result: {'id': 'd54ad6aa-e82e-4e34-8dfd-b561cda9400e', 'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'analysis_type': 'behavior_analysis', 'archetype': 'Foundation Builder', 'analysis_result': {'model_used': 'o3', 'primary_goal': {'goal': 'Establish a sustainable baseline routine that keeps sleep quality high while gradually elevating daily physical activity.', 'timeline': 'Next 4–6 weeks', 'success_metrics': '• Maintain Sleep Score ≥0.80 on ≥5 nights per week; • Increase Activity Score to ≥0.65 (≥5,000–7,000 steps or equivalent) on ≥4 days per week; • Keep Readiness ≥0.75 on average; • Self-rated Mental Wellbeing ≥0.75 by week 6.'}, 'analysis_type': 'comprehensive_behavior', 'data_insights': 'Sleep dominates as current strength: single-night biomarker set shows 7 h 40 m in-bed with 92 % efficiency, latency <15 min, and only 8 min awake after sleep onset—excellent for a new user. Resting heart rate (58 bpm) aligns with good recovery. Activity lag—3 sessions over 7 days—likely explains middling Activity Score (0.54). Mental Wellbeing and overall Wellbeing scores hover in the mid-0.70s, consistent with decent mood but room for stress-management habits. Readiness (0.77) suggests physiological capacity to increase activity without overreaching. Prioritize translating robust sleep into daytime movement while safeguarding recovery.', 'readiness_level': 'Medium', 'recommendations': ['Track sleep consistently for all 7 nights this week to confirm current high-quality trend.', 'Add one additional light-to-moderate activity session (e.g., 20-min brisk walk or beginner YouTube mobility routine) on the weekend.', 'Aim for step count in the 5,000–7,000 range on at least 4 days; use a simple pedometer/phone widget for live feedback.', 'Perform a 2-minute breathing or gratitude exercise after evening routine to nudge Mental Wellbeing score toward ≥0.75.', 'Log perceived energy each morning (1–5 scale) to enrich readiness data and fine-tune pacing.', 'Keep hydrated target (≈8 cups/day); mild dehydration can elevate resting heart rate and impair readiness.', 'Schedule next progress check-in exactly 7 days from today—consistency reinforces habit loops for Foundation Builders.'], 'behavioral_signature': {'signature': 'New Foundation Builder displaying strong initial sleep hygiene (Sleep Score ≈ 0.81, single-night sleep efficiency >85 %) and moderate psychological readiness (Readiness ≈ 0.77) but low-to-moderate physical activation (Activity ≈ 0.54, only 3 logged sessions in 7 days). Engagement appears episodic—high-quality data when tracked, followed by gaps—suggesting early-stage habit formation with good data-tracking skills but still-fragile routine adherence.', 'confidence': 0.56}, 'personalized_strategy': {'habit_integration': '1. Anchor a 10-min post-lunch walk each weekday (link to existing meal routine). 2. Continue pre-bed wind-down (screens off + light stretching) to protect strong sleep pattern. 3. Sunday 5-min weekly check-in: review data and set one micro-goal.', 'barrier_mitigation': '• Set phone reminder for walk; rain plan = indoor 5-min stair or marching in place. • Keep athletic shoes by desk to reduce activation energy. • Use ‘minimum viable’ targets—if overwhelmed, do 5-min walk instead of skipping.', 'motivation_drivers': 'Quick wins, clear feedback, and visible progress; values simplicity and reassurance that small steps matter.'}, 'sophistication_assessment': {'score': 32, 'category': 'Beginner', 'justification': 'User is a new entrant (no long-term patterns yet), logs core metrics reliably, but shows limited activity variety and only basic recovery strategies—hallmarks of early Foundation Builder stage.'}}, 'input_summary': {'source': 'memory_service', 'data_quality': 'excellent'}, 'agent_id': 'memory_service', 'analysis_version': '1.0', 'system_prompt_version': None, 'confidence_score': 0, 'completeness_score': 0, 'processing_time_ms': None, 'created_at': '2025-08-14T16:49:48.739395+00:00', 'analysis_date': '2025-08-14', 'user_rating': None, 'user_feedback': None, 'implementation_success': None, 'follow_up_date': None}       
+📊 MEMORY: Stored behavior_analysis analysis for user 35pDPUIf... ID: d54ad6aa-e82e-4e34-8dfd-b561cda9400e
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory "HTTP/2 201 Created"
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Stored analysis insights - ID: d54ad6aa-e82e-4e34-8dfd-b561cda9400e
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Updating memory profile for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=id&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjj "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_memory_category"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_longterm_memory (
+                        user_id, memory_category, memory_data, confidence_score,
+                        created_at, last_updated, update_source
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', 'behavioral_patterns', {'_raw_analysis': {'behavioral_signature': {'signature': 'New Foundation Builder displaying strong initial sleep hygiene (Sleep Score ≈ 0.81, single-night sleep efficiency >85 %) and moderate psychological readiness (Readiness ≈ 0.77) but low-to-moderate physical activation (Activity ≈ 0.54, only 3 logged sessions in 7 days). Engagement appears episodic—high-quality data when tracked, followed by gaps—suggesting early-stage habit formation with good data-tracking skills but still-fragile routine adherence.', 'confidence': 0.56}, 'sophistication_assessment': {'score': 32, 'category': 'Beginner', 'justification': 'User is a new entrant (no long-term patterns yet), logs core metrics reliably, but shows limited activity variety and only basic recovery strategies—hallmarks of early Foundation Builder stage.'}, 'primary_goal': {'goal': 'Establish a sustainable baseline routine that keeps sleep quality high while gradually elevating daily physical activity.', 'timeline': 'Next 4–6 weeks', 'success_metrics': '• Maintain Sleep Score ≥0.80 on ≥5 nights per week; • Increase Activity Score to ≥0.65 (≥5,000–7,000 steps or equivalent) on ≥4 days per week; • Keep Readiness ≥0.75 on average; • Self-rated Mental Wellbeing ≥0.75 by week 6.'}, 'personalized_strategy': {'motivation_drivers': 'Quick wins, clear feedback, and visible progress; values simplicity and reassurance that small steps matter.', 'habit_integration': '1. Anchor a 10-min post-lunch walk each weekday (link to existing meal routine). 2. Continue pre-bed wind-down (screens off + light stretching) to protect strong sleep pattern. 3. Sunday 5-min weekly check-in: review data and set one micro-goal.', 'barrier_mitigation': '• Set phone reminder for walk; rain plan = indoor 5-min stair or marching in place. • Keep athletic shoes by desk to reduce activation energy. • Use ‘minimum viable’ targets—if overwhelmed, do 5-min walk instead of skipping.'}, 'readiness_level': 'Medium', 'recommendations': ['Track sleep consistently for all 7 nights this week to confirm current high-quality trend.', 'Add one additional light-to-moderate activity session (e.g., 20-min brisk walk or beginner YouTube mobility routine) on the weekend.', 'Aim for step count in the 5,000–7,000 range on at least 4 days; use a simple pedometer/phone widget for live feedback.', 'Perform a 2-minute breathing or gratitude exercise after evening routine to nudge Mental Wellbeing score toward ≥0.75.', 'Log perceived energy each morning (1–5 scale) to enrich readiness data and fine-tune pacing.', 'Keep hydrated target (≈8 cups/day); mild dehydration can elevate resting heart rate and impair readiness.', 'Schedule next progress check-in exactly 7 days from today—consistency reinforces habit loops for Foundation Builders.'], 'data_insights': 'Sleep dominates as current strength: single-night biomarker set shows 7 h 40 m in-bed with 92 % efficiency, latency <15 min, and only 8 min awake after sleep onset—excellent for a new user. Resting heart rate (58 bpm) aligns with good recovery. Activity lag—3 sessions over 7 days—likely explains middling Activity Score (0.54). Mental Wellbeing and overall Wellbeing scores hover in the mid-0.70s, consistent with decent mood but room for stress-management habits. Readiness (0.77) suggests physiological capacity to increase activity without overreaching. Prioritize translating robust sleep into daytime movement while safeguarding recovery.', 'model_used': 'o3', 'analysis_type': 'comprehensive_behavior'}, '_extraction_timestamp': '2025-08-14T16:49:48.714834+00:00', '_analysis_type': 'behavior_analysis', '_source_model': 'o3', 'behavioral_signature': 'New Foundation Builder displaying strong initial sleep hygiene (Sleep Score ≈ 0.81, single-night sleep efficiency >85 %) and moderate psychological readiness (Readiness ≈ 0.77) but low-to-moderate physical activation (Activity ≈ 0.54, only 3 logged sessions in 7 days). Engagement appears episodic—high-quality data when tracked, followed by gaps—suggesting early-stage habit formation with good data-tracking skills but still-fragile routine adherence.', 'signature_confidence': 0.56, 'recommendations': ['Track sleep consistently for all 7 nights this week to confirm current high-quality trend.', 'Add one additional light-to-moderate activity session (e.g., 20-min brisk walk or beginner YouTube mobility routine) on the weekend.', 'Aim for step count in the 5,000–7,000 range on at least 4 days; use a simple pedometer/phone widget for live feedback.', 'Perform a 2-minute breathing or gratitude exercise after evening routine to nudge Mental Wellbeing score toward ≥0.75.', 'Log perceived energy each morning (1–5 scale) to enrich readiness data and fine-tune pacing.', 'Keep hydrated target (≈8 cups/day); mild dehydration can elevate resting heart rate and impair readiness.', 'Schedule next progress check-in exactly 7 days from today—consistency reinforces habit loops for Foundation Builders.'], 'recommendation_count': 7, 'primary_goal': {'goal': 'Establish a sustainable baseline routine that keeps sleep quality high while gradually elevating daily physical activity.', 'timeline': 'Next 4–6 weeks', 'success_metrics': '• Maintain Sleep Score ≥0.80 on ≥5 nights per week; • Increase Activity Score to ≥0.65 (≥5,000–7,000 steps or equivalent) on ≥4 days per week; • Keep Readiness ≥0.75 on average; • Self-rated Mental Wellbeing ≥0.75 by week 6.'}, 'personalized_strategy': {'motivation_drivers': 'Quick wins, clear feedback, and visible progress; values simplicity and reassurance that small steps matter.', 'habit_integration': '1. Anchor a 10-min post-lunch walk each weekday (link to existing meal routine). 2. Continue pre-bed wind-down (screens off + light stretching) to protect strong sleep pattern. 3. Sunday 5-min weekly check-in: review data and set one micro-goal.', 'barrier_mitigation': '• Set phone reminder for walk; rain plan = indoor 5-min stair or marching in place. • Keep athletic shoes by desk to reduce activation energy. • Use ‘minimum viable’ targets—if overwhelmed, do 5-min walk instead of skipping.'}, 'readiness_level': 'Medium', 'sophistication_assessment': {'score': 32, 'category': 'Beginner', 'justification': 'User is a new entrant (no long-term patterns yet), logs core metrics reliably, but shows limited activity variety and only basic recovery strategies—hallmarks of early Foundation Builder stage.'}, 'data_insights': 'Sleep dominates as current strength: single-night biomarker set shows 7 h 40 m in-bed with 92 % efficiency, latency <15 min, and only 8 min awake after sleep onset—excellent for a new user. Resting heart rate (58 bpm) aligns with good recovery. Activity lag—3 sessions over 7 days—likely explains middling Activity Score (0.54). Mental Wellbeing and overall Wellbeing scores hover in the mid-0.70s, consistent with decent mood but room for stress-management habits. Readiness (0.77) suggests physiological capacity to increase activity without overreaching. Prioritize translating robust sleep into daytime movement while safeguarding recovery.'}, 0.8, datetime.datetime(2025, 8, 14, 16, 49, 49, 20841, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 14, 16, 49, 49, 20841, tzinfo=datetime.timezone.utc), 'memory_service')
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=id&user_id=eq.3 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory "HTTP/2 409 Conflict"
+[❌] Query execution failed: {'message': 'duplicate key value violates unique constraint "unique_user_meta_memory"', 'code': '23505', 'hint': None, 'details': None}
+[📝] Query:
+                    INSERT INTO holistic_meta_memory (
+                        user_id, adaptation_patterns, learning_velocity, success_predictors,
+                        failure_patterns, agent_effectiveness, archetype_evolution, engagement_patterns,
+                        created_at, last_updated, analysis_window_start, analysis_window_end
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        adaptation_patterns = EXCLUDED.adaptation_patterns,
+                        learning_velocity = EXCLUDED.learning_velocity,    
+                        last_updated = EXCLUDED.last_updated,
+                        analysis_window_end = EXCLUDED.analysis_window_end 
+
+[📝] Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2', {'agents_used': ['behavior_analysis', 'nutrition_plan', 'routine_plan'], 'complexity_provided': 'low', 'personalization_level': 'low', 'analysis_timestamp': '2025-08-14T16:49:49.320182+00:00'}, {'analysis_frequency': 'regular', 'adaptation_speed': 'moderate', 'retention_indicators': {}}, {}, {}, {}, {}, {}, datetime.datetime(2025, 8, 14, 16, 49, 49, 320201, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 14, 16, 49, 49, 320201, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 7, 15, 16, 49, 49, 320201, tzinfo=datetime.timezone.utc), datetime.datetime(2025, 8, 14, 16, 49, 49, 320201, tzinfo=datetime.timezone.utc))
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Memory profile updated for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Updated analysis time for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00       
+✅ [SHARED_ANALYSIS] Fresh behavior analysis completed for 35pDPUIf        
+INFO:services.user_data_service:[USER_DATA_SERVICE] Database connection closed
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Cleanup completed   
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Service cleaned up
+✅ [NUTRITION_GENERATE] Got shared behavior analysis (shared)
+   • Analysis source: Shared behavior analysis service
+   • Eliminates duplicate OpenAI calls
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 2.0 hours ago at 2025-08-14T14:50:10.088698+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-14T14:50:10.088698+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 2.0 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-14 14:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-14T14:50:10.088698+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.15s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-14 14:50:10.088698+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles%20LEFT%20JOIN%20scores%20ON%20scores.profile_id%20=%20profiles.id%20LEFT%20JOIN%20biomarkers%20ON%20biomarkers.profile_id%20=%20profiles.id?select=GREATEST%28COALESCE%28MAX%28scores.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%2CCOALESCE%28MAX%28biomarkers.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%29asactual_latest_timestamp&profiles.id=eq.3 "HTTP/2 400 Bad Request"
+[ERROR] Query fetch failed: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+[DEBUG] Original Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id        
+[DEBUG] Processed Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1586ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 881ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1482ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.88s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.agents.memory.enhanced_memory_prompts:Enhancing nutrition_planning prompt with memory context for user 35pDPUIf...
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory?select=user_id%2Csession_id%2Cagent_id%2Cmemory_type%2Ccontent%2Cpriority%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&is_active=eq.true&order=created_at.asc "HTTP/2 200 OK"    
+🥗 [MEMORY_ENHANCED] Starting memory-enhanced nutrition generation for 35pDPUIf...
+📋 [MEMORY_ENHANCED] Preparing memory context for nutrition generation...  
+[🔄 MEMORY_SERVICE] Creating new adapter and connecting...
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+[✅ MEMORY_SERVICE] Connected to Supabase successfully
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+📊 PROFILE_CHECK: Found last_analysis_at = 2025-08-14T14:50:10.088698+00:00
+✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)
+⏱️ ANALYSIS_MODE: Last analysis was 119.8 minutes ago (2.0 hours, 0 days) ffrom profiles
+🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_analysis_results?select=id%2Cuser_id%2Canalysis_type%2Canalysis_result%2Carchetype%2Ccreated_at&user_id=eq.35pDPUIfAoRl2Y700&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_working_memory "HTTP/2 201 Created"
+📋 MEMORY_CONTEXT: follow_up mode, 1 days, 4 focus areas
+INFO:services.health_data_client:[API_CLIENT] Initialized for https://hos-fapi-hm-sahha.onrender.com
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Connected to Supabase directly
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=last_analysis_at&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Last analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2: 2025-08-14T14:50:10.088698+00:00
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Time since last analysis: 2.0 hours
+INFO:services.user_data_service:[ANALYSIS_DATA] Incremental analysis for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.user_data_service:[ANALYSIS_DATA] Last analysis: 2.0 hours ago at 2025-08-14T14:50:10.088698+00:00
+INFO:services.user_data_service:[ANALYSIS_DATA] Fetching incremental data from 2025-08-14T14:50:10.088698+00:00 to now
+📊 INCREMENTAL_SYNC: Last analysis was 2.0 hours ago
+📊 INCREMENTAL_SYNC: Fetching new data since 2025-08-14 14:50
+[🔍] Attempting Supabase connection...
+[🔍] URL: https://ijcckqnqruwvqqbkiubb.s...
+[🔍] Key: Present
+[✅] Connected to Supabase successfully - client type: <class 'supabase._sync.client.SyncClient'>
+INFO:services.user_data_service:[INCREMENTAL] Fetching data for 35pDPUIfAoRl2Y700bFkxPKYjjf2 since 2025-08-14T14:50:10.088698+00:00
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/scores?select=id%2Cprofile_id%2Ctype%2Cscore%2Cdata%2Cscore_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/biomarkers?select=id%2Cprofile_id%2Ccategory%2Ctype%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Fetching for user 35pDPUIfAoRl2Y700bFkxPKYjjf2 (simplified query)
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/archetypes?select=id%2Cprofile_id%2Cname%2Cperiodicity%2Cvalue%2Cdata%2Cstart_date_time%2Cend_date_time%2Ccreated_at%2Cupdated_at&profile_id=eq.35pDPUIfAoRl2Y700 "HTTP/2 200 OK"
+INFO:services.user_data_service:[ARCHETYPES] Retrieved 0 unique archetypes in 0.33s
+ERROR:services.user_data_service:[INCREMENTAL_ERROR] Failed fetching data since 2025-08-14 14:50:10.088698+00:00: '>' not supported between instances of 'str' and 'datetime.datetime'
+⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timmestamp
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles%20LEFT%20JOIN%20scores%20ON%20scores.profile_id%20=%20profiles.id%20LEFT%20JOIN%20biomarkers%20ON%20biomarkers.profile_id%20=%20profiles.id?select=GREATEST%28COALESCE%28MAX%28scores.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%2CCOALESCE%28MAX%28biomarkers.created_at%29%2C%271970-01-01%27%3A%3Atimestamp%29%29asactual_latest_timestamp&profiles.id=eq.3 "HTTP/2 400 Bad Request"
+[ERROR] Query fetch failed: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+[DEBUG] Original Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1
+[DEBUG] Query Args: ('35pDPUIfAoRl2Y700bFkxPKYjjf2',)
+[DEBUG] Parsed Operation: SELECT
+[DEBUG] Target Table: profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id        
+[DEBUG] Processed Query: SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = '35pDPUIfAoRl2Y700bFkxPKYjjf2'
+[DEBUG] WHERE Conditions: [{'column': 'profiles.id', 'operator': 'eq', 'value': '3'}]
+ERROR:services.user_data_service:[ANALYSIS_DATA_ERROR] Incremental failed for 35pDPUIfAoRl2Y700bFkxPKYjjf2: {'message': '"failed to parse select parameter (GREATEST(COALESCE(MAX(scores.created_at),\'1970-01-01\'::timestamp),COALESCE(MAX(biomarkers.created_at),\'1970-01-01\'::timestamp))asactual_latest_timestamp)" (line 1, column 30)', 'code': 'PGRST100', 'hint': None, 'details': 'unexpected "r" expecting "count"'}
+INFO:services.user_data_service:[ANALYSIS_DATA] Falling back to 7-day fetch
+INFO:services.user_data_service:[USER_HEALTH_DATA] Starting fetch for user 35pDPUIfAoRl2Y700bFkxPKYjjf2, 7 days
+INFO:services.user_data_service:[DATE_RANGE] Fetching 7 days: 2025-08-07 to 2025-08-14
+INFO:services.user_data_service:[API_FIRST] Attempting API fetch for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/scores with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/biomarkers with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'start_date': '2025-08-07', 'end_date': '2025-08-14', 'limit': 1000}
+INFO:services.health_data_client:[API_REQUEST] /api/v1/sahha/archetypes with params: {'user_id': '35pDPUIfAoRl2Y700bFkxPKYjjf2', 'limit': 100}        
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/scores?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/scores: 15 records in 1549ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/biomarkers?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&start_date=2025-08-07&end_date=2025-08-14&limit=1000 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/biomarkers: 61 records in 1386ms
+INFO:httpx:HTTP Request: GET https://hos-fapi-hm-sahha.onrender.com/api/v1/sahha/archetypes?user_id=35pDPUIfAoRl2Y700bFkxPKYjjf2&limit=100 "HTTP/1.1 200 OK"
+INFO:services.health_data_client:[API_SUCCESS] /api/v1/sahha/archetypes: 100 records in 1144ms
+INFO:services.user_data_service:[API_SUCCESS] Using API data: 15 scores, 61 biomarkers
+INFO:services.user_data_service:[USER_HEALTH_DATA] API completed for 35pDPUIfAoRl2Y700bFkxPKYjjf2 in 1.93s
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?select=analysis_metadata&id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/profiles?id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2 "HTTP/2 200 OK"
+INFO:services.simple_analysis_tracker:[SIMPLE_TRACKER] Incremented analysis count for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🗓️ [MEMORY_ENHANCED] Using 1 days of data for nutrition (mode: follow_up)  
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_longterm_memory?select=user_id%2Cmemory_category%2Cmemory_data%2Cconfidence_score%2Ccreated_at%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_score.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_shortterm_memory?select=user_id%2Cmemory_category%2Ccontent%2Cconfidence_score%2Ccreated_at%2Cexpires_at&user_id=eq.35pDPUIfAoRl2Y700bFkxPKYjjf2&order=created_at.asc "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://ijcckqnqruwvqqbkiubb.supabase.co/rest/v1/holistic_meta_memory?select=adaptation_patterns%2Clearning_velocity%2Csuccess_predictors%2Cfailure_patterns%2Cagent_effectiveness%2Cconfidence_level%2Clast_updated&user_id=eq.35pDPUIfAoRl2Y700&order=confidence_level.asc "HTTP/2 200 OK"
+🧠 MEMORY_ENHANCED: Prompt enhanced with 4 memory elements
+INFO:services.memory_integration_service:[MEMORY_INTEGRATION] Enhanced nutrition_plan prompt for 35pDPUIfAoRl2Y700bFkxPKYjjf2
+🧠 [MEMORY_ENHANCED] Enhanced nutrition prompt with memory context (+15494 chars)
+
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)

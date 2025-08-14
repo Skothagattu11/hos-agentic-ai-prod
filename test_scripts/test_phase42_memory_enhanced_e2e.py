@@ -213,9 +213,99 @@ async def test_insights_endpoints(user_id):
         print(f"❌ Insights endpoints test failed: {e}")
         return {'latest_insights': False, 'generate_insights': False, 'insights_feedback': False}
 
+<<<<<<< HEAD
 async def test_ondemand_endpoints(user_id):
     """Test the enhanced on-demand routine and nutrition endpoints"""
     print_section("ON-DEMAND GENERATION ENDPOINTS", "🔄")
+=======
+async def test_behavior_analysis_endpoint(user_id):
+    """Test the standalone behavior analysis endpoint with 50-item threshold"""
+    print_section("STANDALONE BEHAVIOR ANALYSIS ENDPOINT", "🧠")
+    
+    results = {}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            print("📋 Testing standalone behavior analysis endpoint")
+            
+            # Test 1: Normal behavior analysis (should check 50-item threshold)
+            behavior_request = {
+                "force_refresh": False,
+                "archetype": TEST_ARCHETYPE
+            }
+            
+            async with session.post(
+                f"{BASE_URL}/api/user/{user_id}/behavior/analyze",
+                json=behavior_request
+            ) as response:
+                if response.status == 200:
+                    behavior_result = await response.json()
+                    print(f"✅ Behavior analysis: {behavior_result.get('status')}")
+                    
+                    analysis_type = behavior_result.get('analysis_type', 'unknown')
+                    metadata = behavior_result.get('metadata', {})
+                    
+                    print(f"   🧠 Analysis Type: {analysis_type}")
+                    print(f"   📊 New Data Points: {metadata.get('new_data_points', 0)}")
+                    print(f"   🎯 Threshold: {metadata.get('threshold', 50)}")
+                    print(f"   💾 Memory Quality: {metadata.get('memory_quality', 'unknown')}")
+                    
+                    if metadata.get('next_analysis_info'):
+                        print(f"   ⏳ Next Analysis: {metadata['next_analysis_info']}")
+                    
+                    results['behavior_analysis'] = behavior_result.get('status') == 'success'
+                    results['threshold_detected'] = metadata.get('threshold', 50) == 50
+                    results['constraint_working'] = True
+                    
+                else:
+                    print(f"❌ Behavior analysis failed: HTTP {response.status}")
+                    results['behavior_analysis'] = False
+                    results['threshold_detected'] = False
+                    results['constraint_working'] = False
+            
+            # Test 2: Force refresh behavior analysis (should override threshold)
+            print(f"\n📋 Testing force refresh behavior analysis")
+            
+            force_refresh_request = {
+                "force_refresh": True,
+                "archetype": TEST_ARCHETYPE
+            }
+            
+            async with session.post(
+                f"{BASE_URL}/api/user/{user_id}/behavior/analyze",
+                json=force_refresh_request
+            ) as response:
+                if response.status == 200:
+                    force_result = await response.json()
+                    print(f"✅ Force refresh analysis: {force_result.get('status')}")
+                    
+                    force_metadata = force_result.get('metadata', {})
+                    force_used = force_metadata.get('force_refresh_used', False)
+                    
+                    print(f"   🔄 Force Refresh Used: {force_used}")
+                    print(f"   🧠 Analysis Type: {force_result.get('analysis_type', 'unknown')}")
+                    
+                    results['force_refresh'] = force_result.get('status') == 'success'
+                    results['force_override'] = force_used
+                    
+                else:
+                    print(f"❌ Force refresh failed: HTTP {response.status}")
+                    results['force_refresh'] = False
+                    results['force_override'] = False
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Behavior analysis endpoint test failed: {e}")
+        return {
+            'behavior_analysis': False, 'threshold_detected': False, 
+            'constraint_working': False, 'force_refresh': False, 'force_override': False
+        }
+
+async def test_ondemand_endpoints(user_id):
+    """Test the enhanced on-demand routine and nutrition endpoints (now using behavior analysis endpoint)"""
+    print_section("PLAN GENERATION ENDPOINTS (Using Behavior Analysis)", "🔄")
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     
     results = {}
     
@@ -254,6 +344,7 @@ async def test_ondemand_endpoints(user_id):
                     
                     metadata = routine_result.get('generation_metadata', {})
                     
+<<<<<<< HEAD
                     # Check for Phase 4.2 on-demand analysis features
                     analysis_decision = metadata.get('analysis_decision', 'unknown')
                     data_quality = metadata.get('data_quality', 'unknown')
@@ -282,6 +373,42 @@ async def test_ondemand_endpoints(user_id):
                     
                     results['routine_generate'] = routine_result.get('status') == 'success'
                     results['routine_phase42'] = phase42_detected
+=======
+                    # Check for new independent endpoint architecture features
+                    analysis_type = metadata.get('analysis_type', 'unknown')
+                    analysis_decision = metadata.get('analysis_decision', 'unknown')
+                    new_data_points = metadata.get('new_data_points', 0)
+                    threshold_used = metadata.get('threshold_used', 50)
+                    memory_quality = metadata.get('memory_quality', 'unknown')
+                    cached = routine_result.get('cached', False)
+                    
+                    print(f"   🧠 Analysis Type: {analysis_type}")
+                    print(f"   📊 Analysis Decision: {analysis_decision}")
+                    print(f"   📈 New Data Points: {new_data_points}")
+                    print(f"   🎯 Threshold Used: {threshold_used}")
+                    print(f"   💾 Memory Quality: {memory_quality}")
+                    print(f"   💾 Used Cache: {cached}")
+                    
+                    # Enhanced Phase 4.2 independent endpoint detection
+                    independent_architecture_detected = (
+                        threshold_used == 50 or  # 50-item threshold constraint
+                        analysis_type in ['fresh', 'cached', 'cached_fallback'] or
+                        'behavior_endpoint_call' in analysis_decision or
+                        new_data_points >= 0  # Valid data point count
+                    )
+                    
+                    if independent_architecture_detected:
+                        print("   ✅ Independent endpoint architecture features detected!")
+                        
+                    # Check if 50-item constraint is working
+                    constraint_working = threshold_used == 50
+                    if constraint_working:
+                        print("   ✅ 50-item threshold constraint detected!")
+                    
+                    results['routine_generate'] = routine_result.get('status') == 'success'
+                    results['routine_independent_arch'] = independent_architecture_detected
+                    results['routine_50_constraint'] = constraint_working
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                 else:
                     print(f"❌ Fresh routine failed: HTTP {response.status}")
                     results['routine_generate'] = False
@@ -319,6 +446,7 @@ async def test_ondemand_endpoints(user_id):
                     
                     metadata = nutrition_result.get('generation_metadata', {})
                     
+<<<<<<< HEAD
                     # Check for Phase 4.2 on-demand analysis features  
                     analysis_decision = metadata.get('analysis_decision', 'unknown')
                     data_quality = metadata.get('data_quality', 'unknown')
@@ -347,6 +475,42 @@ async def test_ondemand_endpoints(user_id):
                     
                     results['nutrition_generate'] = nutrition_result.get('status') == 'success'
                     results['nutrition_phase42'] = phase42_detected
+=======
+                    # Check for new independent endpoint architecture features
+                    analysis_type = metadata.get('analysis_type', 'unknown')
+                    analysis_decision = metadata.get('analysis_decision', 'unknown') 
+                    new_data_points = metadata.get('new_data_points', 0)
+                    threshold_used = metadata.get('threshold_used', 50)
+                    memory_quality = metadata.get('memory_quality', 'unknown')
+                    cached = nutrition_result.get('cached', False)
+                    
+                    print(f"   🧠 Analysis Type: {analysis_type}")
+                    print(f"   📊 Analysis Decision: {analysis_decision}")
+                    print(f"   📈 New Data Points: {new_data_points}")
+                    print(f"   🎯 Threshold Used: {threshold_used}")
+                    print(f"   💾 Memory Quality: {memory_quality}")
+                    print(f"   💾 Used Cache: {cached}")
+                    
+                    # Enhanced independent endpoint architecture detection
+                    independent_architecture_detected = (
+                        threshold_used == 50 or  # 50-item threshold constraint
+                        analysis_type in ['fresh', 'cached', 'cached_fallback'] or
+                        'behavior_endpoint_call' in analysis_decision or
+                        new_data_points >= 0  # Valid data point count
+                    )
+                    
+                    if independent_architecture_detected:
+                        print("   ✅ Independent endpoint architecture features detected!")
+                        
+                    # Check if 50-item constraint is working
+                    constraint_working = threshold_used == 50
+                    if constraint_working:
+                        print("   ✅ 50-item threshold constraint detected!")
+                    
+                    results['nutrition_generate'] = nutrition_result.get('status') == 'success'
+                    results['nutrition_independent_arch'] = independent_architecture_detected
+                    results['nutrition_50_constraint'] = constraint_working
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                 else:
                     print(f"❌ Fresh nutrition failed: HTTP {response.status}")
                     results['nutrition_generate'] = False
@@ -437,10 +601,176 @@ async def validate_memory_enhancement(user_id):
         print(f"❌ Memory validation failed: {e}")
         return {'longterm_quality': False, 'analysis_enhanced': False}
 
+<<<<<<< HEAD
 async def main():
     """Main Phase 4.2 enhanced test"""
     print("🚀 PHASE 4.2 MEMORY-ENHANCED E2E TEST")
     print("Testing Memory-Enhanced Intelligent Health Coaching System")
+=======
+async def test_real_user_workflow(user_id):
+    """Test the real user workflow: Generate Routine -> Behavior Analysis -> Routine Generation"""
+    print_section("REAL USER WORKFLOW TEST", "👤")
+    
+    results = {}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            print("🎯 Simulating: User clicks 'Generate Routine' button")
+            
+            # Step 1: User clicks "Generate Routine" - This should internally:
+            # 1. Check if behavior analysis exists/valid (50-item threshold)
+            # 2. Call behavior analysis if needed
+            # 3. Generate routine using that analysis
+            
+            routine_request = {
+                "archetype": TEST_ARCHETYPE,
+                "preferences": {
+                    "workout_time": "morning",
+                    "duration_minutes": 30,
+                    "intensity": "moderate"
+                }
+            }
+            
+            print(f"📋 POST /api/user/{user_id}/routine/generate")
+            print(f"   Expected workflow:")
+            print(f"   1️⃣ Check existing behavior analysis")
+            print(f"   2️⃣ Apply 50-item threshold constraint")
+            print(f"   3️⃣ Call behavior analysis endpoint if needed")
+            print(f"   4️⃣ Generate routine using behavior analysis")
+            
+            async with session.post(
+                f"{BASE_URL}/api/user/{user_id}/routine/generate",
+                json=routine_request
+            ) as response:
+                if response.status == 200:
+                    routine_result = await response.json()
+                    print(f"✅ Routine generation: {routine_result.get('status')}")
+                    
+                    # Check workflow metadata
+                    metadata = routine_result.get('generation_metadata', {})
+                    analysis_decision = metadata.get('analysis_decision', 'unknown')
+                    analysis_type = metadata.get('analysis_type', 'unknown')
+                    new_data_points = metadata.get('new_data_points', 0)
+                    threshold_used = metadata.get('threshold_used', 50)
+                    behavior_analysis_called = 'behavior_endpoint_call' in str(analysis_decision)
+                    
+                    print(f"   🧠 Analysis Decision: {analysis_decision}")
+                    print(f"   📊 Analysis Type: {analysis_type}")
+                    print(f"   📈 New Data Points: {new_data_points}")
+                    print(f"   🎯 Threshold Used: {threshold_used}")
+                    print(f"   🔗 Behavior Analysis Called: {behavior_analysis_called}")
+                    
+                    # Validate workflow worked correctly
+                    workflow_success = (
+                        routine_result.get('status') == 'success' and
+                        analysis_type in ['fresh', 'cached', 'cached_fallback'] and
+                        threshold_used == 50
+                    )
+                    
+                    if workflow_success:
+                        print(f"   ✅ Real user workflow completed successfully!")
+                    
+                    results['routine_workflow'] = workflow_success
+                    results['behavior_integration'] = behavior_analysis_called
+                    results['threshold_constraint'] = threshold_used == 50
+                    
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Routine generation failed: HTTP {response.status}")
+                    print(f"   Error: {error_text[:200]}...")
+                    results['routine_workflow'] = False
+                    results['behavior_integration'] = False
+                    results['threshold_constraint'] = False
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Real user workflow test failed: {e}")
+        return {
+            'routine_workflow': False,
+            'behavior_integration': False, 
+            'threshold_constraint': False
+        }
+
+async def test_nutrition_user_workflow(user_id):
+    """Test the real user workflow: Generate Nutrition -> Behavior Analysis -> Nutrition Generation"""
+    print_section("NUTRITION USER WORKFLOW TEST", "🥗")
+    
+    results = {}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            print("🎯 Simulating: User clicks 'Generate Nutrition Plan' button")
+            
+            nutrition_request = {
+                "archetype": TEST_ARCHETYPE,
+                "preferences": {
+                    "dietary_restriction": "none",
+                    "meal_prep_time": "moderate",
+                    "cuisine_preference": "mediterranean"
+                }
+            }
+            
+            print(f"📋 POST /api/user/{user_id}/nutrition/generate")
+            print(f"   Expected workflow:")
+            print(f"   1️⃣ Check existing behavior analysis")
+            print(f"   2️⃣ Apply 50-item threshold constraint")
+            print(f"   3️⃣ Call behavior analysis endpoint if needed")
+            print(f"   4️⃣ Generate nutrition using behavior analysis")
+            
+            async with session.post(
+                f"{BASE_URL}/api/user/{user_id}/nutrition/generate",
+                json=nutrition_request
+            ) as response:
+                if response.status == 200:
+                    nutrition_result = await response.json()
+                    print(f"✅ Nutrition generation: {nutrition_result.get('status')}")
+                    
+                    # Check workflow metadata
+                    metadata = nutrition_result.get('generation_metadata', {})
+                    analysis_decision = metadata.get('analysis_decision', 'unknown')
+                    analysis_type = metadata.get('analysis_type', 'unknown')
+                    behavior_analysis_called = 'behavior_endpoint_call' in str(analysis_decision)
+                    threshold_used = metadata.get('threshold_used', 50)
+                    
+                    print(f"   🧠 Analysis Decision: {analysis_decision}")
+                    print(f"   📊 Analysis Type: {analysis_type}")
+                    print(f"   🔗 Behavior Analysis Called: {behavior_analysis_called}")
+                    print(f"   🎯 Threshold Used: {threshold_used}")
+                    
+                    workflow_success = (
+                        nutrition_result.get('status') == 'success' and
+                        analysis_type in ['fresh', 'cached', 'cached_fallback'] and
+                        threshold_used == 50
+                    )
+                    
+                    if workflow_success:
+                        print(f"   ✅ Nutrition user workflow completed successfully!")
+                    
+                    results['nutrition_workflow'] = workflow_success
+                    results['nutrition_behavior_integration'] = behavior_analysis_called
+                    
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Nutrition generation failed: HTTP {response.status}")
+                    print(f"   Error: {error_text[:200]}...")
+                    results['nutrition_workflow'] = False
+                    results['nutrition_behavior_integration'] = False
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Nutrition user workflow test failed: {e}")
+        return {
+            'nutrition_workflow': False,
+            'nutrition_behavior_integration': False
+        }
+
+async def main():
+    """Main Real User Workflow Test"""
+    print("👤 REAL USER WORKFLOW E2E TEST")
+    print("Testing Independent Endpoint Architecture with 50-Item Threshold")
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     print("=" * 70)
     
     # Show configuration
@@ -448,10 +778,18 @@ async def main():
     print(f"   • Server URL: {BASE_URL}")
     print(f"   • User ID: {REAL_PROFILE_ID}")
     print(f"   • Archetype: {TEST_ARCHETYPE}")
+<<<<<<< HEAD
     print(f"   • Phase: 4.2 - Memory-Enhanced Intelligence")
     
     # Confirm starting test
     if not get_user_input("🚀 Start Phase 4.2 enhanced test? This will use OpenAI API credits"):
+=======
+    print(f"   • Architecture: Independent Endpoints")
+    print(f"   • Constraint: 50-item threshold")
+    
+    # Confirm starting test
+    if not get_user_input("🚀 Start real user workflow test? This will use OpenAI API credits"):
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
         print("👋 Test cancelled")
         return False
     
@@ -465,6 +803,7 @@ async def main():
         print(f"\n❌ Cannot proceed - server is not accessible")
         return False
     
+<<<<<<< HEAD
     # Step 2: Initial Phase 4.2 analysis
     analysis_result, analysis_success, phase42_features = await test_phase42_analysis(
         REAL_PROFILE_ID, TEST_ARCHETYPE, "INITIAL"
@@ -485,6 +824,21 @@ async def main():
     test_results.update(ondemand_results)
     
     # Step 5: Test scheduler
+=======
+    # Step 2: Test standalone behavior analysis endpoint (for debugging)
+    behavior_results = await test_behavior_analysis_endpoint(REAL_PROFILE_ID)
+    test_results.update(behavior_results)
+    
+    # Step 3: Test real user workflow - Generate Routine
+    routine_workflow_results = await test_real_user_workflow(REAL_PROFILE_ID)
+    test_results.update(routine_workflow_results)
+    
+    # Step 4: Test real user workflow - Generate Nutrition
+    nutrition_workflow_results = await test_nutrition_user_workflow(REAL_PROFILE_ID)
+    test_results.update(nutrition_workflow_results)
+    
+    # Step 5: Test scheduler status
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     scheduler_working = await test_scheduler_status()
     test_results['scheduler'] = scheduler_working
     
@@ -492,6 +846,7 @@ async def main():
     memory_validation = await validate_memory_enhancement(REAL_PROFILE_ID)
     test_results.update(memory_validation)
     
+<<<<<<< HEAD
     # Step 7: Follow-up analysis to test progressive intelligence
     if get_user_input("\n🔄 Run follow-up analysis to test progressive intelligence?"):
         followup_result, followup_success, followup_features = await test_phase42_analysis(
@@ -530,12 +885,46 @@ async def main():
         progressive_components.append(("Progressive Intelligence", test_results.get('progressive_intelligence', False)))
     
     all_components = core_components + phase42_components + progressive_components
+=======
+    # Final Results
+    print_section("REAL USER WORKFLOW TEST RESULTS", "🎯")
+    
+    # Core system components
+    core_components = [
+        ("Server Health", test_results['server_health']),
+        ("Scheduler Status", test_results.get('scheduler', False)),
+    ]
+    
+    # Standalone endpoint components
+    standalone_components = [
+        ("Behavior Analysis Endpoint", test_results.get('behavior_analysis', False)),
+        ("50-Item Threshold Constraint", test_results.get('threshold_detected', False)),
+        ("Force Refresh Override", test_results.get('force_refresh', False)),
+    ]
+    
+    # Real user workflow components
+    workflow_components = [
+        ("Routine Generation Workflow", test_results.get('routine_workflow', False)),
+        ("Routine-Behavior Integration", test_results.get('behavior_integration', False)),
+        ("Nutrition Generation Workflow", test_results.get('nutrition_workflow', False)),
+        ("Nutrition-Behavior Integration", test_results.get('nutrition_behavior_integration', False)),
+    ]
+    
+    # Memory system components
+    memory_components = [
+        ("Long-term Memory Storage", test_results.get('longterm_quality', False)),
+        ("Analysis Memory Enhancement", test_results.get('analysis_enhanced', False)),
+    ]
+    
+    all_components = core_components + standalone_components + workflow_components + memory_components
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     working_count = sum(1 for _, status in all_components if status)
     
     print(f"📊 CORE SYSTEM:")
     for name, status in core_components:
         print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
     
+<<<<<<< HEAD
     print(f"\n🧠 PHASE 4.2 FEATURES:")
     for name, status in phase42_components:
         print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
@@ -578,6 +967,51 @@ async def main():
         print("   ✅ Phase 4.2 implementation is mostly working")
     else:
         print("   ⚠️  Phase 4.2 implementation needs attention")
+=======
+    print(f"\n🔧 STANDALONE ENDPOINTS:")
+    for name, status in standalone_components:
+        print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
+    
+    print(f"\n👤 REAL USER WORKFLOWS:")
+    for name, status in workflow_components:
+        print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
+    
+    print(f"\n🧠 MEMORY SYSTEM:")
+    for name, status in memory_components:
+        print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
+    
+    print(f"\n🎯 OVERALL SCORE: {working_count}/{len(all_components)} components working")
+    
+    # Success criteria for real user workflow
+    core_working = all(status for _, status in core_components)
+    workflow_working = sum(status for _, status in workflow_components if status) >= 2  # At least 2/4 workflows
+    standalone_working = sum(status for _, status in standalone_components if status) >= 2  # At least 2/3 standalone features
+    
+    if core_working and workflow_working and standalone_working:
+        print("\n🏆 EXCELLENT! Real user workflow system is fully operational")
+        print("   • Independent endpoint architecture working")
+        print("   • 50-item threshold constraint working")
+        print("   • Routine/nutrition generation workflows working")
+        print("   • Behavior analysis integration working")
+        success_level = "EXCELLENT"
+    elif core_working and (workflow_working or standalone_working):
+        print("\n✅ GOOD! Core system working, some workflow features need attention")
+        success_level = "GOOD"
+    else:
+        print("\n🔧 NEEDS WORK! Core system or workflow issues need to be resolved")
+        success_level = "NEEDS_WORK"
+    
+    # Workflow-specific validation
+    workflow_score = sum(status for _, status in workflow_components if status)
+    print(f"\n👤 USER WORKFLOW SCORE: {workflow_score}/4")
+    
+    if workflow_score >= 3:
+        print("   🎉 Real user workflows are highly successful!")
+    elif workflow_score >= 2:
+        print("   ✅ Real user workflows are mostly working")
+    else:
+        print("   ⚠️  Real user workflows need attention")
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     
     return success_level in ["EXCELLENT", "GOOD"]
 

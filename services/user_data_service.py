@@ -520,6 +520,7 @@ class UserDataService:
                 # Check if last_analysis is beyond all existing data (invalid timestamp scenario)
                 db = await self._ensure_db_connection()
                 
+<<<<<<< HEAD
                 # Get the actual latest data timestamp from database
                 actual_latest_query = """
                     SELECT 
@@ -532,6 +533,10 @@ class UserDataService:
                     LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id
                     WHERE profiles.id = $1
                 """
+=======
+                # Get the actual latest data timestamp from database - Fixed SQL parsing
+                actual_latest_query = "SELECT GREATEST(COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp), COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)) as actual_latest_timestamp FROM profiles LEFT JOIN scores ON scores.profile_id = profiles.id LEFT JOIN biomarkers ON biomarkers.profile_id = profiles.id WHERE profiles.id = $1"
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                 
                 actual_latest_result = await db.fetch(actual_latest_query, user_id)
                 actual_latest_timestamp = actual_latest_result[0]['actual_latest_timestamp'] if actual_latest_result else datetime(1970, 1, 1, tzinfo=timezone.utc)

@@ -165,6 +165,21 @@ class NutritionPlanResponse(BaseModel):
     generation_metadata: Dict[str, Any]
     cached: bool = False
 
+<<<<<<< HEAD
+=======
+# New Behavior Analysis Models
+class BehaviorAnalysisRequest(BaseModel):
+    force_refresh: Optional[bool] = False
+    archetype: Optional[str] = None
+
+class BehaviorAnalysisResponse(BaseModel):
+    status: str
+    user_id: str
+    analysis_type: str  # "fresh", "cached"
+    behavior_analysis: Dict[str, Any]
+    metadata: Dict[str, Any]
+
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
 # ============================================================================
 # AGENT INITIALIZATION
 # ============================================================================
@@ -387,12 +402,18 @@ async def get_latest_routine_plan(user_id: str):
 @app.post("/api/user/{user_id}/routine/generate", response_model=RoutinePlanResponse)
 async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationRequest):
     """
+<<<<<<< HEAD
     Generate a routine plan with intelligent on-demand behavior analysis
     Checks data threshold and decides whether to run fresh analysis or use cache
+=======
+    Generate a routine plan using the standalone behavior analysis endpoint
+    Calls POST /api/user/{user_id}/behavior/analyze to get analysis, then generates routine
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
     """
     try:
         print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")
         
+<<<<<<< HEAD
         # Import required services
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
@@ -518,6 +539,85 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             await memory_service.cleanup()
             await enhanced_prompts_service.cleanup()
             await ondemand_service.cleanup()
+=======
+        # Get behavior analysis from the standalone endpoint
+        force_refresh = request.preferences.get('force_refresh', False) if request.preferences else False
+        archetype = request.archetype or "Foundation Builder"
+        
+        # Create behavior analysis request
+        behavior_request = BehaviorAnalysisRequest(
+            force_refresh=force_refresh,
+            archetype=archetype
+        )
+        
+        # Use shared behavior analysis (eliminates duplicate analysis calls)
+        print(f"📞 [ROUTINE_GENERATE] Getting shared behavior analysis...")
+        behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh)
+        
+        if not behavior_analysis:
+            return RoutinePlanResponse(
+                status="error",
+                user_id=user_id,
+                routine_plan={},
+                generation_metadata={
+                    "error": "Behavior analysis failed or returned no results",
+                    "suggestion": "Try with force_refresh=true or ensure user has sufficient health data"
+                },
+                cached=False
+            )
+        
+        analysis_type = "shared"  # Indicates shared analysis was used
+        
+        print(f"✅ [ROUTINE_GENERATE] Got shared behavior analysis ({analysis_type})")
+        print(f"   • Analysis source: Shared behavior analysis service")
+        print(f"   • Eliminates duplicate OpenAI calls")
+        
+        # Get user data for routine generation
+        from services.user_data_service import UserDataService
+        user_service = UserDataService()
+        
+        try:
+            user_context, _ = await user_service.get_analysis_data(user_id)
+            
+            # Generate routine using existing function
+            from shared_libs.utils.system_prompts import get_system_prompt
+            from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService
+            
+            enhanced_prompts_service = EnhancedMemoryPromptsService()
+            base_routine_prompt = get_system_prompt("plan_generation")
+            enhanced_routine_prompt = await enhanced_prompts_service.enhance_agent_prompt(
+                base_routine_prompt, user_id, "routine_planning"
+            )
+            
+            # Use the memory-enhanced routine generation function with all /api/analyze features
+            routine_plan = await run_memory_enhanced_routine_generation(
+                user_id=user_id,
+                archetype=archetype,
+                behavior_analysis=behavior_analysis
+            )
+            
+            return RoutinePlanResponse(
+                status="success",
+                user_id=user_id,
+                routine_plan=routine_plan,
+                generation_metadata={
+                    "analysis_decision": "shared_behavior_analysis_service",
+                    "analysis_type": analysis_type,
+                    "data_quality": "memory_enhanced",
+                    "shared_analysis": True,
+                    "duplicate_calls_eliminated": True,
+                    "personalization_level": "high",
+                    "archetype_used": archetype,
+                    "preferences_applied": bool(request.preferences),
+                    "generation_time": datetime.now().isoformat()
+                },
+                cached=(analysis_type == "cached")
+            )
+            
+        except Exception as context_error:
+            print(f"⚠️ [ROUTINE_GENERATE] User context error: {context_error}")
+            raise HTTPException(status_code=500, detail=f"Failed to get user data for routine generation: {str(context_error)}")
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
             
     except Exception as e:
         print(f"❌ [ROUTINE_GENERATE_ERROR] Failed to generate routine for {user_id}: {e}")
@@ -587,6 +687,7 @@ async def get_latest_nutrition_plan(user_id: str):
 @app.post("/api/user/{user_id}/nutrition/generate", response_model=NutritionPlanResponse)
 async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationRequest):
     """
+<<<<<<< HEAD
     Generate a fresh nutrition plan with smart on-demand behavior analysis
     Only runs fresh analysis when data thresholds are exceeded, otherwise uses cached analysis
     """
@@ -713,6 +814,91 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             await memory_service.cleanup()
             await enhanced_prompts_service.cleanup()
             await ondemand_service.cleanup()
+=======
+    Generate a nutrition plan using the standalone behavior analysis endpoint
+    Calls POST /api/user/{user_id}/behavior/analyze to get analysis, then generates nutrition plan
+    """
+    try:
+        print(f"🔄 [NUTRITION_GENERATE] Processing nutrition request for user {user_id[:8]}...")
+        
+        # Get behavior analysis from the standalone endpoint
+        force_refresh = request.preferences.get('force_refresh', False) if request.preferences else False
+        archetype = request.archetype or "Foundation Builder"
+        
+        # Create behavior analysis request
+        behavior_request = BehaviorAnalysisRequest(
+            force_refresh=force_refresh,
+            archetype=archetype
+        )
+        
+        # Use shared behavior analysis (eliminates duplicate analysis calls)
+        print(f"📞 [NUTRITION_GENERATE] Getting shared behavior analysis...")
+        behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh)
+        
+        if not behavior_analysis:
+            return NutritionPlanResponse(
+                status="error",
+                user_id=user_id,
+                nutrition_plan={},
+                generation_metadata={
+                    "error": "Behavior analysis failed or returned no results",
+                    "suggestion": "Try with force_refresh=true or ensure user has sufficient health data"
+                },
+                cached=False
+            )
+        
+        analysis_type = "shared"  # Indicates shared analysis was used
+        
+        print(f"✅ [NUTRITION_GENERATE] Got shared behavior analysis ({analysis_type})")
+        print(f"   • Analysis source: Shared behavior analysis service")
+        print(f"   • Eliminates duplicate OpenAI calls")
+        
+        # Get user data for nutrition generation
+        from services.user_data_service import UserDataService
+        user_service = UserDataService()
+        
+        try:
+            user_context, _ = await user_service.get_analysis_data(user_id)
+            
+            # Generate nutrition using existing function
+            from shared_libs.utils.system_prompts import get_system_prompt
+            from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService
+            
+            enhanced_prompts_service = EnhancedMemoryPromptsService()
+            base_nutrition_prompt = get_system_prompt("plan_generation")
+            enhanced_nutrition_prompt = await enhanced_prompts_service.enhance_agent_prompt(
+                base_nutrition_prompt, user_id, "nutrition_planning"
+            )
+            
+            # Use the memory-enhanced nutrition generation function with all /api/analyze features
+            nutrition_plan = await run_memory_enhanced_nutrition_generation(
+                user_id=user_id,
+                archetype=archetype,
+                behavior_analysis=behavior_analysis
+            )
+            
+            return NutritionPlanResponse(
+                status="success",
+                user_id=user_id,
+                nutrition_plan=nutrition_plan,
+                generation_metadata={
+                    "analysis_decision": "shared_behavior_analysis_service",
+                    "analysis_type": analysis_type,
+                    "data_quality": "memory_enhanced",
+                    "shared_analysis": True,
+                    "duplicate_calls_eliminated": True,
+                    "personalization_level": "high",
+                    "archetype_used": archetype,
+                    "preferences_applied": bool(request.preferences),
+                    "generation_time": datetime.now().isoformat()
+                },
+                cached=(analysis_type == "cached")
+            )
+            
+        except Exception as context_error:
+            print(f"⚠️ [NUTRITION_GENERATE] User context error: {context_error}")
+            raise HTTPException(status_code=500, detail=f"Failed to get user data for nutrition generation: {str(context_error)}")
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
             
     except Exception as e:
         print(f"❌ [NUTRITION_GENERATE_ERROR] Failed to generate nutrition for {user_id}: {e}")
@@ -887,6 +1073,117 @@ async def provide_insight_feedback(user_id: str, insight_id: str, feedback: dict
         print(f"❌ [INSIGHTS_FEEDBACK_ERROR] Failed to record feedback: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to record feedback: {str(e)}")
 
+<<<<<<< HEAD
+=======
+@app.post("/api/user/{user_id}/behavior/analyze", response_model=BehaviorAnalysisResponse)
+async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest):
+    """
+    Standalone behavior analysis endpoint with 50-item threshold constraint
+    Only runs fresh analysis when 50+ new data points exist, otherwise returns cached analysis
+    """
+    try:
+        print(f"🧠 [BEHAVIOR_ANALYZE] Starting behavior analysis for user {user_id[:8]}...")
+        
+        # Import required services
+        from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
+        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        
+        # Initialize services
+        ondemand_service = await get_ondemand_service()
+        memory_service = HolisticMemoryService()
+        
+        # Check if fresh analysis is needed (50-item threshold)
+        decision, metadata = await ondemand_service.should_run_analysis(user_id, request.force_refresh)
+        
+        # Safe enum access for logging
+        decision_str = decision.value if hasattr(decision, 'value') else str(decision)
+        memory_quality = metadata.get('memory_quality')
+        memory_quality_str = memory_quality.value if hasattr(memory_quality, 'value') else str(memory_quality) if memory_quality else 'unknown'
+        
+        print(f"📊 [BEHAVIOR_ANALYZE] Analysis decision: {decision_str}")
+        print(f"   • New data points: {metadata['new_data_points']}")
+        print(f"   • Threshold: {metadata['threshold_used']}")
+        print(f"   • Memory quality: {memory_quality_str}")
+        print(f"   • Reason: {metadata['reason']}")
+        
+        behavior_analysis = None
+        analysis_type = "unknown"
+        
+        if decision == AnalysisDecision.FRESH_ANALYSIS or decision == AnalysisDecision.STALE_FORCE_REFRESH:
+            # Run fresh behavior analysis using existing logic from /api/analyze
+            print(f"🚀 [BEHAVIOR_ANALYZE] Running fresh behavior analysis...")
+            
+            # Get archetype from request or use default
+            archetype = request.archetype or "Foundation Builder"
+            
+            # Use the behavior analysis function that returns correct status format
+            behavior_analysis = await run_behavior_analysis(user_id, archetype)
+            
+            if behavior_analysis and behavior_analysis.get("status") == "success":
+                analysis_type = "fresh"
+                
+                # Store the analysis in memory system for future use
+                await memory_service.store_analysis_result(
+                    user_id=user_id,
+                    analysis_type="behavior_analysis",
+                    analysis_result=behavior_analysis,
+                    archetype_used=archetype
+                )
+                print(f"✅ [BEHAVIOR_ANALYZE] Fresh analysis completed and stored")
+            else:
+                # Fallback to cached if fresh analysis fails
+                print(f"⚠️ [BEHAVIOR_ANALYZE] Fresh analysis failed, attempting cached...")
+                behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id)
+                analysis_type = "cached_fallback"
+                
+        else:
+            # Use cached analysis
+            print(f"💾 [BEHAVIOR_ANALYZE] Using cached analysis (below threshold)")
+            behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id)
+            analysis_type = "cached"
+        
+        # Validate we have behavior analysis
+        if not behavior_analysis:
+            return BehaviorAnalysisResponse(
+                status="error",
+                user_id=user_id,
+                analysis_type="none",
+                behavior_analysis={},
+                metadata={
+                    "error": "No behavior analysis available and unable to generate new analysis",
+                    "suggestion": "Try with force_refresh=true or ensure user has sufficient health data",
+                    "decision_metadata": metadata
+                }
+            )
+        
+        # Calculate next eligible analysis time
+        next_eligible = None
+        if analysis_type == "cached" and metadata.get('new_data_points', 0) < 50:
+            needed_points = 50 - metadata.get('new_data_points', 0)
+            next_eligible = f"Need {needed_points} more data points to trigger fresh analysis"
+        
+        return BehaviorAnalysisResponse(
+            status="success",
+            user_id=user_id,
+            analysis_type=analysis_type,
+            behavior_analysis=behavior_analysis,
+            metadata={
+                "new_data_points": metadata.get('new_data_points', 0),
+                "threshold": metadata.get('threshold_used', 50),
+                "cache_age_hours": metadata.get('cache_age_hours', 0),
+                "memory_quality": metadata.get('memory_quality').value if hasattr(metadata.get('memory_quality'), 'value') else str(metadata.get('memory_quality', 'unknown')),
+                "decision_reason": metadata.get('reason', ''),
+                "force_refresh_used": request.force_refresh,
+                "next_analysis_info": next_eligible,
+                "archetype_used": request.archetype or "Foundation Builder"
+            }
+        )
+        
+    except Exception as e:
+        print(f"❌ [BEHAVIOR_ANALYZE_ERROR] Failed to analyze behavior for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze behavior: {str(e)}")
+
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
 @app.get("/api/scheduler/status")
 async def get_scheduler_status():
     """Get current status of the on-demand analysis system (replaces background scheduler)"""
@@ -897,6 +1194,7 @@ async def get_scheduler_status():
         ondemand_service = await get_ondemand_service()
         
         return {
+<<<<<<< HEAD
             "status": "on_demand_analysis",
             "message": "Background scheduler replaced with intelligent on-demand analysis",
             "system": "Phase 4.2 - Smart Analysis Triggering",
@@ -905,16 +1203,42 @@ async def get_scheduler_status():
             "analysis_mode": "triggered_on_routine_nutrition_requests",
             "timestamp": datetime.now().isoformat(),
             "endpoints": {
+=======
+            "status": "independent_endpoints",
+            "message": "Restructured API with independent behavior analysis endpoint and 50-item threshold",
+            "system": "Phase 4.2 - Independent Endpoint Architecture",
+            "active_users": 1,  # Can be updated to get actual count
+            "data_threshold": 50,  # Fixed 50-item threshold for behavior analysis
+            "analysis_mode": "constraint_based_triggering",
+            "timestamp": datetime.now().isoformat(),
+            "endpoints": {
+                "behavior_analyze": "POST /api/user/{user_id}/behavior/analyze",
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                 "routine_latest": "GET /api/user/{user_id}/routine/latest",
                 "routine_generate": "POST /api/user/{user_id}/routine/generate", 
                 "nutrition_latest": "GET /api/user/{user_id}/nutrition/latest",
                 "nutrition_generate": "POST /api/user/{user_id}/nutrition/generate"
             },
+<<<<<<< HEAD
             "features": {
                 "smart_thresholds": "Rich memory = lower threshold, sparse memory = higher threshold",
                 "three_tier_response": "fresh_analysis | memory_enhanced_cache | stale_force_refresh",
                 "memory_integration": "4-layer memory system (working, short-term, long-term, meta)",
                 "fallback_logic": "Graceful degradation on analysis failures"
+=======
+            "architecture": {
+                "behavior_endpoint": "Standalone endpoint with 50-item threshold constraint",
+                "plan_endpoints": "Call behavior analysis endpoint internally when needed",
+                "constraint_logic": "Only run behavior analysis if 50+ new data points since last analysis",
+                "reusability": "Routine and nutrition endpoints share behavior analysis results"
+            },
+            "features": {
+                "threshold_constraint": "50 new data points required for fresh behavior analysis",
+                "caching_strategy": "Use cached analysis until threshold is met",
+                "force_refresh": "Optional override of 50-item threshold",
+                "memory_integration": "4-layer memory system (working, short-term, long-term, meta)",
+                "endpoint_coordination": "Routine/nutrition can trigger behavior analysis when needed"
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
             }
         }
     except Exception as e:
@@ -1378,7 +1702,11 @@ Please provide a detailed analysis that demonstrates the {archetype} approach to
             },
             "raw_health_data": {
                 "data_quality": {
+<<<<<<< HEAD
                     "level": data_quality.quality_level.value if 'data_quality' in locals() else "unknown",
+=======
+                    "level": (data_quality.quality_level.value if hasattr(data_quality, 'quality_level') and hasattr(data_quality.quality_level, 'value') else str(data_quality)) if 'data_quality' in locals() else "unknown",
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                     "scores_count": data_quality.scores_count if 'data_quality' in locals() else 0,
                     "biomarkers_count": data_quality.biomarkers_count if 'data_quality' in locals() else 0,
                     "completeness_score": data_quality.completeness_score if 'data_quality' in locals() else 0,
@@ -1639,7 +1967,11 @@ async def prepare_behavior_agent_data(user_context, user_context_summary: str) -
             "comprehensive_health_context": user_context_summary,
             "detailed_metrics": {
                 "data_quality": {
+<<<<<<< HEAD
                     "level": user_context.data_quality.quality_level.value,
+=======
+                    "level": (user_context.data_quality.quality_level.value if hasattr(user_context.data_quality, 'quality_level') and hasattr(user_context.data_quality.quality_level, 'value') else str(user_context.data_quality)),
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
                     "completeness": user_context.data_quality.completeness_score,
                     "scores_count": user_context.data_quality.scores_count,
                     "biomarkers_count": user_context.data_quality.biomarkers_count,
@@ -1865,6 +2197,79 @@ async def format_health_data_for_ai(user_context) -> str:
     except Exception as e:
         return f"Error formatting user data: {str(e)}"
 
+<<<<<<< HEAD
+=======
+async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
+    """
+    Extracted behavior analysis logic from /api/analyze for reuse
+    Returns behavior analysis in the same format as the main endpoint
+    """
+    try:
+        print(f"🧠 [BEHAVIOR_WRAPPER] Starting behavior analysis for {user_id[:8]}...")
+        
+        # Get user data using existing services
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        
+        # Get user context (reuse existing logic from /api/analyze)
+        user_context, data_quality = await user_service.get_analysis_data(user_id)
+        # Fix datetime bug - safely handle data_quality attribute access
+        if hasattr(data_quality, 'value'):
+            quality_str = data_quality.value
+        elif hasattr(data_quality, 'quality_level') and hasattr(data_quality.quality_level, 'value'):
+            quality_str = data_quality.quality_level.value
+        else:
+            quality_str = str(data_quality) if data_quality else "unknown"
+        
+        user_context_summary = f"Comprehensive Health Analysis for {archetype} user with {quality_str} data quality."
+        
+        # Prepare behavior agent data
+        behavior_agent_data = await prepare_behavior_agent_data(user_context, user_context_summary)
+        
+        # Get behavior system prompt
+        behavior_prompt = get_system_prompt("behavior_analysis")
+        
+        # Get analysis number for logging
+        analysis_number = await get_next_analysis_number()
+        
+        # Run behavior analysis using o3 model (same as /api/analyze)
+        print("🧠 Running standalone behavior analysis with o3 model...")
+        behavior_result = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
+        
+        if behavior_result:
+            print(f"✅ [BEHAVIOR_WRAPPER] Behavior analysis completed successfully")
+            
+            # Log agent handoff for standalone behavior analysis
+            await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_result, analysis_number)
+            # Safe data quality access
+            data_quality_str = data_quality.value if hasattr(data_quality, 'value') else str(data_quality) if data_quality else "unknown"
+            
+            return {
+                "status": "success",
+                "behavior_analysis": behavior_result,
+                "archetype_used": archetype,
+                "data_quality": data_quality_str,
+                "model_used": "o3"
+            }
+        else:
+            print(f"❌ [BEHAVIOR_WRAPPER] Behavior analysis failed - no result")
+            return {
+                "status": "error",
+                "error": "Behavior analysis returned no result",
+                "behavior_analysis": {}
+            }
+            
+    except Exception as e:
+        print(f"❌ [BEHAVIOR_WRAPPER] Error in behavior analysis: {e}")
+        return {
+            "status": "error", 
+            "error": str(e),
+            "behavior_analysis": {}
+        }
+
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
 async def run_behavior_analysis_o3(system_prompt: str, user_context: str) -> dict:
     """Run behavior analysis using o3 model for deep analysis - Phase 3.2"""
     try:
@@ -1953,6 +2358,549 @@ Focus on actionable insights from the provided health metrics.
             "behavioral_signature": {"signature": "Analysis Error", "confidence": 0.5}
         }
 
+<<<<<<< HEAD
+=======
+async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) -> dict:
+    """
+    Memory-Enhanced Behavior Analysis - Includes all features from /api/analyze
+    Features:
+    - Memory context preparation using MemoryIntegrationService
+    - Memory-enhanced prompt generation
+    - Storing analysis results in memory tables
+    - Updating user memory profile
+    - Complete logging of analysis data
+    """
+    try:
+        print(f"🧠 [MEMORY_ENHANCED] Starting memory-enhanced behavior analysis for {user_id[:8]}...")
+        
+        # Import memory integration service
+        from services.memory_integration_service import MemoryIntegrationService
+        
+        # Initialize memory integration service
+        memory_service = MemoryIntegrationService()
+        
+        # Step 1: Prepare memory-enhanced context
+        print(f"📋 [MEMORY_ENHANCED] Preparing memory context for user {user_id[:8]}...")
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        
+        # Step 2: Get user data for analysis
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        
+        # Get user data (service handles days internally based on analysis history)
+        user_context, data_quality = await user_service.get_analysis_data(user_id)
+        
+        # Fix datetime bug - safely handle data_quality attribute access
+        if hasattr(data_quality, 'value'):
+            data_quality_value = data_quality.value
+        else:
+            data_quality_value = str(data_quality) if data_quality else "unknown"
+        
+        print(f"📊 [MEMORY_ENHANCED] Data quality: {data_quality_value}")
+        print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data (mode: {memory_context.analysis_mode})")
+        
+        # Step 3: Get and enhance system prompt with memory
+        system_prompt = get_system_prompt("behavior_analysis")
+        enhanced_prompt = await memory_service.enhance_agent_prompt(
+            system_prompt, memory_context, "behavior_analysis"
+        )
+        
+        print(f"🧠 [MEMORY_ENHANCED] Enhanced prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")
+        
+        # Step 4: Prepare behavior agent data with memory context
+        user_context_summary = await format_health_data_for_ai(user_context)
+        behavior_data = await prepare_behavior_agent_data(user_context, user_context_summary)
+        
+        # Step 5: Run behavior analysis with memory-enhanced prompt
+        analysis_result = await run_behavior_analysis_o3(enhanced_prompt, user_context_summary)
+        
+        # Step 6: Store analysis insights using same method as /api/analyze
+        print(f"💾 [MEMORY_ENHANCED] Storing analysis insights like /api/analyze...")
+        insights_stored = False
+        try:
+            # Use the same storage method as /api/analyze (line 1523)
+            await memory_service.store_analysis_insights(user_id, "behavior_analysis", analysis_result, archetype)
+            insights_stored = True
+            print(f"✅ [MEMORY_ENHANCED] Analysis insights stored successfully")
+        except Exception as e:
+            print(f"⚠️ [MEMORY_ENHANCED] Failed to store analysis insights: {e}")
+        
+        # Step 8: Log complete analysis data (input/output logging)
+        await log_complete_standalone_analysis(
+            "behavior_analysis", user_id, archetype, 
+            behavior_data, analysis_result, memory_context
+        )
+        
+        # Step 9: Cleanup memory service
+        await memory_service.cleanup()
+        
+        # Add memory enhancement metadata to result
+        analysis_result.update({
+            "memory_enhanced": True,
+            "analysis_mode": memory_context.analysis_mode,
+            "days_fetched": memory_context.days_to_fetch,
+            "memory_focus_areas": memory_context.personalized_focus_areas,
+            "insights_stored": insights_stored
+        })
+        
+        print(f"✅ [MEMORY_ENHANCED] Memory-enhanced behavior analysis completed for {user_id[:8]}")
+        return analysis_result
+        
+    except Exception as e:
+        print(f"❌ [MEMORY_ENHANCED] Error in memory-enhanced behavior analysis: {e}")
+        # Fallback to regular behavior analysis
+        print(f"🔄 [MEMORY_ENHANCED] Falling back to regular behavior analysis...")
+        return await run_behavior_analysis(user_id, archetype)
+
+async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, force_refresh: bool = False) -> dict:
+    """
+    MVP Shared Behavior Analysis - Extracted from /api/analyze (lines 1257-1386)
+    Used by routine/nutrition endpoints to avoid duplicate analysis
+    Applies 50-item threshold logic from OnDemandAnalysisService
+    """
+    try:
+        print(f"🧠 [SHARED_ANALYSIS] Checking behavior analysis for {user_id[:8]}...")
+        
+        # Step 1: Check if fresh analysis needed (50-item threshold logic)
+        from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
+        ondemand_service = await get_ondemand_service()
+        decision, metadata = await ondemand_service.should_run_analysis(user_id, force_refresh)
+        
+        # Debug logging
+        decision_str = decision.value if hasattr(decision, 'value') else str(decision)
+        print(f"📊 [SHARED_ANALYSIS] Decision: {decision_str}, New points: {metadata.get('new_data_points', 0)}, Threshold: {metadata.get('threshold_used', 50)}")
+        
+        # Step 2: Use cached if sufficient
+        if decision == AnalysisDecision.MEMORY_ENHANCED_CACHE:
+            print(f"✅ [SHARED_ANALYSIS] Using cached behavior analysis ({metadata.get('new_data_points', 0)} new points < 50)")
+            cached_analysis = await get_cached_behavior_analysis_from_memory(user_id)
+            if cached_analysis:
+                return cached_analysis
+            # If cache retrieval fails, fall through to fresh analysis
+        
+        # Step 3: Run fresh analysis using EXACT /api/analyze flow (lines 1257-1386)
+        print(f"🚀 [SHARED_ANALYSIS] Running fresh behavior analysis ({metadata.get('new_data_points', 0)} new points)")
+        return await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype)
+        
+    except Exception as e:
+        print(f"❌ [SHARED_ANALYSIS] Error in shared analysis: {e}")
+        # Fallback to basic behavior analysis
+        return await run_behavior_analysis(user_id, archetype)
+
+
+async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
+    """Retrieve cached behavior analysis from memory system"""
+    try:
+        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        memory_service = HolisticMemoryService()
+        
+        # Get latest behavior analysis from memory
+        analysis_results = await memory_service.get_analysis_history(user_id, limit=1)
+        if analysis_results:
+            latest = analysis_results[0]
+            if latest.analysis_type in ["behavior_analysis"]:
+                print(f"📋 [SHARED_ANALYSIS] Found cached behavior analysis from {latest.created_at}")
+                # Handle nested analysis result format - extract behavior_analysis if needed
+                analysis_result = latest.analysis_result
+                if isinstance(analysis_result, dict) and "behavior_analysis" in analysis_result:
+                    return analysis_result["behavior_analysis"]
+                return analysis_result
+        
+        await memory_service.cleanup()
+        return None
+        
+    except Exception as e:
+        print(f"⚠️ [SHARED_ANALYSIS] Cache retrieval failed: {e}")
+        return None
+
+
+async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str) -> dict:
+    """
+    Run fresh behavior analysis using EXACT same flow as /api/analyze
+    Extracted from /api/analyze lines 1257-1386 - minimal changes, maximum reuse
+    """
+    try:
+        # EXACT same imports as /api/analyze (lines 1246-1249)
+        from services.memory_integration_service import MemoryIntegrationService
+        from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService  
+        from services.user_data_service import UserDataService
+        from services.simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        # EXACT same service initialization as /api/analyze (lines 1252-1257)
+        user_service = UserDataService()
+        analysis_tracker = AnalysisTracker()
+        memory_service = MemoryIntegrationService()
+        enhanced_prompts_service = EnhancedMemoryPromptsService()
+        
+        try:
+            # EXACT same memory context preparation as /api/analyze (lines 1258-1259)
+            memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+            
+            # EXACT same data fetching as /api/analyze (line 1271)
+            user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
+            
+            # EXACT same prompt enhancement as /api/analyze (lines 1282-1289)
+            base_behavior_prompt = get_system_prompt("behavior_analysis")
+            behavior_prompt = await enhanced_prompts_service.enhance_agent_prompt(base_behavior_prompt, user_id, "behavior_analysis")
+            
+            # EXACT same context summary creation as /api/analyze (lines 1324-1348)
+            user_context_summary = await create_context_summary_like_api_analyze(user_context, memory_context, archetype, user_id)
+            
+            # EXACT same behavior analysis execution as /api/analyze (lines 1382-1386)  
+            analysis_number = await get_next_analysis_number()
+            behavior_agent_data = await prepare_behavior_agent_data(user_context, user_context_summary)
+            behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
+            await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_analysis, analysis_number)
+            
+            # EXACT same memory storage as /api/analyze (lines 1525-1531)
+            await memory_service.store_analysis_insights(user_id, "behavior_analysis", behavior_analysis, archetype)
+            await memory_service.update_user_memory_profile(user_id, behavior_analysis, {}, {})
+            
+            # EXACT same timestamp update as /api/analyze (line 1536)
+            await analysis_tracker.update_analysis_time(user_id, latest_data_timestamp)
+            
+            print(f"✅ [SHARED_ANALYSIS] Fresh behavior analysis completed for {user_id[:8]}")
+            return behavior_analysis
+            
+        finally:
+            # EXACT same cleanup as /api/analyze (lines 1369-1376)
+            await user_service.cleanup()
+            await analysis_tracker.cleanup()  
+            await memory_service.cleanup()
+            await enhanced_prompts_service.cleanup()
+            
+    except Exception as e:
+        print(f"❌ [SHARED_ANALYSIS] Fresh analysis failed: {e}")
+        # Final fallback
+        return await run_behavior_analysis(user_id, archetype)
+
+
+async def create_context_summary_like_api_analyze(user_context, memory_context, archetype: str, user_id: str) -> str:
+    """
+    Create context summary exactly like /api/analyze does (lines 1324-1348)
+    Minimal extraction - same logic, same format
+    """
+    try:
+        data_quality = user_context.data_quality
+        
+        # EXACT same memory summary logic as /api/analyze (lines 1299-1323)
+        memory_summary = ""
+        if memory_context.longterm_memory:
+            memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: {memory_context.analysis_mode.upper()}
+- User Memory Profile Available: YES
+- Personalized Focus Areas: {', '.join(memory_context.personalized_focus_areas)}
+- Proven Strategies: {len(memory_context.proven_strategies)} strategies identified
+- Recent Pattern Analysis: {len(memory_context.recent_patterns)} patterns tracked
+- Historical Analysis Count: {len(memory_context.analysis_history)}"""
+        else:
+            if memory_context.analysis_mode == "follow_up":
+                memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: FOLLOW-UP (Building memory profile)
+- User Memory Profile Available: PARTIAL (Previous analysis detected)
+- Days Since Last Analysis: {memory_context.days_to_fetch}
+- Analysis History: {len(memory_context.analysis_history)} previous analyses"""
+            else:
+                memory_summary = f"""
+MEMORY-ENHANCED CONTEXT:
+- Analysis Mode: {memory_context.analysis_mode.upper()} (New user)
+- User Memory Profile Available: NO (Building initial memory)"""
+
+        # EXACT same context summary format as /api/analyze (lines 1324-1348)
+        user_context_summary = f"""
+HEALTH ANALYSIS REQUEST - MEMORY-ENHANCED COMPREHENSIVE DATA:
+- Profile Reference: {user_id}
+- Health Archetype: {archetype}
+- Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
+- Mode: Memory-Enhanced Health Analysis (Phase 4.1)
+
+{memory_summary}
+
+HEALTH DATA PROFILE:
+- Data Quality Level: {data_quality.quality_level} 
+- Health Score Samples: {data_quality.scores_count}
+- Biomarker Measurements: {data_quality.biomarkers_count}
+- Data Coverage: {data_quality.completeness_score:.1%}
+- Recent Measurements: {data_quality.has_recent_data}
+- Time Period: {user_context.date_range.start_date.strftime('%Y-%m-%d')} to {user_context.date_range.end_date.strftime('%Y-%m-%d')}
+
+HEALTH TRACKING DATA SUMMARY:
+{await format_health_data_for_ai(user_context)}
+
+ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.
+"""
+        return user_context_summary
+        
+    except Exception as e:
+        print(f"⚠️ [SHARED_ANALYSIS] Context summary creation failed: {e}")
+        # Minimal fallback
+        return f"Health analysis for {archetype} user {user_id}"
+
+async def log_complete_standalone_analysis(agent_type: str, user_id: str, archetype: str, 
+                                         input_data: dict, output_data: dict, memory_context) -> None:
+    """Log complete standalone analysis data like /api/analyze does"""
+    try:
+        analysis_number = await get_next_analysis_number()
+        
+        # Prepare complete input data
+        complete_input = {
+            "timestamp": datetime.now().isoformat(),
+            "analysis_type": "standalone_" + agent_type,
+            "user_id": user_id,
+            "archetype": archetype,
+            "memory_enhanced": True,
+            "analysis_mode": memory_context.analysis_mode,
+            "days_to_fetch": memory_context.days_to_fetch,
+            "personalized_focus_areas": memory_context.personalized_focus_areas,
+            "agent_input_data": input_data
+        }
+        
+        # Prepare complete output data  
+        complete_output = {
+            "timestamp": datetime.now().isoformat(),
+            "analysis_type": "standalone_" + agent_type,
+            "user_id": user_id,
+            "archetype": archetype,
+            "memory_enhanced": True,
+            "analysis_result": output_data
+        }
+        
+        # Log using existing function
+        await log_analysis_data(complete_input, complete_output, analysis_number)
+        
+        print(f"📝 [MEMORY_ENHANCED] Complete standalone analysis logged to files {analysis_number}")
+        
+    except Exception as e:
+        print(f"⚠️ [MEMORY_ENHANCED] Failed to log complete analysis: {e}")
+
+async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict) -> dict:
+    """
+    Memory-Enhanced Routine Generation - Includes all features from /api/analyze
+    Features:
+    - Memory context preparation using MemoryIntegrationService
+    - Memory-enhanced prompt generation
+    - Storing routine plan in memory tables
+    - Updating user memory profile
+    - Complete logging of routine generation data
+    """
+    try:
+        print(f"🏃 [MEMORY_ENHANCED] Starting memory-enhanced routine generation for {user_id[:8]}...")
+        
+        # Import memory integration service
+        from services.memory_integration_service import MemoryIntegrationService
+        
+        # Initialize memory integration service
+        memory_service = MemoryIntegrationService()
+        
+        # Step 1: Prepare memory-enhanced context
+        print(f"📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...")
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        
+        # Step 2: Get user data for routine generation
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        
+        # Get user data (service handles days internally based on analysis history)
+        user_context, data_quality = await user_service.get_analysis_data(user_id)
+        
+        print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data for routine (mode: {memory_context.analysis_mode})")
+        
+        # Step 3: Get and enhance system prompt with memory
+        system_prompt = get_system_prompt("routine_plan")
+        enhanced_prompt = await memory_service.enhance_agent_prompt(
+            system_prompt, memory_context, "routine_plan"
+        )
+        
+        print(f"🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")
+        
+        # Step 4: Prepare routine agent data with memory context
+        user_context_summary = await format_health_data_for_ai(user_context)
+        routine_data = await prepare_routine_agent_data(user_context, behavior_analysis)
+        
+        # Step 5: Run routine planning with memory-enhanced prompt
+        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype)
+        
+        # Step 6: Store routine plan insights in memory
+        print(f"💾 [MEMORY_ENHANCED] Storing routine plan insights in memory...")
+        insights_stored = await memory_service.store_analysis_insights(
+            user_id, "routine_plan", routine_result, archetype
+        )
+        
+        if insights_stored:
+            print(f"✅ [MEMORY_ENHANCED] Routine plan insights stored successfully")
+        else:
+            print(f"⚠️ [MEMORY_ENHANCED] Failed to store routine plan insights")
+        
+        # Step 7: Store complete routine plan in holistic_analysis_results table
+        print(f"💾 [MEMORY_ENHANCED] Storing complete routine plan in database...")
+        try:
+            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            holistic_memory = HolisticMemoryService()
+            
+            # Store the complete routine result
+            analysis_id = await holistic_memory.store_analysis_result(
+                user_id, "routine_plan", routine_result, archetype
+            )
+            print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")
+            
+            await holistic_memory.cleanup()
+        except Exception as e:
+            print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete routine plan: {e}")
+        
+        # Step 8: Log complete routine generation data (input/output logging)
+        await log_complete_standalone_analysis(
+            "routine_plan", user_id, archetype, 
+            routine_data, routine_result, memory_context
+        )
+        
+        # Step 9: Cleanup memory service
+        await memory_service.cleanup()
+        
+        # Add memory enhancement metadata to result
+        routine_result.update({
+            "memory_enhanced": True,
+            "analysis_mode": memory_context.analysis_mode,
+            "days_fetched": memory_context.days_to_fetch,
+            "memory_focus_areas": memory_context.personalized_focus_areas,
+            "insights_stored": insights_stored
+        })
+        
+        print(f"✅ [MEMORY_ENHANCED] Memory-enhanced routine generation completed for {user_id[:8]}")
+        return routine_result
+        
+    except Exception as e:
+        print(f"❌ [MEMORY_ENHANCED] Error in memory-enhanced routine generation: {e}")
+        # Fallback to regular routine generation
+        print(f"🔄 [MEMORY_ENHANCED] Falling back to regular routine generation...")
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        user_context, _ = await user_service.get_analysis_data(user_id)
+        user_context_summary = await format_health_data_for_ai(user_context)
+        system_prompt = get_system_prompt("routine_plan")
+        
+        return await run_routine_planning_4o(system_prompt, user_context_summary, behavior_analysis, archetype)
+
+async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str, behavior_analysis: dict) -> dict:
+    """
+    Memory-Enhanced Nutrition Generation - Includes all features from /api/analyze
+    Features:
+    - Memory context preparation using MemoryIntegrationService
+    - Memory-enhanced prompt generation
+    - Storing nutrition plan in memory tables
+    - Updating user memory profile
+    - Complete logging of nutrition generation data
+    """
+    try:
+        print(f"🥗 [MEMORY_ENHANCED] Starting memory-enhanced nutrition generation for {user_id[:8]}...")
+        
+        # Import memory integration service
+        from services.memory_integration_service import MemoryIntegrationService
+        
+        # Initialize memory integration service
+        memory_service = MemoryIntegrationService()
+        
+        # Step 1: Prepare memory-enhanced context
+        print(f"📋 [MEMORY_ENHANCED] Preparing memory context for nutrition generation...")
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        
+        # Step 2: Get user data for nutrition generation
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        
+        # Get user data (service handles days internally based on analysis history)
+        user_context, data_quality = await user_service.get_analysis_data(user_id)
+        
+        print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data for nutrition (mode: {memory_context.analysis_mode})")
+        
+        # Step 3: Get and enhance system prompt with memory
+        system_prompt = get_system_prompt("nutrition_plan")
+        enhanced_prompt = await memory_service.enhance_agent_prompt(
+            system_prompt, memory_context, "nutrition_plan"
+        )
+        
+        print(f"🧠 [MEMORY_ENHANCED] Enhanced nutrition prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")
+        
+        # Step 4: Prepare nutrition agent data with memory context
+        user_context_summary = await format_health_data_for_ai(user_context)
+        nutrition_data = await prepare_nutrition_agent_data(user_context, behavior_analysis)
+        
+        # Step 5: Run nutrition planning with memory-enhanced prompt
+        nutrition_result = await run_nutrition_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype)
+        
+        # Step 6: Store nutrition plan insights in memory
+        print(f"💾 [MEMORY_ENHANCED] Storing nutrition plan insights in memory...")
+        insights_stored = await memory_service.store_analysis_insights(
+            user_id, "nutrition_plan", nutrition_result, archetype
+        )
+        
+        if insights_stored:
+            print(f"✅ [MEMORY_ENHANCED] Nutrition plan insights stored successfully")
+        else:
+            print(f"⚠️ [MEMORY_ENHANCED] Failed to store nutrition plan insights")
+        
+        # Step 7: Store complete nutrition plan in holistic_analysis_results table
+        print(f"💾 [MEMORY_ENHANCED] Storing complete nutrition plan in database...")
+        try:
+            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            holistic_memory = HolisticMemoryService()
+            
+            # Store the complete nutrition result
+            analysis_id = await holistic_memory.store_analysis_result(
+                user_id, "nutrition_plan", nutrition_result, archetype
+            )
+            print(f"✅ [MEMORY_ENHANCED] Complete nutrition plan stored with ID: {analysis_id}")
+            
+            await holistic_memory.cleanup()
+        except Exception as e:
+            print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete nutrition plan: {e}")
+        
+        # Step 8: Log complete nutrition generation data (input/output logging)
+        await log_complete_standalone_analysis(
+            "nutrition_plan", user_id, archetype, 
+            nutrition_data, nutrition_result, memory_context
+        )
+        
+        # Step 9: Cleanup memory service
+        await memory_service.cleanup()
+        
+        # Add memory enhancement metadata to result
+        nutrition_result.update({
+            "memory_enhanced": True,
+            "analysis_mode": memory_context.analysis_mode,
+            "days_fetched": memory_context.days_to_fetch,
+            "memory_focus_areas": memory_context.personalized_focus_areas,
+            "insights_stored": insights_stored
+        })
+        
+        print(f"✅ [MEMORY_ENHANCED] Memory-enhanced nutrition generation completed for {user_id[:8]}")
+        return nutrition_result
+        
+    except Exception as e:
+        print(f"❌ [MEMORY_ENHANCED] Error in memory-enhanced nutrition generation: {e}")
+        # Fallback to regular nutrition generation
+        print(f"🔄 [MEMORY_ENHANCED] Falling back to regular nutrition generation...")
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+        
+        user_service = UserDataService()
+        user_context, _ = await user_service.get_analysis_data(user_id)
+        user_context_summary = await format_health_data_for_ai(user_context)
+        system_prompt = get_system_prompt("nutrition_plan")
+        
+        return await run_nutrition_planning_4o(system_prompt, user_context_summary, behavior_analysis, archetype)
+
+>>>>>>> 2a82c3b (Safety snapshot before reconnecting to origin)
 async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
     """Run nutrition planning using gpt-4o for plan generation - Phase 3.2"""
     try:
