@@ -584,53 +584,27 @@ class UserDataService:
                 # Check if last_analysis is beyond all existing data (invalid timestamp scenario)
                 db = await self._ensure_db_connection()
                 
-                # Get the actual latest data timestamp using Supabase native API - no complex SQL
+                # Get the actual latest data timestamp using SQL 
                 try:
-                    # Use Supabase native API to get latest timestamps
-                    from supabase import create_client
-                    import os
+                    # Query to find the latest timestamp from both tables
+                    latest_timestamp_query = """
+                        SELECT GREATEST(
+                            COALESCE(MAX(scores.created_at), '1970-01-01'::timestamp),
+                            COALESCE(MAX(biomarkers.created_at), '1970-01-01'::timestamp)
+                        ) as latest_timestamp
+                        FROM scores
+                        FULL OUTER JOIN biomarkers ON scores.profile_id = biomarkers.profile_id
+                        WHERE scores.profile_id = $1 OR biomarkers.profile_id = $1
+                    """
                     
-                    supabase_url = os.getenv('SUPABASE_URL')
-                    supabase_key = os.getenv('SUPABASE_KEY')
-                    
-                    if supabase_url and supabase_key:
-                        supabase_client = create_client(supabase_url, supabase_key)
-                        
-                        # Get latest score timestamp
-                        latest_score = supabase_client.table('scores')\
-                            .select('created_at')\
-                            .eq('profile_id', user_id)\
-                            .order('created_at', desc=True)\
-                            .limit(1)\
-                            .execute()
-                        
-                        # Get latest biomarker timestamp  
-                        latest_biomarker = supabase_client.table('biomarkers')\
-                            .select('created_at')\
-                            .eq('profile_id', user_id)\
-                            .order('created_at', desc=True)\
-                            .limit(1)\
-                            .execute()
-                        
-                        # Find the latest timestamp
-                        actual_latest_timestamp = datetime(1970, 1, 1, tzinfo=timezone.utc)
-                        
-                        if latest_score.data:
-                            score_time = self._parse_datetime_field(latest_score.data[0]['created_at'])
-                            if score_time:
-                                actual_latest_timestamp = max(actual_latest_timestamp, score_time)
-                        
-                        if latest_biomarker.data:
-                            biomarker_time = self._parse_datetime_field(latest_biomarker.data[0]['created_at'])
-                            if biomarker_time:
-                                actual_latest_timestamp = max(actual_latest_timestamp, biomarker_time)
-                        
-                        logger.info(f"[STALE_CHECK] Using Supabase native API for timestamp check")
-                        
+                    latest_result = await db.fetch(latest_timestamp_query, user_id)
+                    if latest_result and latest_result[0]:
+                        actual_latest_timestamp = self._parse_datetime_field(latest_result[0]['latest_timestamp'])
+                        logger.info(f"[STALE_CHECK] Using SQL query for timestamp check")
                     else:
-                        # Fallback - use current time if credentials not available
+                        # Fallback - use current time if query fails
                         actual_latest_timestamp = datetime.now(timezone.utc)
-                        logger.warning(f"[STALE_CHECK] Supabase credentials not available, using current time")
+                        logger.warning(f"[STALE_CHECK] SQL query returned no results, using current time")
                         
                 except Exception as e:
                     logger.error(f"[STALE_CHECK] Failed to get actual latest timestamp: {e}")
