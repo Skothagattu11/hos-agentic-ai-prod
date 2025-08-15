@@ -1,26 +1,26 @@
 {
-  "timestamp": "2025-08-15T16:18:40.635202",
-  "analysis_type": "standalone_routine_plan",
+  "timestamp": "2025-08-15T17:22:17.919287",
+  "analysis_type": "shared_routine_plan",
   "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
   "archetype": "Foundation Builder",
   "memory_enhanced": true,
   "analysis_mode": "follow_up",
   "days_to_fetch": 1,
   "personalized_focus_areas": [
-    "health_analysis",
+    "recommendation_following",
     "readiness_improvement",
     "activity_tracking",
-    "recommendation_following"
+    "health_analysis"
   ],
   "agent_input_data": {
     "behavioral_insights": {
-      "habit_integration_strategy": "Anchor a 15-20 min walk immediately after a consistent daily event (e.g., after lunch) and use bedtime alarm to keep sleep start time within a 30-minute window",
-      "barrier_mitigation": "Start with low-friction activities (walking, gentle stretching) to avoid overwhelm; pre-commit by laying out walking shoes the night before; use phone reminders and single-tap logging to reduce cognitive load",
+      "habit_integration_strategy": "Anchor a 15-minute walk or gentle mobility routine immediately after a fixed daily cue (e.g., lunch). Start with \u2018minimum-viable\u2019 sessions to ensure success, then layer optional add-ons (body-weight circuit, stretching). Keep bedtime and wake-time within a 30-minute window to protect current sleep strength.",
+      "barrier_mitigation": "\u2022 Time scarcity \u2192 use micro-sessions (5-minute movement snacks) when full session isn\u2019t possible.\n\u2022 Low confidence \u2192 track streaks visually and celebrate weekly consistency rather than intensity.\n\u2022 Environment \u2192 prepare walking shoes by the door; choose indoor backup routine for bad weather.",
       "readiness_level": "Medium",
       "key_recommendations": [
-        "Schedule a 20-minute walk or equivalent light activity at least 5 days this coming week; log it in the tracker.",
-        "Maintain current sleep window by setting a bedtime reminder 30 minutes before preferred sleep start.",
-        "Perform a 2-minute evening reflection: note energy, mood, and one positive event; reinforces mental wellbeing metric tracking."
+        "Schedule a 15-minute post-lunch walk every weekday; log it in your tracker to raise Activity sessions from 2 to 5+ per week.",
+        "Add a 5-minute evening stretch right before your established bedtime routine to reinforce sleep cueing and enhance recovery.",
+        "Keep sleep window consistent (\u00b130 min) to preserve the strong 0.81 Sleep Metric; set a phone reminder 45 minutes before target bedtime to start winding down."
       ]
     },
     "routine_relevant_metrics": {

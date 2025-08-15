@@ -78,7 +78,9 @@ class OnDemandAnalysisService:
             "hours_since_analysis": 0,
             "threshold_used": self.base_data_threshold,
             "memory_quality": MemoryQuality.SPARSE,
-            "reason": ""
+            "reason": "",
+            "analysis_mode": "initial",
+            "days_to_fetch": 7
         }
         
         try:
@@ -91,7 +93,9 @@ class OnDemandAnalysisService:
             last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
             
             if not last_analysis:
-                # New user - always run initial analysis
+                # New user - always run initial analysis with comprehensive data window
+                metadata["analysis_mode"] = "initial"
+                metadata["days_to_fetch"] = 7
                 metadata["reason"] = "No previous analysis found - initial analysis required"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             
@@ -103,19 +107,25 @@ class OnDemandAnalysisService:
             
             metadata["hours_since_analysis"] = hours_since
             
-            # Check if analysis is too stale
+            # Check if analysis is too stale - treat as fresh start
             if days_since > self.max_cache_age_days:
-                metadata["reason"] = f"Analysis is {days_since:.1f} days old (>{self.max_cache_age_days} days)"
+                metadata["analysis_mode"] = "initial" 
+                metadata["days_to_fetch"] = 7
+                metadata["reason"] = f"Analysis is {days_since:.1f} days old (>{self.max_cache_age_days} days) - fresh start"
                 return (AnalysisDecision.STALE_FORCE_REFRESH, metadata)
             
-            # Too recent - use cache
+            # Too recent - use cache with follow-up parameters
             if hours_since < self.min_cache_age_hours:
+                metadata["analysis_mode"] = "follow_up"
+                metadata["days_to_fetch"] = 1
                 metadata["reason"] = f"Recent analysis from {hours_since:.1f} hours ago"
                 return (AnalysisDecision.MEMORY_ENHANCED_CACHE, metadata)
             
             # Count new data points since last analysis
+            print(f"🔍 [ONDEMAND_COUNT] Counting data since: {last_analysis.isoformat()}")
             new_data_count = await self._count_new_data_points(user_id, last_analysis)
             metadata["new_data_points"] = new_data_count
+            print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points")
             
             # Minimal logging for debugging
             logger.debug(f"[ONDEMAND] User {user_id[:8]}... - {new_data_count} new points, {hours_since:.1f}h since last")
@@ -132,11 +142,24 @@ class OnDemandAnalysisService:
             )
             metadata["threshold_used"] = threshold
             
-            # Make decision based on threshold
+            # Intelligent analysis mode determination based on data and time
             if new_data_count >= threshold:
-                metadata["reason"] = f"{new_data_count} new data points >= {threshold} threshold"
+                # Sufficient new data - determine mode based on time gap and data volume
+                if days_since >= 3 or new_data_count >= threshold * 2:
+                    # Longer gap or massive new data - treat as comprehensive re-analysis
+                    metadata["analysis_mode"] = "initial"
+                    metadata["days_to_fetch"] = 7
+                    metadata["reason"] = f"{new_data_count} new data points >= {threshold} threshold - comprehensive re-analysis (gap: {days_since:.1f} days)"
+                else:
+                    # Recent but sufficient data - incremental analysis with more context
+                    metadata["analysis_mode"] = "follow_up"
+                    metadata["days_to_fetch"] = min(7, max(3, int(days_since) + 1))  # Scale based on gap
+                    metadata["reason"] = f"{new_data_count} new data points >= {threshold} threshold - incremental analysis with {metadata['days_to_fetch']} days context"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             else:
+                # Insufficient new data - use cached with follow-up parameters
+                metadata["analysis_mode"] = "follow_up"
+                metadata["days_to_fetch"] = 1
                 metadata["reason"] = f"{new_data_count} new data points < {threshold} threshold - using cached with memory"
                 return (AnalysisDecision.MEMORY_ENHANCED_CACHE, metadata)
                 
@@ -167,6 +190,7 @@ class OnDemandAnalysisService:
             
             total_count = scores_count + biomarkers_count
             
+            print(f"📈 [DATA_COUNT] Scores: {scores_count}, Biomarkers: {biomarkers_count}, Total: {total_count}")
             logger.debug(f"[ONDEMAND] User {user_id[:8]}... has {total_count} new data points")
             return total_count
             

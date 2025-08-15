@@ -448,10 +448,12 @@ class HolisticMemoryService:
             # Prepare data matching the table schema exactly
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
             
-            # Handle duplicate constraint by checking existing record first
+            # Handle duplicate constraint by checking existing record first  
+            # The constraint is on (user_id, analysis_type, analysis_date) where analysis_date defaults to CURRENT_DATE
             check_query = """
                 SELECT id FROM holistic_analysis_results 
-                WHERE user_id = $1 AND analysis_type = $2 AND DATE(created_at) = CURRENT_DATE
+                WHERE user_id = $1 AND analysis_type = $2 
+                AND (analysis_date = CURRENT_DATE OR DATE(created_at) = CURRENT_DATE)
             """
             
             print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record...")
@@ -463,7 +465,8 @@ class HolisticMemoryService:
                 update_query = """
                     UPDATE holistic_analysis_results 
                     SET analysis_result = $3, archetype = $4, input_summary = $5, created_at = NOW()
-                    WHERE user_id = $1 AND analysis_type = $2 AND DATE(created_at) = CURRENT_DATE
+                    WHERE user_id = $1 AND analysis_type = $2 
+                    AND (analysis_date = CURRENT_DATE OR DATE(created_at) = CURRENT_DATE)
                     RETURNING id
                 """
                 result = await db.fetchrow(update_query, user_id, analysis_type, analysis_result, 

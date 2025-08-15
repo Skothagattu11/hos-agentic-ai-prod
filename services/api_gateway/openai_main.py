@@ -850,8 +850,8 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest):
             # Get archetype from request or use default
             archetype = request.archetype or "Foundation Builder"
             
-            # Use the behavior analysis function that returns correct status format
-            behavior_analysis = await run_behavior_analysis(user_id, archetype)
+            # Use shared behavior analysis with force_refresh=True to ensure fresh analysis
+            behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh=True)
             
             if behavior_analysis and behavior_analysis.get("status") == "success":
                 analysis_type = "fresh"
@@ -1905,11 +1905,12 @@ async def format_health_data_for_ai(user_context) -> str:
 
 async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
-    Extracted behavior analysis logic from /api/analyze for reuse
-    Returns behavior analysis in the same format as the main endpoint
+    Behavior analysis that MUST go through OnDemandAnalysisService threshold logic
+    This function should only be called by the behavior analysis endpoint after threshold check
     """
     try:
-        print(f"🧠 [BEHAVIOR_WRAPPER] Starting behavior analysis for {user_id[:8]}...")
+        print(f"🧠 [BEHAVIOR_WRAPPER] Starting DIRECT behavior analysis for {user_id[:8]}...")
+        print(f"⚠️ [BEHAVIOR_WRAPPER] WARNING: This bypasses OnDemandAnalysisService threshold logic!")
         
         # Get user data using existing services
         from services.user_data_service import UserDataService
@@ -2130,9 +2131,10 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
             print(f"⚠️ [MEMORY_ENHANCED] Failed to store analysis insights: {e}")
         
         # Step 8: Log complete analysis data (input/output logging)
-        await log_complete_standalone_analysis(
+        await log_complete_analysis(
             "behavior_analysis", user_id, archetype, 
-            behavior_data, analysis_result, memory_context
+            behavior_data, analysis_result, memory_context,
+            analysis_source="shared"
         )
         
         # Step 9: Cleanup memory service
@@ -2152,9 +2154,8 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         
     except Exception as e:
         print(f"❌ [MEMORY_ENHANCED] Error in memory-enhanced behavior analysis: {e}")
-        # Fallback to regular behavior analysis
-        print(f"🔄 [MEMORY_ENHANCED] Falling back to regular behavior analysis...")
-        return await run_behavior_analysis(user_id, archetype)
+        # No fallback to standalone - all analysis must go through OnDemandAnalysisService
+        raise Exception(f"Memory-enhanced behavior analysis failed for user {user_id}: {e}")
 
 async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, force_refresh: bool = False) -> dict:
     """
@@ -2168,29 +2169,44 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         ondemand_service = await get_ondemand_service()
         decision, metadata = await ondemand_service.should_run_analysis(user_id, force_refresh)
         
-        # Critical logging only
+        # Enhanced debugging for threshold issues
         decision_str = decision.value if hasattr(decision, 'value') else str(decision)
-        logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Decision: {decision_str}, Data: {metadata.get('new_data_points', 0)}/{metadata.get('threshold_used', 50)}")
+        new_data = metadata.get('new_data_points', 0)
+        threshold = metadata.get('threshold_used', 50)
+        
+        print(f"🎯 [THRESHOLD_DEBUG] OnDemandAnalysisService Decision for {user_id[:8]}...")
+        print(f"   📊 Decision: {decision_str}")
+        print(f"   📈 New Data Points: {new_data}")
+        print(f"   🎯 Threshold: {threshold}")
+        print(f"   💾 Memory Quality: {metadata.get('memory_quality', 'unknown')}")
+        print(f"   ⏰ Hours Since Last: {metadata.get('hours_since_analysis', 0):.1f}")
+        print(f"   💡 Reason: {metadata.get('reason', 'no reason provided')}")
+        
+        logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Decision: {decision_str}, Data: {new_data}/{threshold}")
         
         # Step 2: Use cached if sufficient (only for MEMORY_ENHANCED_CACHE decision)
         if decision == AnalysisDecision.MEMORY_ENHANCED_CACHE:
+            print(f"💾 [THRESHOLD_DEBUG] Decision is MEMORY_ENHANCED_CACHE - fetching cached analysis...")
             cached_analysis = await get_cached_behavior_analysis_from_memory(user_id)
             if cached_analysis:
+                print(f"✅ [THRESHOLD_DEBUG] Found cached analysis - using cached behavior analysis")
+                print(f"   📝 Cache contains: {len(str(cached_analysis))} characters")
                 logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Using cached analysis")
                 return cached_analysis
             else:
+                print(f"❌ [THRESHOLD_DEBUG] No cached analysis found - falling back to fresh")
                 logger.warning(f"[SHARED_ANALYSIS] {user_id[:8]}... Cache failed, using fresh")
         
         # Step 3: Run fresh analysis for all other decisions
         logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Running fresh analysis")
-        fresh_result = await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype)
+        fresh_result = await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype, metadata)
         logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Fresh analysis completed")
         return fresh_result
         
     except Exception as e:
         logger.error(f"[SHARED_ANALYSIS] {user_id[:8]}... Error: {e}")
-        # Fallback to basic behavior analysis
-        return await run_behavior_analysis(user_id, archetype)
+        # No fallback - all analysis must go through OnDemandAnalysisService
+        raise Exception(f"Shared behavior analysis failed for user {user_id}: {e}")
 
 
 async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
@@ -2225,10 +2241,15 @@ async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
         return None
 
 
-async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str) -> dict:
+async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str, ondemand_metadata: dict = None) -> dict:
     """
     Run fresh behavior analysis using EXACT same flow as /api/analyze
     Extracted from /api/analyze lines 1257-1386 - minimal changes, maximum reuse
+    
+    Args:
+        user_id: User identifier
+        archetype: User archetype
+        ondemand_metadata: Metadata from OnDemandAnalysisService containing analysis_mode and days_to_fetch
     """
     try:
         # EXACT same imports as /api/analyze (lines 1246-1249)
@@ -2245,8 +2266,8 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
         enhanced_prompts_service = EnhancedMemoryPromptsService()
         
         try:
-            # EXACT same memory context preparation as /api/analyze (lines 1258-1259)
-            memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+            # Use OnDemandAnalysisService metadata for memory context preparation
+            memory_context = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata)
             
             # EXACT same data fetching as /api/analyze (line 1271)
             user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
@@ -2282,8 +2303,8 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             
     except Exception as e:
         print(f"❌ [SHARED_ANALYSIS] Fresh analysis failed: {e}")
-        # Final fallback
-        return await run_behavior_analysis(user_id, archetype)
+        # No final fallback - all analysis must go through OnDemandAnalysisService
+        raise Exception(f"Fresh behavior analysis failed for user {user_id}: {e}")
 
 
 async def create_context_summary_like_api_analyze(user_context, memory_context, archetype: str, user_id: str) -> str:
@@ -2349,16 +2370,23 @@ ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sle
         # Minimal fallback
         return f"Health analysis for {archetype} user {user_id}"
 
-async def log_complete_standalone_analysis(agent_type: str, user_id: str, archetype: str, 
-                                         input_data: dict, output_data: dict, memory_context) -> None:
-    """Log complete standalone analysis data like /api/analyze does"""
+async def log_complete_analysis(agent_type: str, user_id: str, archetype: str, 
+                               input_data: dict, output_data: dict, memory_context, 
+                               analysis_source: str = "shared") -> None:
+    """Log complete analysis data - supports both shared and standalone analysis"""
     try:
         analysis_number = await get_next_analysis_number()
+        
+        # Determine analysis type based on source
+        if analysis_source == "shared":
+            analysis_type = "shared_" + agent_type
+        else:
+            analysis_type = "standalone_" + agent_type
         
         # Prepare complete input data
         complete_input = {
             "timestamp": datetime.now().isoformat(),
-            "analysis_type": "standalone_" + agent_type,
+            "analysis_type": analysis_type,
             "user_id": user_id,
             "archetype": archetype,
             "memory_enhanced": True,
@@ -2371,7 +2399,7 @@ async def log_complete_standalone_analysis(agent_type: str, user_id: str, archet
         # Prepare complete output data  
         complete_output = {
             "timestamp": datetime.now().isoformat(),
-            "analysis_type": "standalone_" + agent_type,
+            "analysis_type": analysis_type,
             "user_id": user_id,
             "archetype": archetype,
             "memory_enhanced": True,
@@ -2463,9 +2491,10 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete routine plan: {e}")
         
         # Step 8: Log complete routine generation data (input/output logging)
-        await log_complete_standalone_analysis(
+        await log_complete_analysis(
             "routine_plan", user_id, archetype, 
-            routine_data, routine_result, memory_context
+            routine_data, routine_result, memory_context,
+            analysis_source="shared"
         )
         
         # Step 9: Cleanup memory service
@@ -2574,9 +2603,10 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete nutrition plan: {e}")
         
         # Step 8: Log complete nutrition generation data (input/output logging)
-        await log_complete_standalone_analysis(
+        await log_complete_analysis(
             "nutrition_plan", user_id, archetype, 
-            nutrition_data, nutrition_result, memory_context
+            nutrition_data, nutrition_result, memory_context,
+            analysis_source="shared"
         )
         
         # Step 9: Cleanup memory service
@@ -2888,9 +2918,10 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete routine plan: {e}")
         
         # Step 8: Log complete routine generation data (input/output logging)
-        await log_complete_standalone_analysis(
+        await log_complete_analysis(
             "routine_plan", user_id, archetype, 
-            routine_data, routine_result, memory_context
+            routine_data, routine_result, memory_context,
+            analysis_source="shared"
         )
         
         # Step 9: Cleanup memory service
