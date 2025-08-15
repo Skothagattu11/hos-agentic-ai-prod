@@ -933,7 +933,7 @@ Focus on insights that could only be generated with access to the user's complet
                 # Generate insights with enhanced context
                 response = await asyncio.to_thread(
                     openai.chat.completions.create,
-                    model="gpt-4",
+                    model="gpt-4o",
                     messages=[
                         {"role": "system", "content": enhanced_prompt},
                         {"role": "user", "content": insights_context}

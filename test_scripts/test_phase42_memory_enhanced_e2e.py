@@ -566,7 +566,7 @@ async def test_real_user_workflow(user_id):
                     # Validate workflow worked correctly
                     workflow_success = (
                         routine_result.get('status') == 'success' and
-                        analysis_type in ['fresh', 'cached', 'cached_fallback'] and
+                        analysis_type in ['fresh', 'cached', 'cached_fallback', 'shared'] and
                         threshold_used == 50
                     )
                     
@@ -574,7 +574,7 @@ async def test_real_user_workflow(user_id):
                         print(f"   ✅ Real user workflow completed successfully!")
                     
                     results['routine_workflow'] = workflow_success
-                    results['behavior_integration'] = behavior_analysis_called
+                    results['behavior_integration'] = behavior_analysis_called or analysis_decision == 'shared_behavior_analysis_service'
                     results['threshold_constraint'] = threshold_used == 50
                     
                 else:
@@ -593,6 +593,78 @@ async def test_real_user_workflow(user_id):
             'routine_workflow': False,
             'behavior_integration': False, 
             'threshold_constraint': False
+        }
+
+async def test_followup_analysis_workflow(user_id, archetype=TEST_ARCHETYPE):
+    """Test follow-up analysis workflow after initial analysis"""
+    print_section("FOLLOW-UP ANALYSIS WORKFLOW", "🔄")
+    
+    results = {}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            print("🎯 Simulating: Follow-up Analysis After Progress")
+            print("   This tests incremental data processing and memory evolution")
+            
+            # Simulate some time passing and new data arriving
+            print("   📊 Simulating new health data points...")
+            await asyncio.sleep(2)  # In real scenario, new data would be added
+            
+            # Perform follow-up analysis
+            print(f"📋 POST /api/analyze (Follow-up)")
+            payload = {
+                "user_id": user_id,
+                "archetype": archetype
+            }
+            
+            timeout = aiohttp.ClientTimeout(total=600)
+            async with session.post(
+                f"{BASE_URL}/api/analyze",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=timeout
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    print(f"✅ Follow-up analysis: success")
+                    
+                    # Check if it detected follow-up mode
+                    analysis_data = result.get('analysis', {})
+                    system_info = analysis_data.get('system_info', {})
+                    
+                    # Detect follow-up indicators
+                    is_followup = 'follow_up' in str(system_info).lower() or 'follow-up' in str(system_info).lower()
+                    uses_incremental = 'incremental' in str(system_info).lower()
+                    
+                    print(f"   🔄 Follow-up Mode Detected: {'Yes' if is_followup else 'No'}")
+                    print(f"   📈 Incremental Data Used: {'Yes' if uses_incremental else 'No'}")
+                    
+                    # Check behavior analysis changes
+                    if 'behavior_analysis' in analysis_data:
+                        behavior = analysis_data['behavior_analysis']
+                        score = behavior.get('overall_score', 'N/A')
+                        print(f"   📊 Updated Behavior Score: {score}")
+                    
+                    results['followup_analysis'] = True
+                    results['followup_mode_detected'] = is_followup
+                    results['incremental_data'] = uses_incremental
+                    
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Follow-up analysis failed: HTTP {response.status}")
+                    print(f"   Error: {error_text[:200]}...")
+                    results['followup_analysis'] = False
+                    results['followup_mode_detected'] = False
+                    results['incremental_data'] = False
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Follow-up analysis workflow failed: {e}")
+        return {
+            'followup_analysis': False,
+            'followup_mode_detected': False,
+            'incremental_data': False
         }
 
 async def test_nutrition_user_workflow(user_id):
@@ -643,7 +715,7 @@ async def test_nutrition_user_workflow(user_id):
                     
                     workflow_success = (
                         nutrition_result.get('status') == 'success' and
-                        analysis_type in ['fresh', 'cached', 'cached_fallback'] and
+                        analysis_type in ['fresh', 'cached', 'cached_fallback', 'shared'] and
                         threshold_used == 50
                     )
                     
@@ -651,7 +723,7 @@ async def test_nutrition_user_workflow(user_id):
                         print(f"   ✅ Nutrition user workflow completed successfully!")
                     
                     results['nutrition_workflow'] = workflow_success
-                    results['nutrition_behavior_integration'] = behavior_analysis_called
+                    results['nutrition_behavior_integration'] = behavior_analysis_called or analysis_decision == 'shared_behavior_analysis_service'
                     
                 else:
                     error_text = await response.text()
@@ -712,12 +784,21 @@ async def main():
     nutrition_workflow_results = await test_nutrition_user_workflow(REAL_PROFILE_ID)
     test_results.update(nutrition_workflow_results)
     
-    # Step 5: Test scheduler status
-
+    # Step 5: Test insights endpoints (Phase 4.2 Memory & AI Insights)
+    print("\n📊 Testing AI Insights with Memory Integration...")
+    insights_results = await test_insights_endpoints(REAL_PROFILE_ID)
+    test_results.update(insights_results)
+    
+    # Step 6: Test follow-up analysis workflow
+    print("\n🔄 Testing Follow-up Analysis Workflow...")
+    followup_results = await test_followup_analysis_workflow(REAL_PROFILE_ID)
+    test_results.update(followup_results)
+    
+    # Step 7: Test scheduler status
     scheduler_working = await test_scheduler_status()
     test_results['scheduler'] = scheduler_working
     
-    # Step 6: Validate memory enhancement
+    # Step 8: Validate memory enhancement
     memory_validation = await validate_memory_enhancement(REAL_PROFILE_ID)
     test_results.update(memory_validation)
     
@@ -745,13 +826,27 @@ async def main():
         ("Nutrition-Behavior Integration", test_results.get('nutrition_behavior_integration', False)),
     ]
     
+    # AI Insights components
+    insights_components = [
+        ("Latest Insights Retrieval", test_results.get('latest_insights', False)),
+        ("Fresh Insights Generation", test_results.get('generate_insights', False)),
+        ("Insights Feedback System", test_results.get('insights_feedback', False)),
+    ]
+    
+    # Follow-up analysis components
+    followup_components = [
+        ("Follow-up Analysis", test_results.get('followup_analysis', False)),
+        ("Follow-up Mode Detection", test_results.get('followup_mode_detected', False)),
+        ("Incremental Data Processing", test_results.get('incremental_data', False)),
+    ]
+    
     # Memory system components
     memory_components = [
         ("Long-term Memory Storage", test_results.get('longterm_quality', False)),
         ("Analysis Memory Enhancement", test_results.get('analysis_enhanced', False)),
     ]
     
-    all_components = core_components + standalone_components + workflow_components + memory_components
+    all_components = core_components + standalone_components + workflow_components + insights_components + followup_components + memory_components
 
     working_count = sum(1 for _, status in all_components if status)
     
@@ -765,6 +860,14 @@ async def main():
     
     print(f"\n👤 REAL USER WORKFLOWS:")
     for name, status in workflow_components:
+        print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
+    
+    print(f"\n🔍 AI INSIGHTS:")
+    for name, status in insights_components:
+        print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
+    
+    print(f"\n🔄 FOLLOW-UP ANALYSIS:")
+    for name, status in followup_components:
         print(f"   • {name}: {'✅ WORKING' if status else '❌ FAILED'}")
     
     print(f"\n🧠 MEMORY SYSTEM:")
@@ -806,10 +909,92 @@ async def main():
     
     return success_level in ["EXCELLENT", "GOOD"]
 
+async def interactive_mode():
+    """Interactive mode for continuous testing and follow-up analysis"""
+    print("\n" + "="*70)
+    print("🔄 INTERACTIVE FOLLOW-UP TEST MODE")
+    print("="*70)
+    print("\nThis mode allows continuous testing with follow-up analyses")
+    print("Perfect for testing incremental updates and memory evolution\n")
+    
+    # Check server
+    if not await test_server_health():
+        print("❌ Server not available. Please start the server first.")
+        return False
+    
+    while True:
+        print("\n" + "-"*50)
+        print("Test Options:")
+        print("1. Run complete workflow test")
+        print("2. Test follow-up analysis only")
+        print("3. Generate fresh insights")
+        print("4. Test routine generation (shared behavior)")
+        print("5. Test nutrition generation (shared behavior)")
+        print("6. Check memory evolution")
+        print("7. Run behavior analysis")
+        print("8. Test all insights endpoints")
+        print("0. Exit")
+        
+        choice = input("\nSelect option (0-8): ").strip()
+        
+        if choice == "0":
+            print("\n👋 Exiting interactive mode")
+            break
+        elif choice == "1":
+            await main()
+        elif choice == "2":
+            results = await test_followup_analysis_workflow(REAL_PROFILE_ID)
+            print(f"\n📊 Follow-up test results: {sum(1 for v in results.values() if v)}/{len(results)} passed")
+        elif choice == "3":
+            results = await test_insights_endpoints(REAL_PROFILE_ID)
+            print(f"\n📊 Insights test results: {sum(1 for v in results.values() if v)}/{len(results)} passed")
+        elif choice == "4":
+            results = await test_real_user_workflow(REAL_PROFILE_ID)
+            print(f"\n📊 Routine test results: {sum(1 for v in results.values() if v)}/{len(results)} passed")
+        elif choice == "5":
+            results = await test_nutrition_user_workflow(REAL_PROFILE_ID)
+            print(f"\n📊 Nutrition test results: {sum(1 for v in results.values() if v)}/{len(results)} passed")
+        elif choice == "6":
+            results = await validate_memory_enhancement(REAL_PROFILE_ID)
+            print(f"\n📊 Memory validation: {sum(1 for v in results.values() if v)}/{len(results)} checks passed")
+        elif choice == "7":
+            results = await test_behavior_analysis_endpoint(REAL_PROFILE_ID)
+            print(f"\n📊 Behavior analysis results: {sum(1 for v in results.values() if v)}/{len(results)} passed")
+        elif choice == "8":
+            # Test all insights endpoints in sequence
+            print("\n🔍 Testing all insights endpoints...")
+            insights_results = await test_insights_endpoints(REAL_PROFILE_ID)
+            print(f"\n📊 Complete insights test: {sum(1 for v in insights_results.values() if v)}/{len(insights_results)} passed")
+        else:
+            print("Invalid option. Please select 0-8.")
+        
+        if choice != "0":
+            input("\nPress Enter to continue...")
+    
+    return True
+
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Phase 4.2 Memory-Enhanced E2E Test")
+    parser.add_argument("--interactive", "-i", action="store_true",
+                       help="Run in interactive mode for continuous testing")
+    parser.add_argument("--followup", "-f", action="store_true",
+                       help="Run follow-up analysis test only")
+    
+    args = parser.parse_args()
+    
     try:
-        success = asyncio.run(main())
-        print(f"\n{'🎉 Phase 4.2 test completed successfully!' if success else '⚠️  Phase 4.2 test completed with issues'}")
+        if args.interactive:
+            success = asyncio.run(interactive_mode())
+        elif args.followup:
+            print("🔄 Running Follow-up Analysis Test Only")
+            success = asyncio.run(test_followup_analysis_workflow(REAL_PROFILE_ID))
+            print(f"\n{'✅ Follow-up test passed!' if success else '❌ Follow-up test failed'}")
+        else:
+            success = asyncio.run(main())
+            print(f"\n{'🎉 Phase 4.2 test completed successfully!' if success else '⚠️  Phase 4.2 test completed with issues'}")
+        
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
         print("\n\n👋 Test interrupted by user. Goodbye!")

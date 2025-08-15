@@ -445,42 +445,74 @@ class HolisticMemoryService:
             db = await self._ensure_db_connection()
             print(f"🔍 MEMORY DEBUG: DB connection established: {type(db)}")
             
-            # Use the SAME method as working memory (SQL adapter execute)  
-            # Match the EXACT table schema from memory_system_tables.sql
-            # Table columns: id, user_id, analysis_type, archetype, analysis_result, input_summary, 
-            #                agent_id, analysis_version, system_prompt_version, confidence_score, 
-            #                completeness_score, processing_time_ms, created_at, analysis_date, 
-            #                user_rating, user_feedback, implementation_success, follow_up_date
-            query = """
-                INSERT INTO holistic_analysis_results (
-                    user_id, analysis_type, archetype, analysis_result, 
-                    input_summary, agent_id
-                ) VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING id
-            """
-            
             # Prepare data matching the table schema exactly
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
-            print(f"🔍 MEMORY DEBUG: Executing SQL insert...")
             
-            try:
-                result = await db.fetchrow(query, user_id, analysis_type, archetype_used, 
+            # Handle duplicate constraint by checking existing record first
+            check_query = """
+                SELECT id FROM holistic_analysis_results 
+                WHERE user_id = $1 AND analysis_type = $2 AND DATE(created_at) = CURRENT_DATE
+            """
+            
+            print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record...")
+            existing_record = await db.fetch(check_query, user_id, analysis_type)
+            
+            if existing_record:
+                # Update existing record
+                print(f"🔄 MEMORY DEBUG: Updating existing {analysis_type} record...")
+                update_query = """
+                    UPDATE holistic_analysis_results 
+                    SET analysis_result = $3, archetype = $4, input_summary = $5, created_at = NOW()
+                    WHERE user_id = $1 AND analysis_type = $2 AND DATE(created_at) = CURRENT_DATE
+                    RETURNING id
+                """
+                result = await db.fetchrow(update_query, user_id, analysis_type, analysis_result, 
+                                         archetype_used, input_summary)
+            else:
+                # Insert new record
+                print(f"➕ MEMORY DEBUG: Inserting new {analysis_type} record...")
+                insert_query = """
+                    INSERT INTO holistic_analysis_results (
+                        user_id, analysis_type, archetype, analysis_result, 
+                        input_summary, agent_id
+                    ) VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING id
+                """
+                result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
                                          analysis_result, input_summary, 'memory_service')
-                print(f"🔍 MEMORY DEBUG: SQL result: {result}")
-                
-                if result:
-                    analysis_id = str(result['id'])
-                    print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")
-                    return analysis_id
-                else:
-                    print(f"❌ MEMORY: Failed to store {analysis_type} analysis - no result returned")
-                    return None
-                    
-            except Exception as insert_error:
-                print(f"🔍 MEMORY DEBUG: SQL insert failed with error: {insert_error}")
-                print(f"🔍 MEMORY DEBUG: Insert error type: {type(insert_error)}")
-                return None
             
+            print(f"🔍 MEMORY DEBUG: SQL result: {result}")
+            
+            if result:
+                analysis_id = str(result['id'])
+                print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")
+                
+                # HYBRID APPROACH: Optional automatic insights extraction with error handling
+                try:
+                    from services.insights_extraction_service import insights_service
+                    
+                    # Only extract insights if this is a fresh analysis (not an update)
+                    if analysis_id:  # Successful storage
+                        insights_count = await insights_service.extract_and_store_insights(
+                            analysis_result=analysis_result,
+                            analysis_type=analysis_type,
+                            user_id=user_id,
+                            archetype=archetype_used or "Foundation Builder",
+                            source_analysis_id=analysis_id
+                        )
+                        print(f"✨ INSIGHTS: Auto-extracted {insights_count} insights from {analysis_type}")
+                    else:
+                        print(f"📊 ANALYSIS: {analysis_type} stored - no insights extracted (update)")
+                except Exception as e:
+                    # Don't fail the analysis storage if insights extraction fails
+                    print(f"⚠️ INSIGHTS: Failed to auto-extract insights: {str(e)}")
+                    print(f"📊 ANALYSIS: {analysis_type} stored (ID: {analysis_id}) - insights available on demand")
+                
+                return analysis_id
+            else:
+                print(f"❌ MEMORY: Failed to store {analysis_type} analysis - no result returned")
+                return None
+                
         except Exception as e:
             print(f"🔍 MEMORY DEBUG: General error: {e}")
             logger.debug(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")

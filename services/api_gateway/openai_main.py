@@ -47,6 +47,29 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate health data endpoints: {e}")
 
+# Integrate Insights Endpoints
+print("🔍 [DEBUG] Attempting to import insights endpoints...")
+try:
+    from .insights_endpoints import router as insights_router
+    print("🔍 [DEBUG] Insights endpoints imported successfully")
+    app.include_router(insights_router)
+    print("✅ [INTEGRATION] Insights endpoints added successfully")
+    print("✨ [ENDPOINTS] Insights API endpoints now available:")
+    print("  - POST /api/v1/insights/generate")
+    print("  - GET /api/v1/insights/{user_id}")
+    print("  - PATCH /api/v1/insights/{insight_id}/acknowledge")
+    print("  - POST /api/v1/insights/{insight_id}/rate")
+except ImportError as e:
+    print(f"⚠️  [WARNING] Insights endpoints not available: ImportError - {e}")
+    import traceback
+    print("Full traceback:")
+    traceback.print_exc()
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate insights endpoints: {e}")
+    import traceback
+    print("Full traceback:")
+    traceback.print_exc()
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 

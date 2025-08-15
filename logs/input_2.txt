@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-14T16:26:58.736997",
+  "timestamp": "2025-08-15T16:23:09.903711",
   "analysis_type": "standalone_nutrition_plan",
   "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
   "archetype": "Foundation Builder",
@@ -7,74 +7,26 @@
   "analysis_mode": "follow_up",
   "days_to_fetch": 1,
   "personalized_focus_areas": [
-    "recommendation_following",
+    "health_analysis",
     "readiness_improvement",
     "activity_tracking",
-    "health_analysis"
+    "recommendation_following"
   ],
   "agent_input_data": {
     "behavioral_insights": {
       "sophistication_level": "Beginner",
       "readiness_level": "Medium",
       "primary_goal": {
-        "goal": "Establish a reliable, low-effort daily wellness routine (movement + sleep consistency + balanced meals).",
-        "timeline": "3\u20134 months to reach 80% routine adherence on non-travel weeks.",
-        "success_metrics": "1) \u22658,000 steps on \u22655 days/week; 2) 7\u20138 h sleep with <15 % wake-after-sleep time on \u22654 nights/week; 3) balanced plate (\u00bd veg/fruit, \u00bc protein, \u00bc complex carbs) logged at \u226510 meals/week."
+        "goal": "Establish a reliable daily movement routine while preserving good sleep quality",
+        "timeline": "First 4-6 weeks",
+        "success_metrics": "\u2022 \u22655 days/week with \u22657,500 steps or \u226520 min moderate activity logged\n\u2022 Sleep Efficiency maintained \u226585 %\n\u2022 Self-rated mental wellbeing \u22650.80 average by week 6"
       },
-      "motivation_drivers": "Positive feedback loops, visible progress badges, and social support from close friends/family. Responds well to gentle encouragement and quick wins rather than competitive challenges."
+      "motivation_drivers": "Confidence from quick wins, visible progress tracking, and feeling more energized during the day"
     },
     "nutrition_relevant_metrics": {
-      "activity_levels": [
-        {
-          "date": "2025-08-09",
-          "activity_score": 0.69,
-          "state": "medium"
-        },
-        {
-          "date": "2025-08-08",
-          "activity_score": 0.39,
-          "state": "minimal"
-        },
-        {
-          "date": "2025-08-07",
-          "activity_score": 0.36,
-          "state": "minimal"
-        }
-      ],
-      "sleep_quality": [
-        {
-          "date": "2025-08-09",
-          "sleep_score": 0.81,
-          "state": "high"
-        },
-        {
-          "date": "2025-08-08",
-          "sleep_score": 0.8,
-          "state": "high"
-        },
-        {
-          "date": "2025-08-07",
-          "sleep_score": 0.74,
-          "state": "medium"
-        }
-      ],
-      "energy_indicators": [
-        {
-          "date": "2025-08-09",
-          "readiness_score": 0.64,
-          "state": "medium"
-        },
-        {
-          "date": "2025-08-08",
-          "readiness_score": 0.9,
-          "state": "high"
-        },
-        {
-          "date": "2025-08-07",
-          "readiness_score": 0.82,
-          "state": "high"
-        }
-      ],
+      "activity_levels": [],
+      "sleep_quality": [],
+      "energy_indicators": [],
       "nutrition_biomarkers": []
     },
     "planning_focus": "nutrition_plan_based_on_activity_sleep_and_goals"

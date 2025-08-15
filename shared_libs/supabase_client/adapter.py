@@ -273,7 +273,7 @@ class SupabaseAsyncPGAdapter:
             result['table'] = query[table_match:table_end].strip()
             
             # For memory table INSERTs, create data dict from args
-            if 'memory' in result['table'] or result['table'] in ['analysis_memory', 'memory', 'holistic_analysis_results']:
+            if 'memory' in result['table'] or result['table'] in ['analysis_memory', 'memory', 'holistic_analysis_results', 'holistic_insights']:
                 result['data'] = self._create_generic_insert_data(query, args)
             
         # Parse UPDATE queries  
