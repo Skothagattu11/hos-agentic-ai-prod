@@ -448,28 +448,32 @@ class HolisticMemoryService:
             # Prepare data matching the table schema exactly
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
             
-            # Handle duplicate constraint by checking existing record first  
-            # The constraint is on (user_id, analysis_type, analysis_date) where analysis_date defaults to CURRENT_DATE
+            # Simplified query that works with Supabase REST API
+            # Check for today's analysis using created_at date comparison
+            from datetime import datetime, timezone
+            today = datetime.now(timezone.utc).date().isoformat()
+            
             check_query = """
                 SELECT id FROM holistic_analysis_results 
                 WHERE user_id = $1 AND analysis_type = $2 
-                AND (analysis_date = CURRENT_DATE OR DATE(created_at) = CURRENT_DATE)
+                AND created_at >= $3
             """
             
-            print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record...")
-            existing_record = await db.fetch(check_query, user_id, analysis_type)
+            print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record from {today}...")
+            existing_record = await db.fetch(check_query, user_id, analysis_type, f"{today}T00:00:00Z")
             
             if existing_record:
                 # Update existing record
                 print(f"🔄 MEMORY DEBUG: Updating existing {analysis_type} record...")
+                # Use the existing record ID for a simpler update
+                existing_id = existing_record[0]['id']
                 update_query = """
                     UPDATE holistic_analysis_results 
-                    SET analysis_result = $3, archetype = $4, input_summary = $5, created_at = NOW()
-                    WHERE user_id = $1 AND analysis_type = $2 
-                    AND (analysis_date = CURRENT_DATE OR DATE(created_at) = CURRENT_DATE)
+                    SET analysis_result = $2, archetype = $3, input_summary = $4, created_at = NOW()
+                    WHERE id = $1
                     RETURNING id
                 """
-                result = await db.fetchrow(update_query, user_id, analysis_type, analysis_result, 
+                result = await db.fetchrow(update_query, existing_id, analysis_result, 
                                          archetype_used, input_summary)
             else:
                 # Insert new record

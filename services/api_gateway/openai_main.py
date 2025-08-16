@@ -452,7 +452,17 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
         user_service = UserDataService()
         
         try:
-            user_context, _ = await user_service.get_analysis_data(user_id)
+            # CRITICAL FIX: Check if behavior analysis has locked timestamp metadata
+            locked_timestamp = None
+            if isinstance(behavior_analysis, dict) and '_metadata' in behavior_analysis:
+                locked_timestamp = behavior_analysis['_metadata'].get('fixed_timestamp')
+            
+            if locked_timestamp:
+                print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp for routine data fetch")
+                user_context, _ = await user_service.get_analysis_data(user_id, locked_timestamp)
+            else:
+                print(f"🔍 [NORMAL_FLOW] No locked timestamp in behavior analysis - using standard flow")
+                user_context, _ = await user_service.get_analysis_data(user_id)
             
             # Use the memory-enhanced routine generation function with all /api/analyze features
             routine_plan = await run_memory_enhanced_routine_generation(
@@ -460,6 +470,18 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 archetype=archetype,
                 behavior_analysis=behavior_analysis
             )
+            
+            # CRITICAL FIX: Only update timestamp AFTER successful plan generation
+            # This prevents race conditions where next call sees premature timestamp update
+            try:
+                from services.simple_analysis_tracker import SimpleAnalysisTracker
+                tracker = SimpleAnalysisTracker()
+                completion_time = datetime.now(timezone.utc)
+                await tracker.update_analysis_time(user_id, completion_time)
+                print(f"✅ [PLAN_COMPLETION] Routine plan complete - updated last_analysis_at: {completion_time.isoformat()}")
+            except Exception as timestamp_error:
+                print(f"⚠️ [PLAN_COMPLETION] Failed to update timestamp: {timestamp_error}")
+                # Don't fail the request for timestamp update errors
             
             return RoutinePlanResponse(
                 status="success",
@@ -594,7 +616,17 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
         user_service = UserDataService()
         
         try:
-            user_context, _ = await user_service.get_analysis_data(user_id)
+            # CRITICAL FIX: Check if behavior analysis has locked timestamp metadata
+            locked_timestamp = None
+            if isinstance(behavior_analysis, dict) and '_metadata' in behavior_analysis:
+                locked_timestamp = behavior_analysis['_metadata'].get('fixed_timestamp')
+            
+            if locked_timestamp:
+                print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp for nutrition data fetch")
+                user_context, _ = await user_service.get_analysis_data(user_id, locked_timestamp)
+            else:
+                print(f"🔍 [NORMAL_FLOW] No locked timestamp in behavior analysis - using standard flow")
+                user_context, _ = await user_service.get_analysis_data(user_id)
             
             # Generate nutrition using existing function
             from shared_libs.utils.system_prompts import get_system_prompt
@@ -612,6 +644,18 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 archetype=archetype,
                 behavior_analysis=behavior_analysis
             )
+            
+            # CRITICAL FIX: Only update timestamp AFTER successful plan generation
+            # This prevents race conditions where next call sees premature timestamp update
+            try:
+                from services.simple_analysis_tracker import SimpleAnalysisTracker
+                tracker = SimpleAnalysisTracker()
+                completion_time = datetime.now(timezone.utc)
+                await tracker.update_analysis_time(user_id, completion_time)
+                print(f"✅ [PLAN_COMPLETION] Nutrition plan complete - updated last_analysis_at: {completion_time.isoformat()}")
+            except Exception as timestamp_error:
+                print(f"⚠️ [PLAN_COMPLETION] Failed to update timestamp: {timestamp_error}")
+                # Don't fail the request for timestamp update errors
             
             return NutritionPlanResponse(
                 status="success",
@@ -2269,8 +2313,14 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             # Use OnDemandAnalysisService metadata for memory context preparation
             memory_context = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata)
             
-            # EXACT same data fetching as /api/analyze (line 1271)
-            user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
+            # CRITICAL FIX: Pass locked timestamp to prevent race conditions
+            locked_timestamp = ondemand_metadata.get('fixed_timestamp') if ondemand_metadata else None
+            if locked_timestamp:
+                print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp from OnDemandAnalysisService")
+                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, locked_timestamp)
+            else:
+                print(f"🔍 [NORMAL_FLOW] No locked timestamp - using standard flow")
+                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
             
             # EXACT same prompt enhancement as /api/analyze (lines 1282-1289)
             base_behavior_prompt = get_system_prompt("behavior_analysis")
@@ -2292,6 +2342,13 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             # NOTE: timestamp update moved to data fetching phase for proper incremental boundaries
             
             print(f"✅ [SHARED_ANALYSIS] Fresh behavior analysis completed for {user_id[:8]}")
+            
+            # CRITICAL FIX: Include OnDemand metadata in behavior analysis result
+            # This allows downstream services to access the locked timestamp
+            if ondemand_metadata:
+                behavior_analysis['_metadata'] = ondemand_metadata
+                print(f"🔒 [RACE_CONDITION_FIX] Added OnDemand metadata to behavior analysis result")
+            
             return behavior_analysis
             
         finally:

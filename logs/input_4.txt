@@ -1,0 +1,142 @@
+{
+  "timestamp": "2025-08-16T19:45:11.044340",
+  "analysis_type": "shared_nutrition_plan",
+  "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+  "archetype": "Foundation Builder",
+  "memory_enhanced": true,
+  "analysis_mode": "follow_up",
+  "days_to_fetch": 1,
+  "personalized_focus_areas": [
+    "readiness_improvement",
+    "activity_tracking",
+    "health_analysis",
+    "recommendation_following"
+  ],
+  "agent_input_data": {
+    "behavioral_insights": {
+      "sophistication_level": "Beginner",
+      "readiness_level": "Medium-High",
+      "primary_goal": {
+        "goal": "Establish a consistent baseline of daily physical activity while preserving current high-quality sleep patterns.",
+        "timeline": "Next 6\u20138 weeks",
+        "success_metrics": "\u2022 Raise Activity Metric from 0.41 \u2192 0.60 (\u226546 tracked activity sessions over next 30 days)\n\u2022 Maintain Sleep Metric \u22650.80 (average) with <10% sleep debt"
+      },
+      "motivation_drivers": "Quick wins, visible progress, and reassurance that small efforts compound over time. Positive feedback loops around maintained sleep quality will reinforce daytime activity."
+    },
+    "nutrition_relevant_metrics": {
+      "activity_levels": [
+        {
+          "date": "2025-07-18",
+          "activity_score": 0.4,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-19",
+          "activity_score": 0.42,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-20",
+          "activity_score": 0.43,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-21",
+          "activity_score": 0.4,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-22",
+          "activity_score": 0.42,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-23",
+          "activity_score": 0.38,
+          "state": "minimal"
+        },
+        {
+          "date": "2025-07-24",
+          "activity_score": 0.32,
+          "state": "minimal"
+        }
+      ],
+      "sleep_quality": [
+        {
+          "date": "2025-07-18",
+          "sleep_score": 0.81,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-19",
+          "sleep_score": 0.82,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-20",
+          "sleep_score": 0.76,
+          "state": "medium"
+        },
+        {
+          "date": "2025-07-21",
+          "sleep_score": 0.89,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-22",
+          "sleep_score": 0.63,
+          "state": "medium"
+        },
+        {
+          "date": "2025-07-23",
+          "sleep_score": 0.87,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-24",
+          "sleep_score": 0.78,
+          "state": "medium"
+        }
+      ],
+      "energy_indicators": [
+        {
+          "date": "2025-07-18",
+          "readiness_score": 0.81,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-19",
+          "readiness_score": 0.82,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-20",
+          "readiness_score": 0.77,
+          "state": "medium"
+        },
+        {
+          "date": "2025-07-21",
+          "readiness_score": 0.88,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-22",
+          "readiness_score": 0.7,
+          "state": "medium"
+        },
+        {
+          "date": "2025-07-23",
+          "readiness_score": 0.86,
+          "state": "high"
+        },
+        {
+          "date": "2025-07-24",
+          "readiness_score": 0.78,
+          "state": "medium"
+        }
+      ],
+      "nutrition_biomarkers": []
+    },
+    "planning_focus": "nutrition_plan_based_on_activity_sleep_and_goals"
+  }
+}

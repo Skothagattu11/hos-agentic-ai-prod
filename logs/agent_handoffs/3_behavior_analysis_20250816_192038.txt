@@ -1,0 +1,244 @@
+============================================================
+AGENT HANDOFF: BEHAVIOR_ANALYSIS
+Analysis #: 3
+Timestamp: 2025-08-16T19:20:38.682447
+============================================================
+
+INPUT DATA:
+----------------------------------------
+{
+  "comprehensive_health_context": "\nHEALTH ANALYSIS REQUEST - MEMORY-ENHANCED COMPREHENSIVE DATA:\n- Profile Reference: 35pDPUIfAoRl2Y700bFkxPKYjjf2\n- Health Archetype: Foundation Builder\n- Analysis Date: 2025-08-16\n- Mode: Memory-Enhanced Health Analysis (Phase 4.1)\n\n\nMEMORY-ENHANCED CONTEXT:\n- Analysis Mode: FOLLOW-UP (Building memory profile)\n- User Memory Profile Available: PARTIAL (Previous analysis detected)\n- Days Since Last Analysis: 3\n- Analysis History: 0 previous analyses\n\nHEALTH DATA PROFILE:\n- Data Quality Level: DataQualityLevel.EXCELLENT \n- Health Score Samples: 130\n- Biomarker Measurements: 39\n- Data Coverage: 100.0%\n- Recent Measurements: True\n- Time Period: 2025-08-15 to 2025-08-16\n\nHEALTH TRACKING DATA SUMMARY:\nHEALTH SCORE PATTERNS:\n  \u2022 Activity Metrics: 0.41 (trend: minimal) - 2 measurements\n  \u2022 Sleep Metrics: 0.81 (trend: high) - 2 measurements\n  \u2022 Mental_Wellbeing Metrics: 0.69 (trend: medium) - 2 measurements\n  \u2022 Wellbeing Metrics: 0.66 (trend: medium) - 2 measurements\n  \u2022 Readiness Metrics: 0.81 (trend: high) - 2 measurements\n\nBIOMARKER MEASUREMENTS:\n  \u2022 Respiratory Rate: vitals category (2 measurements)\n  \u2022 Oxygen Saturation: vitals category (2 measurements)\n  \u2022 Heart Rate Resting: vitals category (3 measurements)\n  \u2022 Respiratory Rate Sleep: vitals category (1 measurements)\n  \u2022 Oxygen Saturation Sleep: vitals category (1 measurements)\n  \u2022 Sleep Awake Duration: sleep category (1 measurements)\n  \u2022 Sleep Duration: sleep category (1 measurements)\n  \u2022 Sleep Start Time: sleep category (1 measurements)\n  \u2022 Sleep In Bed Duration: sleep category (1 measurements)\n  \u2022 Sleep Interruptions: sleep category (1 measurements)\n\nACTIVITY PATTERNS:\n  \u2022 Activity sessions: 27 tracked periods\n  \u2022 Sleep cycles: 23 recorded periods\n\nANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the Foundation Builder framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.\n",
+  "detailed_metrics": {
+    "data_quality": {
+      "level": "excellent",
+      "completeness": 1.0,
+      "scores_count": 130,
+      "biomarkers_count": 39,
+      "recent_data_available": true
+    },
+    "time_coverage": {
+      "start_date": "2025-08-15T23:20:23.437222+00:00",
+      "end_date": "2025-08-16T23:20:23.437222+00:00",
+      "total_days": 1
+    },
+    "activity_patterns": [
+      {
+        "date": "2025-07-18",
+        "type": "activity",
+        "score": 0.4,
+        "state": "minimal"
+      },
+      {
+        "date": "2025-07-18",
+        "type": "sleep",
+        "score": 0.81,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-18",
+        "type": "readiness",
+        "score": 0.81,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-19",
+        "type": "sleep",
+        "score": 0.82,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-19",
+        "type": "activity",
+        "score": 0.42,
+        "state": "minimal"
+      },
+      {
+        "date": "2025-07-19",
+        "type": "readiness",
+        "score": 0.82,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-20",
+        "type": "activity",
+        "score": 0.43,
+        "state": "minimal"
+      },
+      {
+        "date": "2025-07-20",
+        "type": "sleep",
+        "score": 0.76,
+        "state": "medium"
+      },
+      {
+        "date": "2025-07-20",
+        "type": "readiness",
+        "score": 0.77,
+        "state": "medium"
+      },
+      {
+        "date": "2025-07-21",
+        "type": "activity",
+        "score": 0.4,
+        "state": "minimal"
+      },
+      {
+        "date": "2025-07-21",
+        "type": "readiness",
+        "score": 0.88,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-21",
+        "type": "sleep",
+        "score": 0.89,
+        "state": "high"
+      },
+      {
+        "date": "2025-07-22",
+        "type": "sleep",
+        "score": 0.63,
+        "state": "medium"
+      },
+      {
+        "date": "2025-07-22",
+        "type": "readiness",
+        "score": 0.7,
+        "state": "medium"
+      },
+      {
+        "date": "2025-07-22",
+        "type": "activity",
+        "score": 0.42,
+        "state": "minimal"
+      }
+    ],
+    "biomarker_categories": {
+      "vitals": [
+        {
+          "type": "respiratory_rate",
+          "date": "2025-08-15"
+        },
+        {
+          "type": "oxygen_saturation",
+          "date": "2025-08-15"
+        },
+        {
+          "type": "heart_rate_resting",
+          "date": "2025-08-15"
+        },
+        {
+          "type": "respiratory_rate",
+          "date": "2025-08-14"
+        },
+        {
+          "type": "oxygen_saturation",
+          "date": "2025-08-14"
+        },
+        {
+          "type": "heart_rate_resting",
+          "date": "2025-08-14"
+        },
+        {
+          "type": "respiratory_rate_sleep",
+          "date": "2025-08-13"
+        },
+        {
+          "type": "oxygen_saturation_sleep",
+          "date": "2025-08-13"
+        },
+        {
+          "type": "heart_rate_resting",
+          "date": "2025-08-13"
+        }
+      ],
+      "sleep": [
+        {
+          "type": "sleep_awake_duration",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_duration",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_start_time",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_in_bed_duration",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_interruptions",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_mid_time",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_latency",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_efficiency",
+          "date": "2025-08-12"
+        },
+        {
+          "type": "sleep_end_time",
+          "date": "2025-08-12"
+        }
+      ],
+      "activity": [
+        {
+          "type": "active_energy_burned",
+          "date": "2025-08-13"
+        },
+        {
+          "type": "activity_low_intensity_duration",
+          "date": "2025-08-13"
+        }
+      ]
+    }
+  },
+  "analysis_focus": "comprehensive_behavior_pattern_analysis"
+}
+
+OUTPUT DATA:
+----------------------------------------
+{
+  "behavioral_signature": {
+    "signature": "New Foundation Builder showing strong sleep regularity and physiological stability but very limited voluntary movement. Engagement pattern suggests the user reliably captures biometrics and sleep data (100 % coverage, 39 biomarkers) yet has not translated that monitoring into consistent daytime activity (activity score 0.41 vs. sleep score 0.81). The user appears comfortable with passive tracking habits and demonstrates readiness for gentle, structured habit layering.",
+    "confidence": 0.63
+  },
+  "sophistication_assessment": {
+    "score": 28,
+    "category": "Beginner",
+    "justification": "User is new to the program, has no long-term success patterns in memory, and displays solid data-collection behavior but low implementation of active lifestyle behaviors. This indicates early-stage competence focused on passive tracking rather than proactive habit execution."
+  },
+  "primary_goal": {
+    "goal": "Establish a reliable baseline of daily movement while preserving strong sleep quality",
+    "timeline": "Next 6 weeks",
+    "success_metrics": "\u2022 Raise Activity score from 0.41 \u2192 \u22650.60\n\u2022 Accumulate \u22655,000 steps on at least 5 days/week by week 6\n\u2022 Maintain Sleep score \u22650.80 during the same period"
+  },
+  "personalized_strategy": {
+    "motivation_drivers": "Small, visible wins; clear progress tracking; positive reinforcement that aligns with the user\u2019s existing habit of data review",
+    "habit_integration": "1) Attach a 10-minute walk immediately after a routinely stable event (first coffee or lunch) to piggy-back on an existing cue.\n2) Use the same wearable/app the user already consults for sleep to set a daily steps ring/goal so the metrics live in one familiar dashboard.\n3) Preserve current bedtime and sleep duration windows to protect the strongest existing pillar.",
+    "barrier_mitigation": "\u2022 Pre-commit by placing walking shoes by the door each night (reduces friction)\n\u2022 Calendar reminder at chosen cue time for the first 14 days to solidify routine\n\u2022 \u2018Minimum-viable-action\u2019 rule: if day feels rushed, perform at least a 5-minute micro-walk to keep the chain unbroken"
+  },
+  "readiness_level": "High",
+  "recommendations": [
+    "Set a daily step target of 3,500 for week 1-2, increasing by ~500 steps every week until 5,000-6,000 is reached.",
+    "Schedule a 10-minute daylight walk after the same meal each day; log completion in the tracking app immediately for reinforcement.",
+    "Continue current sleep schedule; aim to keep bedtime within \u00b130 minutes of the current average start time to maintain Sleep score \u22650.80.",
+    "Perform a weekly Sunday review: glance at Activity vs. Sleep graphs and note one positive trend and one improvement area in a simple journal entry (build reflection muscle).",
+    "Hydration micro-habit: drink one glass of water upon waking to leverage already high readiness scores and prime daytime energy.",
+    "Re-measure resting heart rate trend after week 6; target is stable or slightly lower average (signal of improved cardiovascular adaptation)."
+  ],
+  "data_insights": "Sleep quality is the standout strength (Sleep & Readiness metrics both 0.81), indicating effective recovery habits. Resting HR, SpO\u2082, and respiratory readings are all in normal range, suggesting good baseline cardiorespiratory health. Activity signal is weak: 27 tracked sessions across two days imply brief, possibly incidental movements rather than structured exercise. Mental wellbeing and general wellbeing sit at moderate levels (~0.66-0.69) and could benefit from the mood-lifting effects of daylight walking. There are nearly as many sleep recordings (23) as activity sessions, reinforcing the pattern of reliable nighttime data capture vs. limited daytime engagement. No red-flag biomarker deviations were detected.",
+  "model_used": "o3",
+  "analysis_type": "comprehensive_behavior"
+}
+
+============================================================

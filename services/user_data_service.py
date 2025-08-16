@@ -514,18 +514,28 @@ class UserDataService:
             logger.error(f"[INCREMENTAL_ERROR] Failed fetching data since {since_timestamp}: {e}")
             return [], [], [], since_timestamp
     
-    async def get_analysis_data(self, user_id: str) -> tuple[UserHealthContext, datetime]:
+    async def get_analysis_data(self, user_id: str, locked_timestamp: datetime = None) -> tuple[UserHealthContext, datetime]:
         """
         Get data for analysis based on last analysis time
         True incremental: fetches ALL data from last analysis to now
+        
+        Args:
+            user_id: User identifier
+            locked_timestamp: Fixed timestamp from OnDemandAnalysisService to prevent race conditions
         """
         from .simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
         
         overall_start = datetime.now()
         tracker = AnalysisTracker()
         
-        # Check when we last analyzed this user
-        last_analysis = await tracker.get_last_analysis_time(user_id)
+        # CRITICAL FIX: Use locked timestamp if provided, otherwise get fresh timestamp
+        if locked_timestamp:
+            last_analysis = locked_timestamp
+            print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp: {last_analysis.isoformat()}")
+            logger.info(f"[ANALYSIS_DATA] Using locked timestamp from OnDemandAnalysisService: {last_analysis.isoformat()}")
+        else:
+            last_analysis = await tracker.get_last_analysis_time(user_id)
+            print(f"🔍 [NORMAL_FLOW] Retrieved fresh timestamp: {last_analysis.isoformat() if last_analysis else 'None'}")
         
         if not last_analysis:
             # First analysis - get 7 days baseline
@@ -570,12 +580,11 @@ class UserDataService:
         print(f"📊 INCREMENTAL_SYNC: Fetching new data since {last_analysis.strftime('%Y-%m-%d %H:%M')}")
         
         try:
-            # CRITICAL FIX: Update analysis timestamp BEFORE fetching incremental data
-            analysis_start_time = datetime.now(timezone.utc)
-            await tracker.update_analysis_time(user_id, analysis_start_time)
-            logger.info(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
+            # CRITICAL FIX: NEVER update timestamp during data fetching
+            # Timestamp should only be updated at the END of successful plan generation
+            print(f"🔒 [TIMESTAMP_PROTECTION] Skipping timestamp update during data fetch - will update at plan completion")
             
-            # Get ALL data since last analysis (true incremental)
+            # Get ALL data since last analysis (using locked timestamp if provided)
             scores, biomarkers, archetypes, latest_data_timestamp = await self.fetch_data_since(user_id, last_analysis)
             
             if not scores and not biomarkers:

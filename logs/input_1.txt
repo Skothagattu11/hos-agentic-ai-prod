@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-15T17:22:17.919287",
+  "timestamp": "2025-08-16T19:15:04.988217",
   "analysis_type": "shared_routine_plan",
   "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
   "archetype": "Foundation Builder",
@@ -7,20 +7,20 @@
   "analysis_mode": "follow_up",
   "days_to_fetch": 1,
   "personalized_focus_areas": [
-    "recommendation_following",
     "readiness_improvement",
     "activity_tracking",
-    "health_analysis"
+    "health_analysis",
+    "recommendation_following"
   ],
   "agent_input_data": {
     "behavioral_insights": {
-      "habit_integration_strategy": "Anchor a 15-minute walk or gentle mobility routine immediately after a fixed daily cue (e.g., lunch). Start with \u2018minimum-viable\u2019 sessions to ensure success, then layer optional add-ons (body-weight circuit, stretching). Keep bedtime and wake-time within a 30-minute window to protect current sleep strength.",
-      "barrier_mitigation": "\u2022 Time scarcity \u2192 use micro-sessions (5-minute movement snacks) when full session isn\u2019t possible.\n\u2022 Low confidence \u2192 track streaks visually and celebrate weekly consistency rather than intensity.\n\u2022 Environment \u2192 prepare walking shoes by the door; choose indoor backup routine for bad weather.",
+      "habit_integration_strategy": "a) Fixed \u2018digital sunset\u2019 60 min before target bedtime; b) 10-min morning light exposure + 15-min walk to anchor circadian rhythm; c) Use phone reminder to log sleep + activity daily at the same time.",
+      "barrier_mitigation": "Keep goals bite-sized (one change per week); attach new habits to existing anchors (e.g., brush teeth \u2192 phone in charger outside bedroom); set weekly reflection alarm every Sunday to review scores and choose one micro-improvement.",
       "readiness_level": "Medium",
       "key_recommendations": [
-        "Schedule a 15-minute post-lunch walk every weekday; log it in your tracker to raise Activity sessions from 2 to 5+ per week.",
-        "Add a 5-minute evening stretch right before your established bedtime routine to reinforce sleep cueing and enhance recovery.",
-        "Keep sleep window consistent (\u00b130 min) to preserve the strong 0.81 Sleep Metric; set a phone reminder 45 minutes before target bedtime to start winding down."
+        "Pick a fixed bedtime within a 30-min window (e.g., 11:00-11:30 PM) and aim for 7 h time-in-bed for the next 7 nights.",
+        "Schedule one 20-30 min low-intensity activity (walk, gentle bike) on four non-consecutive days this week; log each session immediately after completion.",
+        "Add a 5-min pre-bed wind-down ritual (stretching or diaphragmatic breathing) to reduce sleep latency."
       ]
     },
     "routine_relevant_metrics": {

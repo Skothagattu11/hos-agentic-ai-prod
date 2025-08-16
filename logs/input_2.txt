@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-15T17:24:40.240077",
+  "timestamp": "2025-08-16T19:15:39.699641",
   "analysis_type": "shared_nutrition_plan",
   "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
   "archetype": "Foundation Builder",
@@ -7,21 +7,21 @@
   "analysis_mode": "follow_up",
   "days_to_fetch": 1,
   "personalized_focus_areas": [
-    "recommendation_following",
     "readiness_improvement",
     "activity_tracking",
-    "health_analysis"
+    "health_analysis",
+    "recommendation_following"
   ],
   "agent_input_data": {
     "behavioral_insights": {
       "sophistication_level": "Beginner",
       "readiness_level": "Medium",
       "primary_goal": {
-        "goal": "Build a reliable daily movement habit to raise Activity score toward 0.55+ while preserving current sleep quality.",
-        "timeline": "Next 4\u20136 weeks",
-        "success_metrics": "\u2022 Average \u22656,000 steps/day OR \u226530 min cumulative moderate movement on \u22655 days/week\n\u2022 Activity score climbs from 0.37 \u2192 \u22650.55\n\u2022 Mental_Wellbeing score improves from 0.59 \u2192 \u22650.70\n\u2022 Readiness remains \u22650.80 indicating recovery is not compromised"
+        "goal": "Establish a stable sleep-wake schedule and minimum-viable daily movement routine",
+        "timeline": "Next 8 weeks",
+        "success_metrics": "1) Average sleep score \u226570 for 5 consecutive nights; 2) Activity score \u226560 with \u22655 logged movement sessions per week; 3) \u226590 % weekly data capture for sleep and activity."
       },
-      "motivation_drivers": "Quick wins, visible progress, feeling more energetic during the day, positive feedback loops from readiness staying high."
+      "motivation_drivers": "Desire for consistent energy and mental clarity; satisfaction from seeing objective numbers improve; positive feedback loops."
     },
     "nutrition_relevant_metrics": {
       "activity_levels": [],

@@ -64,6 +64,9 @@ class OnDemandAnalysisService:
         """
         Determine if fresh behavior analysis should run
         
+        CRITICAL: This method must be called BEFORE any data fetching or timestamp updates
+        to avoid race conditions in threshold detection.
+        
         Returns:
             (decision, metadata) where metadata contains:
             - new_data_points: count of new data
@@ -71,6 +74,7 @@ class OnDemandAnalysisService:
             - threshold_used: the calculated threshold
             - memory_quality: quality of memory profile
             - reason: human-readable explanation
+            - fixed_timestamp: the timestamp to use for consistent counting
         """
         
         metadata = {
@@ -80,7 +84,8 @@ class OnDemandAnalysisService:
             "memory_quality": MemoryQuality.SPARSE,
             "reason": "",
             "analysis_mode": "initial",
-            "days_to_fetch": 7
+            "days_to_fetch": 7,
+            "fixed_timestamp": None  # Critical for race condition fix
         }
         
         try:
@@ -89,8 +94,9 @@ class OnDemandAnalysisService:
                 metadata["reason"] = "Force refresh requested by user"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             
-            # Get last analysis time
+            # CRITICAL FIX: Get and lock the timestamp BEFORE any other operations
             last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
+            metadata["fixed_timestamp"] = last_analysis  # Lock this timestamp for consistent use
             
             if not last_analysis:
                 # New user - always run initial analysis with comprehensive data window
@@ -99,7 +105,7 @@ class OnDemandAnalysisService:
                 metadata["reason"] = "No previous analysis found - initial analysis required"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             
-            # Calculate time since last analysis
+            # Calculate time since last analysis using locked timestamp
             now = datetime.now(timezone.utc)
             time_delta = now - last_analysis
             hours_since = time_delta.total_seconds() / 3600
@@ -114,54 +120,43 @@ class OnDemandAnalysisService:
                 metadata["reason"] = f"Analysis is {days_since:.1f} days old (>{self.max_cache_age_days} days) - fresh start"
                 return (AnalysisDecision.STALE_FORCE_REFRESH, metadata)
             
-            # Too recent - use cache with follow-up parameters
-            if hours_since < self.min_cache_age_hours:
-                metadata["analysis_mode"] = "follow_up"
-                metadata["days_to_fetch"] = 1
-                metadata["reason"] = f"Recent analysis from {hours_since:.1f} hours ago"
-                return (AnalysisDecision.MEMORY_ENHANCED_CACHE, metadata)
-            
-            # Count new data points since last analysis
-            print(f"🔍 [ONDEMAND_COUNT] Counting data since: {last_analysis.isoformat()}")
+            # CRITICAL FIX: Always count data points before making time-based decisions
+            # This ensures we don't miss threshold-crossing data due to recent timestamps
+            print(f"🔍 [ONDEMAND_COUNT] Counting data since LOCKED timestamp: {last_analysis.isoformat()}")
             new_data_count = await self._count_new_data_points(user_id, last_analysis)
             metadata["new_data_points"] = new_data_count
-            print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points")
+            print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points (using locked timestamp)")
             
-            # Minimal logging for debugging
-            logger.debug(f"[ONDEMAND] User {user_id[:8]}... - {new_data_count} new points, {hours_since:.1f}h since last")
-            
-
-            # Assess memory quality and calculate threshold
+            # Check if we have enough data to override time-based caching
             memory_quality = await self._assess_memory_quality(user_id)
             metadata["memory_quality"] = memory_quality
             
-            threshold = self._calculate_dynamic_threshold(
-                memory_quality, 
-                user_id,
-                days_since
-            )
+            threshold = self._calculate_dynamic_threshold(memory_quality, user_id, days_since)
             metadata["threshold_used"] = threshold
             
-            # Intelligent analysis mode determination based on data and time
+            # DATA-FIRST DECISION: If we have enough new data, analyze regardless of time
             if new_data_count >= threshold:
-                # Sufficient new data - determine mode based on time gap and data volume
-                if days_since >= 3 or new_data_count >= threshold * 2:
-                    # Longer gap or massive new data - treat as comprehensive re-analysis
-                    metadata["analysis_mode"] = "initial"
-                    metadata["days_to_fetch"] = 7
-                    metadata["reason"] = f"{new_data_count} new data points >= {threshold} threshold - comprehensive re-analysis (gap: {days_since:.1f} days)"
-                else:
-                    # Recent but sufficient data - incremental analysis with more context
-                    metadata["analysis_mode"] = "follow_up"
-                    metadata["days_to_fetch"] = min(7, max(3, int(days_since) + 1))  # Scale based on gap
-                    metadata["reason"] = f"{new_data_count} new data points >= {threshold} threshold - incremental analysis with {metadata['days_to_fetch']} days context"
+                print(f"🎯 [DATA_OVERRIDE] {new_data_count} points ≥ {threshold} threshold - overriding time-based cache")
+                metadata["analysis_mode"] = "follow_up" if days_since < 3 else "initial"
+                metadata["days_to_fetch"] = min(7, max(3, int(days_since) + 1))
+                metadata["reason"] = f"Data threshold override: {new_data_count} ≥ {threshold} points (recent but sufficient data)"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
-            else:
-                # Insufficient new data - use cached with follow-up parameters
+            
+            # Too recent AND insufficient data - use cache with follow-up parameters  
+            if hours_since < self.min_cache_age_hours:
                 metadata["analysis_mode"] = "follow_up"
                 metadata["days_to_fetch"] = 1
-                metadata["reason"] = f"{new_data_count} new data points < {threshold} threshold - using cached with memory"
+                metadata["reason"] = f"Recent analysis from {hours_since:.1f} hours ago + insufficient data ({new_data_count} < {threshold})"
                 return (AnalysisDecision.MEMORY_ENHANCED_CACHE, metadata)
+            
+            # Remaining cases: sufficient time gap + data count already checked above
+            logger.debug(f"[ONDEMAND] User {user_id[:8]}... - {new_data_count} new points, {hours_since:.1f}h since last")
+            
+            # If we reach here: sufficient time gap + insufficient data
+            metadata["analysis_mode"] = "follow_up" 
+            metadata["days_to_fetch"] = 1
+            metadata["reason"] = f"{new_data_count} new data points < {threshold} threshold + sufficient time gap - using cached with memory"
+            return (AnalysisDecision.MEMORY_ENHANCED_CACHE, metadata)
                 
         except Exception as e:
             logger.error(f"[ONDEMAND_ERROR] Decision error for {user_id}: {e}")

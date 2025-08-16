@@ -10,4 +10,6 @@ pytest
 pytest-asyncio
 openai
 typing-extensions
+aiohttp
+
 
