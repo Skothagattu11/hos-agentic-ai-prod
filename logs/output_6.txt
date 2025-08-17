@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-08-17T14:39:34.076894",
+  "timestamp": "2025-08-17T14:55:16.441296",
   "analysis_type": "shared_routine_plan",
   "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
   "archetype": "Foundation Builder",
   "memory_enhanced": true,
   "analysis_result": {
-    "error": "Object of type MemoryQuality is not JSON serializable",
+    "error": "Object of type datetime is not JSON serializable",
     "model_used": "gpt-4o - fallback",
     "archetype": "Foundation Builder",
     "date": "2025-08-17"

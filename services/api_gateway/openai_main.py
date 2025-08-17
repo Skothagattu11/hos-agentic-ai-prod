@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
@@ -2346,7 +2346,14 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             # CRITICAL FIX: Include OnDemand metadata in behavior analysis result
             # This allows downstream services to access the locked timestamp
             if ondemand_metadata:
-                behavior_analysis['_metadata'] = ondemand_metadata
+                # Convert any enum values to strings for JSON serialization
+                serializable_metadata = {}
+                for key, value in ondemand_metadata.items():
+                    if hasattr(value, 'value'):  # Check if it's an enum
+                        serializable_metadata[key] = value.value
+                    else:
+                        serializable_metadata[key] = value
+                behavior_analysis['_metadata'] = serializable_metadata
                 print(f"🔒 [RACE_CONDITION_FIX] Added OnDemand metadata to behavior analysis result")
             
             return behavior_analysis
