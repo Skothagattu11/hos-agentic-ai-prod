@@ -182,6 +182,11 @@ class MetricsCollector:
     
     async def update_database_metrics(self):
         """Update database metrics (async version for health checks)"""
+        # Skip database metrics on Render - using REST API only
+        if os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"):
+            logger.debug("Skipping database metrics on Render (REST API mode)")
+            return
+            
         try:
             from shared_libs.database.connection_pool import db_pool
             pool_status = await db_pool.get_pool_status()
