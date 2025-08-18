@@ -521,8 +521,9 @@ class SupabaseAsyncPGAdapter:
         return result
     
     def _create_generic_insert_data(self, query: str, args: tuple) -> Dict[str, Any]:
-        """Create INSERT data dict from query and args - generic parser"""
+        """Create INSERT data dict from query and args - generic parser with SQL function support"""
         import re
+        from datetime import date
         
         # Extract column names from INSERT query
         values_match = re.search(r'\((.*?)\)\s+VALUES', query, re.IGNORECASE | re.DOTALL)
@@ -533,19 +534,62 @@ class SupabaseAsyncPGAdapter:
         columns_text = values_match.group(1)
         columns = [col.strip() for col in columns_text.split(',')]
         
-        # Create data dict from columns and args
-        data = {}
-        for i, col in enumerate(columns):
-            if i < len(args):
-                value = args[i]
-                # Handle JSON serialization for complex types
-                if isinstance(value, dict):
-                    data[col] = value
-                elif hasattr(value, 'isoformat'):  # datetime
-                    data[col] = value.isoformat()
-                else:
-                    data[col] = value
+        # Extract VALUES clause to handle SQL functions like CURRENT_DATE
+        values_match = re.search(r'VALUES\s*\((.*?)\)', query, re.IGNORECASE | re.DOTALL)
+        if not values_match:
+            print(f"[ERROR] Could not parse VALUES clause from INSERT query")
+            return {}
         
+        values_text = values_match.group(1)
+        values = [val.strip() for val in values_text.split(',')]
+        
+        # Create data dict from columns and values
+        data = {}
+        args_index = 0
+        
+        print(f"[DEBUG] Parsing INSERT: columns={columns}, values={values}")
+        
+        for i, col in enumerate(columns):
+            if i < len(values):
+                value_placeholder = values[i]
+                print(f"[DEBUG] Column '{col}' -> Value '{value_placeholder}'")
+                
+                if value_placeholder.startswith('$'):
+                    # Parameter placeholder like $1, $2
+                    if args_index < len(args):
+                        value = args[args_index]
+                        args_index += 1
+                        # Handle JSON serialization for complex types
+                        if isinstance(value, dict):
+                            data[col] = value
+                        elif hasattr(value, 'isoformat'):  # datetime
+                            data[col] = value.isoformat()
+                        else:
+                            data[col] = value
+                        print(f"[DEBUG] Mapped parameter {value_placeholder} to {col} = {str(value)[:50]}...")
+                elif value_placeholder.upper() == 'CURRENT_DATE':
+                    # Handle CURRENT_DATE function
+                    data[col] = date.today().isoformat()
+                    print(f"[DEBUG] Set CURRENT_DATE for {col} = {date.today().isoformat()}")
+                elif value_placeholder.upper() == 'NOW()':
+                    # Handle NOW() function
+                    from datetime import datetime
+                    data[col] = datetime.now().isoformat()
+                    print(f"[DEBUG] Set NOW() for {col} = {datetime.now().isoformat()}")
+                elif value_placeholder.startswith("'") and value_placeholder.endswith("'"):
+                    # String literal
+                    data[col] = value_placeholder[1:-1]
+                    print(f"[DEBUG] Set string literal for {col} = {value_placeholder[1:-1]}")
+                elif value_placeholder.isdigit():
+                    # Numeric literal
+                    data[col] = int(value_placeholder)
+                    print(f"[DEBUG] Set numeric for {col} = {int(value_placeholder)}")
+                else:
+                    # Fallback: treat as string
+                    data[col] = value_placeholder
+                    print(f"[DEBUG] Set fallback for {col} = {value_placeholder}")
+        
+        print(f"[DEBUG] Final INSERT data: {data}")
         return data
     
     def _find_next_keyword_pos(self, query_upper: str, start_pos: int, keywords: list) -> int:

@@ -445,71 +445,37 @@ class HolisticMemoryService:
     
     async def store_analysis_result(self, user_id: str, analysis_type: str, 
                                   analysis_result: Dict[str, Any], archetype_used: str = None) -> str:
-        """Store complete analysis in holistic_analysis_results table - using SQL adapter"""
+        """Store complete analysis in holistic_analysis_results table"""
         try:
-        # print(f"🔍 MEMORY DEBUG: Starting store_analysis_result for {analysis_type}")  # Commented to reduce noise
             db = await self._ensure_db_connection()
-        # print(f"🔍 MEMORY DEBUG: DB connection established: {type(db)}")  # Commented to reduce noise
-            
-            # Prepare data matching the table schema exactly
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
             
-            # Simplified query that works with Supabase REST API
-            # Check for today's analysis using created_at date comparison
-            from datetime import datetime, timezone
-            today = datetime.now(timezone.utc).date().isoformat()
-            
-            check_query = """
-                SELECT id FROM holistic_analysis_results 
-                WHERE user_id = $1 AND analysis_type = $2 
-                AND created_at >= $3
+            # Use UPSERT to handle duplicates gracefully
+            insert_query = """
+                INSERT INTO holistic_analysis_results (
+                    user_id, analysis_type, archetype, analysis_result, 
+                    input_summary, agent_id, analysis_date
+                ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE)
+                ON CONFLICT (user_id, analysis_type, analysis_date, archetype) 
+                DO UPDATE SET
+                    analysis_result = EXCLUDED.analysis_result,
+                    input_summary = EXCLUDED.input_summary,
+                    created_at = NOW()
+                RETURNING id
             """
             
-        # print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record from {today}...")  # Commented to reduce noise
-            from datetime import datetime, timezone
-            today_datetime = datetime.strptime(f"{today}T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            existing_record = await db.fetch(check_query, user_id, analysis_type, today_datetime)
-            
-            if existing_record:
-                # Update existing record
-        # print(f"🔄 MEMORY DEBUG: Updating existing {analysis_type} record...")  # Commented to reduce noise
-                # Use the existing record ID for a simpler update
-                existing_id = existing_record[0]['id']
-                update_query = """
-                    UPDATE holistic_analysis_results 
-                    SET analysis_result = $2, archetype = $3, input_summary = $4, created_at = NOW()
-                    WHERE id = $1
-                    RETURNING id
-                """
-                import json
-                result = await db.fetchrow(update_query, existing_id, json.dumps(analysis_result), 
-                                         archetype_used, json.dumps(input_summary))
-            else:
-                # Insert new record
-                print(f"➕ MEMORY DEBUG: Inserting new {analysis_type} record...")
-                insert_query = """
-                    INSERT INTO holistic_analysis_results (
-                        user_id, analysis_type, archetype, analysis_result, 
-                        input_summary, agent_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING id
-                """
-                import json
-                result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
-                                         json.dumps(analysis_result), json.dumps(input_summary), 'memory_service')
-            
-        # print(f"🔍 MEMORY DEBUG: SQL result: {result}")  # Commented to reduce noise
+            import json
+            result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
+                                     json.dumps(analysis_result), json.dumps(input_summary), 'memory_service')
             
             if result:
                 analysis_id = str(result['id'])
-        # print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")  # Commented to reduce noise
                 
-                # HYBRID APPROACH: Optional automatic insights extraction with error handling
+                # Optional automatic insights extraction with error handling
                 try:
                     from services.insights_extraction_service import insights_service
                     
-                    # Only extract insights if this is a fresh analysis (not an update)
-                    if analysis_id:  # Successful storage
+                    if analysis_id:
                         insights_count = await insights_service.extract_and_store_insights(
                             analysis_result=analysis_result,
                             analysis_type=analysis_type,
@@ -517,23 +483,18 @@ class HolisticMemoryService:
                             archetype=archetype_used or "Foundation Builder",
                             source_analysis_id=analysis_id
                         )
-                        print(f"✨ INSIGHTS: Auto-extracted {insights_count} insights from {analysis_type}")
-                    else:
-                        # print(f"📊 ANALYSIS: {analysis_type} stored - no insights extracted (update)")  # Commented to reduce noise
-                        pass
+                        logger.debug(f"Auto-extracted {insights_count} insights from {analysis_type}")
                 except Exception as e:
                     # Don't fail the analysis storage if insights extraction fails
-                    print(f"⚠️ INSIGHTS: Failed to auto-extract insights: {str(e)}")
-        # print(f"📊 ANALYSIS: {analysis_type} stored (ID: {analysis_id}) - insights available on demand")  # Commented to reduce noise
+                    logger.warning(f"Failed to auto-extract insights: {str(e)}")
                 
                 return analysis_id
             else:
-                print(f"❌ MEMORY: Failed to store {analysis_type} analysis - no result returned")
+                logger.error(f"Failed to store {analysis_type} analysis - no result returned")
                 return None
                 
         except Exception as e:
-        # print(f"🔍 MEMORY DEBUG: General error: {e}")  # Commented to reduce noise
-            logger.debug(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")
+            logger.error(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")
             return ""
     
     async def get_analysis_history(self, user_id: str, analysis_type: str = None, 
