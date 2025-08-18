@@ -69,6 +69,21 @@ class HealthChecker:
     
     async def check_database_health(self) -> HealthCheckResult:
         """Check database connectivity and performance using Agent 1's pool"""
+        
+        # Skip database checks on Render - use REST API only
+        if os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"):
+            return HealthCheckResult(
+                service="database",
+                status=HealthStatus.HEALTHY,
+                response_time_ms=0,
+                message="Database checks disabled on Render (using Supabase REST API)",
+                details={
+                    "mode": "rest-api-only",
+                    "environment": "render",
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+        
         start_time = time.time()
         
         try:
