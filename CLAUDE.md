@@ -60,11 +60,29 @@ python start_openai.py
 # Alternative: Run with uvicorn directly
 uvicorn services.api_gateway.openai_main:app --host 0.0.0.0 --port 8001 --reload
 
-# Testing
-python test_ondemand_analysis.py     # Test on-demand analysis service
-python test_insight_mvp.py           # Test insights generation
-python test_fixes.py                 # Validate recent fixes
-pytest tests/unit/                   # Run unit tests
+# Environment validation
+python testing/check_env.py
+
+# Core testing suite
+python testing/test_ondemand_analysis.py       # Test threshold-based analysis
+python testing/test_insight_mvp.py             # Test insights generation
+python testing/test_fixes.py                   # Validate production fixes
+python testing/test_memory_management.py       # Test 4-layer memory system
+python testing/test_user_journey_simple.py     # End-to-end user workflow
+python testing/test_rate_limiting.py           # Test rate limiting system
+
+# Unit and integration tests
+pytest tests/unit/                             # Unit tests
+pytest tests/integration/                      # Integration tests
+python tests/benchmarks/performance_benchmarks.py  # Performance testing
+python tests/load/load_test_suite.py          # Load testing
+
+# Production readiness validation
+python testing/run_production_tests.py        # Full production test suite
+python testing/validate_fixes.py              # Validate all P0 fixes
+
+# Deployment
+git push origin main                           # Auto-deploys via render.yaml
 ```
 
 ## High-Level Architecture
@@ -96,14 +114,32 @@ pytest tests/unit/                   # Run unit tests
 All agents inherit from `BaseAgent` and use async event-driven patterns:
 
 ```
-User Request → API Gateway → Orchestrator → Agents (parallel/sequential)
-                                           ↓
-                                     Memory Update
-                                           ↓
-                                     Insights Generation
-                                           ↓
-                                     Response to User
+User Request → API Gateway → On-Demand Analysis → Threshold Check
+                                                      ↓
+                                                 Agent Workflow
+                                                      ↓
+                            Orchestrator → Agents (parallel/sequential)
+                                   ↓              ↓
+                            Memory Update → Insights Generation
+                                   ↓              ↓
+                            Database Pool → Response Cache
+                                   ↓              ↓
+                                Response to User
 ```
+
+### Critical System Architecture Patterns
+
+**50-Item Threshold System**: Analysis only triggers when sufficient new data points exist, preventing unnecessary API calls and ensuring meaningful insights.
+
+**4-Layer Memory Hierarchy**:
+- **Working Memory**: Current session context and immediate decisions
+- **Episodic Memory**: Specific user experiences and historical events  
+- **Semantic Memory**: General knowledge and learned patterns
+- **Procedural Memory**: Skills, habits, and routine optimizations
+
+**Event-Driven Agent System**: All agents inherit from `BaseAgent` in `shared_libs/event_system/base_agent.py` with standardized async event handling.
+
+**Connection Pooling**: Database pool with 2-8 connections optimized for Render's 0.5 CPU instances, preventing connection exhaustion.
 
 ## Key Patterns and Conventions
 
@@ -121,7 +157,12 @@ The system supports 6 distinct user archetypes:
 - **Agent Communication**: All agents inherit from `BaseAgent` and use async event-driven patterns
 - **System Prompts**: Stored in `shared_libs/utils/system_prompts.py` with HolisticOS specifications
 - **Data Models**: Pydantic models in `shared_libs/data_models/` with strict validation
-- **Error Handling**: Graceful degradation when agents fail, detailed logging throughout
+- **Error Handling**: Comprehensive exception hierarchy in `shared_libs/exceptions/holisticos_exceptions.py`
+- **Retry Logic**: Exponential backoff patterns with circuit breaker protection
+- **Rate Limiting**: Redis-based with tier controls (5/hour free, 20/hour premium)
+- **Cost Protection**: Automatic limits ($1/day free, $10/day premium)
+- **Monitoring**: Prometheus metrics, health checks, and alerting system
+- **Ultra-Quiet Mode**: `start_openai.py` runs with minimal output (errors only)
 
 ## Environment Variables
 
@@ -148,27 +189,68 @@ ENVIRONMENT=development
 
 ## API Endpoints
 
+### Core Health Analysis
 ```
-POST /api/user/{user_id}/behavior/analyze   # Standalone with 50-item threshold
-POST /api/user/{user_id}/routine/generate   # Calls behavior endpoint internally  
-POST /api/user/{user_id}/nutrition/generate # Calls behavior endpoint internally
-POST /api/analyze                           # Legacy endpoint (archetype-based)
-GET  /api/scheduler/status                  # On-demand system status
-GET  /api/health                           # System health check
+POST /api/user/{user_id}/behavior/analyze   # Threshold-based behavior analysis
+POST /api/user/{user_id}/routine/generate   # Routine planning with behavior context
+POST /api/user/{user_id}/nutrition/generate # Nutrition planning with behavior context
+POST /api/analyze                           # Legacy archetype-based analysis
+```
+
+### System Monitoring & Health
+```
+GET  /api/health                           # Basic system health check
+GET  /api/health/detailed                  # Comprehensive health status
+GET  /api/scheduler/status                 # On-demand analysis system status
+GET  /api/metrics                          # Prometheus metrics endpoint
+```
+
+### Administrative & Debug
+```
+GET  /api/admin/rate-limits                # Rate limiting status and usage
+GET  /api/admin/cost-tracking              # Cost monitoring dashboard
+POST /api/admin/insights/trigger           # Manual insights generation
+GET  /api/debug/memory-stats               # Memory system diagnostics
+```
+
+### Health Data Integration
+```
+GET  /api/health-data/{user_id}            # User health data retrieval
+POST /api/health-data/{user_id}/sync       # Trigger data synchronization
+GET  /api/insights/{user_id}               # User-specific insights
 ```
 
 
 ## Troubleshooting
 
+### Common Issues & Solutions
+
+**Server won't start**: Run `python testing/check_env.py` to validate environment setup and dependencies
+
 **Threshold not triggering**: Check OnDemandAnalysisService debug logs for race conditions in timestamps
+
+**Database connection errors**: Verify PostgreSQL URL and check connection pool status at `/api/health/detailed`
+
+**Rate limiting issues**: Check Redis connection and rate limit status at `/api/admin/rate-limits`
+
+**Memory errors**: Monitor memory system health with `python testing/test_memory_management.py`
 
 **Duplicate constraint errors**: Verify holistic_analysis_results table constraint columns match check query
 
+**Analysis failing**: Validate OpenAI API key and check cost limits at `/api/admin/cost-tracking`
+
 **Insights not generating**: Ensure 'holistic_insights' is in SupabaseAsyncPGAdapter table list
 
-**Analysis mode inconsistency**: Verify ondemand_metadata passes through MemoryIntegrationService
+**Performance issues**: Run load tests with `python tests/load/load_test_suite.py`
 
-**HTTP 500 on endpoints**: Check that functions `run_routine_planning_4o` and `run_nutrition_planning_4o` exist in openai_main.py
+### Development Workflow
+
+1. **Environment Setup**: Ensure `.env` file exists with all required variables
+2. **Dependency Check**: Run `pip install -r requirements.txt` 
+3. **System Validation**: Execute `python testing/check_env.py`
+4. **Start Development**: Use `python start_openai.py` for quiet mode
+5. **Test Changes**: Run relevant test scripts in `testing/` directory
+6. **Production Readiness**: Execute `python testing/validate_fixes.py`
 
 ---
 

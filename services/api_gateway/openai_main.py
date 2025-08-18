@@ -1369,28 +1369,27 @@ Please provide a detailed analysis that demonstrates the {archetype} approach to
             if 'enhanced_prompts_service' in locals():
                 await enhanced_prompts_service.cleanup()
 
-        # Get analysis number early for logging
-        analysis_number = await get_next_analysis_number()
+        # Note: Removed complex logging infrastructure to focus on core functionality
         
         # Step 1: Behavior Analysis (using o3 for deep analysis) - Phase 3.3 Agent-Specific Data
         print("🧠 Running behavior analysis with o3 model...")
         behavior_agent_data = await prepare_behavior_agent_data(user_context if 'user_context' in locals() else None, user_context_summary)
         behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
-        await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_analysis, analysis_number)
+        # Note: Agent handoff logging removed - focus on core functionality
         # print(f"✅ Behavior analysis complete with comprehensive pattern data")  # Commented to reduce noise
         
         # Step 2: Nutrition Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data  
         print("🥗 Generating nutrition plan with gpt-4o...")
         nutrition_agent_data = await prepare_nutrition_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
         nutrition_plan = await run_nutrition_planning_4o(nutrition_prompt, user_context_summary, behavior_analysis, archetype)
-        await log_agent_handoff("nutrition_plan", nutrition_agent_data, nutrition_plan, analysis_number)
+        # Note: Agent handoff logging removed - focus on core functionality
         # print(f"✅ Nutrition plan complete with nutrition-specific data filtering")  # Commented to reduce noise
         
         # Step 3: Routine Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data
         print("🏃‍♂️ Generating routine plan with gpt-4o...")
         routine_agent_data = await prepare_routine_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
         routine_plan = await run_routine_planning_4o(routine_prompt, user_context_summary, behavior_analysis, archetype)
-        await log_agent_handoff("routine_plan", routine_agent_data, routine_plan, analysis_number)
+        # Note: Agent handoff logging removed - focus on core functionality
         # print(f"✅ Routine plan complete with routine-specific data filtering")  # Commented to reduce noise
         
         # Log analysis data - PHASE 3.3 UPDATE
@@ -1940,8 +1939,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
         # Get behavior system prompt
         behavior_prompt = get_system_prompt("behavior_analysis")
         
-        # Get analysis number for logging
-        analysis_number = await get_next_analysis_number()
+        # Note: Removed complex logging infrastructure to focus on core functionality
         
         # Run behavior analysis using o3 model (same as /api/analyze)
         print("🧠 Running standalone behavior analysis with o3 model...")
@@ -1950,8 +1948,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
         if behavior_result:
         # print(f"✅ [BEHAVIOR_WRAPPER] Behavior analysis completed successfully")  # Commented to reduce noise
             
-            # Log agent handoff for standalone behavior analysis
-            await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_result, analysis_number)
+            # Note: Agent handoff logging removed - focus on core functionality
             # Safe data quality access
             data_quality_str = data_quality.value if hasattr(data_quality, 'value') else str(data_quality) if data_quality else "unknown"
             
@@ -2290,10 +2287,10 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             user_context_summary = await create_context_summary_like_api_analyze(user_context, memory_context, archetype, user_id)
             
             # EXACT same behavior analysis execution as /api/analyze (lines 1382-1386)  
-            analysis_number = await get_next_analysis_number()
+            # Note: Removed complex logging infrastructure to focus on core functionality
             behavior_agent_data = await prepare_behavior_agent_data(user_context, user_context_summary)
             behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
-            await log_agent_handoff("behavior_analysis", behavior_agent_data, behavior_analysis, analysis_number)
+            # Note: Agent handoff logging removed - focus on core functionality
             
             # EXACT same memory storage as /api/analyze (lines 1525-1531)
             await memory_service.store_analysis_insights(user_id, "behavior_analysis", behavior_analysis, archetype)
@@ -2399,7 +2396,7 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
                                analysis_source: str = "shared") -> None:
     """Log complete analysis data - supports both shared and standalone analysis"""
     try:
-        analysis_number = await get_next_analysis_number()
+        # Note: Removed complex logging infrastructure to focus on core functionality
         
         # Determine analysis type based on source
         if analysis_source == "shared":

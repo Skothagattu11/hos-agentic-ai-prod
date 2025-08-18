@@ -59,7 +59,8 @@ class OnDemandAnalysisService:
     async def should_run_analysis(
         self, 
         user_id: str, 
-        force_refresh: bool = False
+        force_refresh: bool = False,
+        requested_archetype: str = None
     ) -> Tuple[AnalysisDecision, Dict[str, Any]]:
         """
         Determine if fresh behavior analysis should run
@@ -97,6 +98,21 @@ class OnDemandAnalysisService:
             # CRITICAL FIX: Get and lock the timestamp BEFORE any other operations
             last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
             metadata["fixed_timestamp"] = last_analysis  # Lock this timestamp for consistent use
+            
+            # ARCHETYPE FIX: Check if archetype has changed since last analysis
+            if requested_archetype and last_analysis:
+                last_archetype = await self.get_last_archetype(user_id)
+                if last_archetype and last_archetype != requested_archetype:
+                    # Import archetype manager to assess if fresh analysis needed
+                    from services.archetype_manager import archetype_manager
+                    should_force = await archetype_manager.should_force_fresh_analysis(
+                        user_id, last_archetype, requested_archetype, last_analysis
+                    )
+                    if should_force:
+                        metadata["reason"] = f"Archetype changed from {last_archetype} to {requested_archetype} - incompatible archetypes require fresh analysis"
+                        metadata["archetype_change"] = True
+                        metadata["previous_archetype"] = last_archetype
+                        return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             
             if not last_analysis:
                 # New user - always run initial analysis with comprehensive data window
@@ -282,11 +298,24 @@ class OnDemandAnalysisService:
         
         return threshold
     
-    async def get_cached_behavior_analysis(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Get the most recent cached behavior analysis"""
+    async def get_cached_behavior_analysis(self, user_id: str, archetype: str = None) -> Optional[Dict[str, Any]]:
+        """Get the most recent cached behavior analysis, optionally filtered by archetype"""
         try:
-            # Get from memory system
-            analysis_history = await self.memory_service.get_analysis_history(user_id, limit=1)
+            # Get from memory system with archetype filtering
+            if archetype:
+                # Get recent analyses and filter by archetype
+                analysis_history = await self.memory_service.get_analysis_history(user_id, limit=3)
+                matching_analyses = [
+                    result for result in analysis_history 
+                    if hasattr(result, 'archetype_used') and result.archetype_used == archetype
+                ]
+                if matching_analyses:
+                    analysis_history = [matching_analyses[0]]  # Use most recent matching archetype
+                elif analysis_history:
+                    logger.info(f"[ONDEMAND] No cached analysis found for archetype '{archetype}' for user {user_id[:8]}")
+                    return None
+            else:
+                analysis_history = await self.memory_service.get_analysis_history(user_id, limit=1)
             
             if analysis_history and len(analysis_history) > 0:
                 latest = analysis_history[0]
@@ -303,6 +332,24 @@ class OnDemandAnalysisService:
             logger.error(f"[ONDEMAND_ERROR] Failed to get cached analysis: {e}")
             return None
     
+    async def get_last_archetype(self, user_id: str) -> Optional[str]:
+        """Get the archetype used in the most recent analysis"""
+        try:
+            # Query the most recent analysis to get its archetype
+            analysis_history = await self.memory_service.get_analysis_history(
+                user_id=user_id,
+                analysis_type="behavior_analysis", 
+                limit=1
+            )
+            
+            if analysis_history:
+                return analysis_history[0].archetype_used
+            return None
+            
+        except Exception as e:
+            logger.error(f"[ONDEMAND_ERROR] Error getting last archetype for {user_id}: {e}")
+            return None
+
     async def cleanup(self):
         """Clean up resources"""
         if self.user_service:
