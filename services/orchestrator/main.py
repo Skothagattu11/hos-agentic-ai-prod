@@ -104,7 +104,7 @@ class HolisticOrchestrator(BaseAgent):
             self.nutrition_agent = None
             self.routine_agent = None
             
-            self.logger.info("Direct agent instances created successfully")
+            self.logger.debug("Direct agent instances created successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize agent instances: {e}")
@@ -116,7 +116,7 @@ class HolisticOrchestrator(BaseAgent):
             self.nutrition_agent = None
             self.routine_agent = None
         
-        self.logger.info(f"HolisticOS Multi-Agent Orchestrator initialized with {len(self.coordinated_agents)} agents")
+        self.logger.debug(f"HolisticOS Multi-Agent Orchestrator initialized with {len(self.coordinated_agents)} agents")
     
     async def call_agent_directly(self, event_type: str, payload: Dict[str, Any], 
                                  target_agent: str, user_id: str, archetype: str = None) -> Optional[AgentResponse]:
@@ -259,7 +259,7 @@ class HolisticOrchestrator(BaseAgent):
         workflow_state = WorkflowState(user_id, archetype, workflow_id)
         self.workflow_states[workflow_id] = workflow_state
         
-        self.logger.info("Starting complete multi-agent workflow",
+        self.logger.debug("Starting complete multi-agent workflow",
                         workflow_id=workflow_id,
                         user_id=user_id,
                         archetype=archetype,

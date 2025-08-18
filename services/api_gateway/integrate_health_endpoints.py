@@ -21,18 +21,18 @@ def integrate_health_data_endpoints(app: FastAPI) -> None:
         # Add the insights router
         app.include_router(insights_router)
         
-        logger.info("[INTEGRATION] Health data endpoints added successfully")
-        logger.info("[INTEGRATION] Available endpoints:")
-        logger.info("  - GET /api/v1/health-data/users/{user_id}/health-context")
-        logger.info("  - GET /api/v1/health-data/users/{user_id}/summary")
-        logger.info("  - GET /api/v1/health-data/users/{user_id}/data-quality")
-        logger.info("  - GET /api/v1/health-data/users/{user_id}/agent/{agent_name}/data")
-        logger.info("  - POST /api/v1/health-data/users/{user_id}/analyze")
-        logger.info("  - GET /api/v1/health-data/system/health")
-        logger.info("  - POST /api/v1/insights/generate")
-        logger.info("  - GET /api/v1/insights/{user_id}")
-        logger.info("  - PATCH /api/v1/insights/{insight_id}/acknowledge")
-        logger.info("  - POST /api/v1/insights/{insight_id}/rate")
+        logger.debug("[INTEGRATION] Health data endpoints added successfully")
+        logger.debug("[INTEGRATION] Available endpoints:")
+        logger.debug("  - GET /api/v1/health-data/users/{user_id}/health-context")
+        logger.debug("  - GET /api/v1/health-data/users/{user_id}/summary")
+        logger.debug("  - GET /api/v1/health-data/users/{user_id}/data-quality")
+        logger.debug("  - GET /api/v1/health-data/users/{user_id}/agent/{agent_name}/data")
+        logger.debug("  - POST /api/v1/health-data/users/{user_id}/analyze")
+        logger.debug("  - GET /api/v1/health-data/system/health")
+        logger.debug("  - POST /api/v1/insights/generate")
+        logger.debug("  - GET /api/v1/insights/{user_id}")
+        logger.debug("  - PATCH /api/v1/insights/{insight_id}/acknowledge")
+        logger.debug("  - POST /api/v1/insights/{insight_id}/rate")
         
         return True
         

@@ -38,7 +38,7 @@ class BehaviorAnalysisScheduler:
             self.user_service = UserDataService()
             self.analysis_tracker = SimpleAnalysisTracker()
             self.memory_service = HolisticMemoryService()
-            logger.info(f"[SCHEDULER] Initialized with {self.data_threshold} data point threshold")
+            logger.debug(f"[SCHEDULER] Initialized with {self.data_threshold} data point threshold")
             return True
         except Exception as e:
             logger.error(f"[SCHEDULER_ERROR] Failed to initialize: {e}")
@@ -260,7 +260,7 @@ class BehaviorAnalysisScheduler:
             analysis_result = await run_complete_health_analysis(user_id, archetype)
             
             if analysis_result and analysis_result.get('status') == 'success':
-                print(f"✅ [SCHEDULER] Analysis completed for {user_id[:8]}...")
+        # print(f"✅ [SCHEDULER] Analysis completed for {user_id[:8]}...")  # Commented to reduce noise
                 
                 # Log successful scheduled analysis
                 await self.log_scheduled_analysis(user_id, reason, analysis_result)
@@ -325,7 +325,7 @@ class BehaviorAnalysisScheduler:
                 logger.info("[SCHEDULER] No active users found")
                 return
                 
-            print(f"🔍 [SCHEDULER] Checking {len(active_users)} active users...")
+        # print(f"🔍 [SCHEDULER] Checking {len(active_users)} active users...")  # Commented to reduce noise
             
             triggers_found = 0
             
@@ -345,7 +345,7 @@ class BehaviorAnalysisScheduler:
             if triggers_found > 0:
                 print(f"🚀 [SCHEDULER] Triggered {triggers_found} behavior analyses")
             else:
-                print(f"✅ [SCHEDULER] All users up to date (no triggers needed)")
+        # print(f"✅ [SCHEDULER] All users up to date (no triggers needed)")  # Commented to reduce noise
                 
         except Exception as e:
             logger.error(f"[SCHEDULER_ERROR] Failed to check users: {e}")
@@ -353,7 +353,7 @@ class BehaviorAnalysisScheduler:
     async def start_monitoring(self):
         """Start the background monitoring loop"""
         self.is_running = True
-        logger.info(f"[SCHEDULER] Starting background monitoring (every {self.check_interval_minutes} minutes)")
+        logger.debug(f"[SCHEDULER] Starting background monitoring (every {self.check_interval_minutes} minutes)")
         
         while self.is_running:
             try:

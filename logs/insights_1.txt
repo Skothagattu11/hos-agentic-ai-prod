@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-08-17T21:37:43.040540",
+  "analysis_number": 1,
+  "source": "routine_plan_extraction",
+  "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+  "archetype": "Foundation Builder",
+  "total_insights": 1,
+  "insights": [
+    {
+      "title": "Routine Plan Focus",
+      "content": "### Daily Routine Plan for Foundation Builder\n\n---\n\n#### **Daily Summary**\n\n**Key Focus Areas:**\n- Establish a sustainable daily movement routine\n- Maintain strong sleep quality\n- Enhance mental wellbeing through structured activities\n\n**Goals:**\n- Increase daily steps and active minutes\n- Preserve high sleep efficiency\n- Integrate micro-activities to reduce sedentary behavior\n\n---\n\n### **Time Blo...",
+      "type": "routine"
+    }
+  ],
+  "metadata": {
+    "generated_by": "HolisticOS Insights System",
+    "log_type": "insights",
+    "version": "1.0"
+  }
+}

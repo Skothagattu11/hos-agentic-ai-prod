@@ -50,8 +50,8 @@ class HolisticRoutineAgent(BaseAgent):
         # Initialize Supabase adapter to preserve existing data flow
         self.supabase = SupabaseAsyncPGAdapter()
         
-        logger.info(f"Initialized HolisticRoutineAgent with system prompt length: {len(self.system_prompt)}")
-        logger.info(f"Available archetypes: {self.routine_service.get_available_archetypes()}")
+        logger.debug(f"Initialized HolisticRoutineAgent with system prompt length: {len(self.system_prompt)}")
+        logger.debug(f"Available archetypes: {self.routine_service.get_available_archetypes()}")
     
     async def process_message(self, message_type: str, data: dict) -> dict:
         """
@@ -245,7 +245,7 @@ specific health profile, and behavioral patterns.
             user_id = data.get("user_id")
             update_type = data.get("update_type", "general")
             
-            logger.info(f"Processing user update for {user_id}: {update_type}")
+            logger.debug(f"Processing user update for {user_id}: {update_type}")
             
             return {"status": "success", "message": "User update processed"}
             
@@ -267,7 +267,7 @@ specific health profile, and behavioral patterns.
                     "message": f"Invalid archetype. Available options: {', '.join(available_archetypes)}"
                 }
             
-            logger.info(f"Updating archetype for {user_id} to {new_archetype}")
+            logger.debug(f"Updating archetype for {user_id} to {new_archetype}")
             
             # In a full implementation, you might store this preference in the database
             # For now, just acknowledge the update
@@ -311,7 +311,7 @@ specific health profile, and behavioral patterns.
             with open(input_file_path, 'w') as f:
                 f.write(json.dumps(input_data, indent=2, default=str))
             
-            logger.info(f"Input data logged to {input_file_path}")
+            logger.debug(f"Input data logged to {input_file_path}")
             
         except Exception as e:
             logger.error(f"Error logging input data: {str(e)}")
@@ -338,7 +338,7 @@ specific health profile, and behavioral patterns.
             with open(output_file_path, 'w') as f:
                 f.write(json.dumps(output_data, indent=2, default=str))
             
-            logger.info(f"Output data logged to {output_file_path}")
+            logger.debug(f"Output data logged to {output_file_path}")
             
         except Exception as e:
             logger.error(f"Error logging output data: {str(e)}")

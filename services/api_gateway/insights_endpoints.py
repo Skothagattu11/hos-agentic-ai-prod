@@ -3,43 +3,43 @@ Insights API Endpoints (MVP)
 Simple endpoints for generating and retrieving insights
 """
 
-print("🔍 [DEBUG] Loading insights_endpoints.py...")
+        # print("🔍 [DEBUG] Loading insights_endpoints.py...")  # Commented to reduce noise
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-print("🔍 [DEBUG] Basic imports loaded, attempting service imports...")
+        # print("🔍 [DEBUG] Basic imports loaded, attempting service imports...")  # Commented to reduce noise
 
 try:
     from ..insights_extraction_service import insights_service
-    print("🔍 [DEBUG] insights_service imported successfully")
+        # print("🔍 [DEBUG] insights_service imported successfully")  # Commented to reduce noise
 except Exception as e:
-    print(f"❌ [DEBUG] Failed to import insights_service: {e}")
+        # print(f"❌ [DEBUG] Failed to import insights_service: {e}")  # Commented to reduce noise
     insights_service = None
 
 try:
     from ..agents.memory.holistic_memory_service import HolisticMemoryService
-    print("🔍 [DEBUG] HolisticMemoryService imported successfully")
+        # print("🔍 [DEBUG] HolisticMemoryService imported successfully")  # Commented to reduce noise
 except Exception as e:
-    print(f"❌ [DEBUG] Failed to import HolisticMemoryService: {e}")
+        # print(f"❌ [DEBUG] Failed to import HolisticMemoryService: {e}")  # Commented to reduce noise
     HolisticMemoryService = None
 
 try:
-    from ..logging_config import get_logger
-    logger = get_logger(__name__)
-    print("🔍 [DEBUG] logger imported successfully")
+    import structlog
+    logger = structlog.get_logger(__name__)
+        # print("🔍 [DEBUG] structlog logger imported successfully")  # Commented to reduce noise
 except Exception as e:
-    print(f"❌ [DEBUG] Failed to import logger: {e}")
+        # print(f"❌ [DEBUG] Failed to import logger: {e}")  # Commented to reduce noise
     import logging
     logger = logging.getLogger(__name__)
 
 try:
     from ..insights_logger import insights_logger
-    print("🔍 [DEBUG] insights_logger imported successfully")
+        # print("🔍 [DEBUG] insights_logger imported successfully")  # Commented to reduce noise
 except Exception as e:
-    print(f"❌ [DEBUG] Failed to import insights_logger: {e}")
+        # print(f"❌ [DEBUG] Failed to import insights_logger: {e}")  # Commented to reduce noise
     insights_logger = None
 
 # Create router

@@ -49,7 +49,7 @@ class BaseAgent(ABC):
         # Get system prompt for this agent type
         self.system_prompt = get_system_prompt(agent_type)
         
-        self.logger.info("Agent initialized", system_prompt_length=len(self.system_prompt))
+        self.logger.debug("Agent initialized", system_prompt_length=len(self.system_prompt))
     
     async def publish_event(self, event_type: str, payload: Dict[str, Any], 
                           target_agent: Optional[str] = None, user_id: Optional[str] = None,

@@ -15,6 +15,9 @@ from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
 from .health_data_client import HealthDataClient
 from shared_libs.data_models.health_models import UserHealthContext, create_health_context_from_raw_data
 
+# Import memory-safe caching
+from shared_libs.caching.lru_cache import cache_manager
+
 # Setup logging for easy troubleshooting
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,17 +32,33 @@ class UserDataService:
         """Initialize with existing infrastructure - reuse what works"""
         self.db_adapter = None
         self.api_client = HealthDataClient()
-        self.cache = {}  # Simple memory cache for MVP
+        
+        # Replace unbounded cache with memory-safe LRU cache
+        self.user_context_cache = cache_manager.create_cache(
+            name="user_contexts",
+            max_size=50,      # Maximum 50 cached user contexts
+            ttl_seconds=1800  # 30 minutes TTL
+        )
+        
+        self.health_data_cache = cache_manager.create_cache(
+            name="health_data",
+            max_size=30,      # Maximum 30 cached health data sets
+            ttl_seconds=600   # 10 minutes TTL
+        )
         
         # Configuration
         self.default_days = 7
         self.max_records = 1000  # Prevent runaway queries
         self.use_api_first = True  # API-first approach like health-agent-main
         
-        # Phase 4.0 MVP: Simple sync tracking
-        self.sync_cache = {}  # In-memory cache for last sync times (MVP approach)
+        # Phase 4.0 MVP: Simple sync tracking - replace with bounded cache
+        self.sync_cache = cache_manager.create_cache(
+            name="sync_tracking",
+            max_size=100,     # Maximum 100 sync timestamps
+            ttl_seconds=3600  # 1 hour TTL
+        )
         
-        logger.debug("[USER_DATA_SERVICE] Initialized with API client and incremental sync support")
+        logger.debug("[USER_DATA_SERVICE] Initialized with memory-safe caching")
 
     async def _ensure_db_connection(self) -> SupabaseAsyncPGAdapter:
         """Lazy connection initialization - MVP pattern"""
@@ -256,15 +275,14 @@ class UserDataService:
         overall_start = datetime.now()
         days = days or self.default_days
         
-        logger.info(f"[USER_HEALTH_DATA] Starting fetch for user {user_id}, {days} days")
+        logger.debug(f"[USER_HEALTH_DATA] Starting fetch for user {user_id}, {days} days")
         
-        # Use cache for MVP - simple but effective
-        cache_key = f"{user_id}_{days}"
-        if cache_key in self.cache:
-            cache_data = self.cache[cache_key]
-            if (datetime.now(timezone.utc) - cache_data.fetch_timestamp).seconds < 300:  # 5 min cache
-                logger.info(f"[CACHE_HIT] Returning cached data for {user_id}")
-                return cache_data
+        # Use memory-safe LRU cache with automatic TTL
+        cache_key = f"{user_id}_{days}days"
+        cached_data = self.health_data_cache.get(cache_key)
+        if cached_data:
+            logger.debug(f"[CACHE_HIT] Returning cached data for {user_id}")
+            return cached_data
         
         start_date, end_date = self._get_date_range(days)
         
@@ -272,7 +290,7 @@ class UserDataService:
             # Try API first (health-agent-main pattern)
             if self.use_api_first:
                 try:
-                    logger.info(f"[API_FIRST] Attempting API fetch for {user_id}")
+                    logger.debug(f"[API_FIRST] Attempting API fetch for {user_id}")
                     api_tasks = [
                         self.api_client.get_user_scores(user_id, start_date, end_date),
                         self.api_client.get_user_biomarkers(user_id, start_date, end_date),
@@ -283,7 +301,7 @@ class UserDataService:
                     
                     # If API returns good data, use it
                     if api_scores or api_biomarkers:
-                        logger.info(f"[API_SUCCESS] Using API data: {len(api_scores)} scores, {len(api_biomarkers)} biomarkers")
+                        logger.debug(f"[API_SUCCESS] Using API data: {len(api_scores)} scores, {len(api_biomarkers)} biomarkers")
                         result = create_health_context_from_raw_data(
                             user_id=user_id,
                             raw_scores=api_scores,
@@ -293,21 +311,22 @@ class UserDataService:
                         )
                         
                         # Cache and return
-                        self.cache[cache_key] = result
-                        self._clean_cache()
+                        self.health_data_cache.set(cache_key, result)
+                        # Check memory usage and cleanup if needed
+                        cache_manager.cleanup_if_needed()
                         
                         overall_duration = (datetime.now() - overall_start).total_seconds()
-                        logger.info(f"[USER_HEALTH_DATA] API completed for {user_id} in {overall_duration:.2f}s")
+                        logger.debug(f"[USER_HEALTH_DATA] API completed for {user_id} in {overall_duration:.2f}s")
                         
                         return result
                     
-                    logger.info(f"[API_NO_DATA] No API data found, falling back to database")
+                    logger.debug(f"[API_NO_DATA] No API data found, falling back to database")
                     
                 except Exception as api_error:
                     logger.warning(f"[API_FALLBACK] API failed for {user_id}: {api_error}, trying database")
             
             # Fallback to database (existing logic)
-            logger.info(f"[DB_FALLBACK] Using database for {user_id}")
+            logger.debug(f"[DB_FALLBACK] Using database for {user_id}")
             tasks = [
                 self.fetch_user_scores(user_id, days),
                 self.fetch_user_biomarkers(user_id, days),
@@ -368,12 +387,13 @@ class UserDataService:
             )
             
             # Cache result
-            self.cache[cache_key] = result
-            self._clean_cache()
+            self.health_data_cache.set(cache_key, result)
+            # Check memory usage and cleanup if needed
+            cache_manager.cleanup_if_needed()
             
             overall_duration = (datetime.now() - overall_start).total_seconds()
-            logger.info(f"[USER_HEALTH_DATA] Database completed for {user_id} in {overall_duration:.2f}s")
-            logger.info(f"[DATA_QUALITY] Scores: {result.data_quality.scores_count}, "
+            logger.debug(f"[USER_HEALTH_DATA] Database completed for {user_id} in {overall_duration:.2f}s")
+            logger.debug(f"[DATA_QUALITY] Scores: {result.data_quality.scores_count}, "
                        f"Biomarkers: {result.data_quality.biomarkers_count}, "
                        f"Quality: {result.data_quality.quality_level}")
             
@@ -396,7 +416,7 @@ class UserDataService:
         try:
             db = await self._ensure_db_connection()
             
-            logger.info(f"[INCREMENTAL] Fetching data for {user_id} since {since_timestamp.isoformat()}")
+            logger.debug(f"[INCREMENTAL] Fetching data for {user_id} since {since_timestamp.isoformat()}")
             
             # Use Supabase native API for more reliable queries
             from supabase import create_client
@@ -430,7 +450,7 @@ class UserDataService:
                     
                     scores_rows = scores_response.data
                     biomarkers_rows = biomarkers_response.data
-                    logger.info(f"[INCREMENTAL] Using Supabase native API")
+                    logger.debug(f"[INCREMENTAL] Using Supabase native API")
                     
                 else:
                     # Fallback to SQL adapter
@@ -504,9 +524,9 @@ class UserDataService:
                 latest_data_timestamp = max(latest_data_timestamp, latest_biomarker_timestamp)
             
             hours_since = (datetime.now(timezone.utc) - since_timestamp).total_seconds() / 3600
-            print(f"📊 INCREMENTAL_RESULT: {len(scores)} scores, {len(biomarkers)} biomarkers")
-            print(f"⏰ TIME_SPAN: {hours_since:.1f} hours of new data")
-            print(f"📅 LATEST_DATA: {latest_data_timestamp.strftime('%m/%d %H:%M')}")
+        # print(f"📊 INCREMENTAL_RESULT: {len(scores)} scores, {len(biomarkers)} biomarkers")  # Commented to reduce noise
+            # print(f"⏰ TIME_SPAN: {hours_since:.1f} hours of new data")  # Commented for error-only mode
+            # print(f"📅 LATEST_DATA: {latest_data_timestamp.strftime('%m/%d %H:%M')}")  # Commented for error-only mode
             
             return scores, biomarkers, archetypes, latest_data_timestamp
             
@@ -532,20 +552,20 @@ class UserDataService:
         if locked_timestamp:
             last_analysis = locked_timestamp
             print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp: {last_analysis.isoformat()}")
-            logger.info(f"[ANALYSIS_DATA] Using locked timestamp from OnDemandAnalysisService: {last_analysis.isoformat()}")
+            logger.debug(f"[ANALYSIS_DATA] Using locked timestamp from OnDemandAnalysisService: {last_analysis.isoformat()}")
         else:
             last_analysis = await tracker.get_last_analysis_time(user_id)
-            print(f"🔍 [NORMAL_FLOW] Retrieved fresh timestamp: {last_analysis.isoformat() if last_analysis else 'None'}")
+        # print(f"🔍 [NORMAL_FLOW] Retrieved fresh timestamp: {last_analysis.isoformat() if last_analysis else 'None'}")  # Commented to reduce noise
         
         if not last_analysis:
             # First analysis - get 7 days baseline
-            logger.info(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days baseline")
-            print(f"📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline")
+            logger.debug(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days baseline")
+        # print(f"📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline")  # Commented to reduce noise
             
             # CRITICAL FIX: Update analysis timestamp BEFORE fetching data
             analysis_start_time = datetime.now(timezone.utc)
             await tracker.update_analysis_time(user_id, analysis_start_time)
-            logger.info(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
+            logger.debug(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
             
             result = await self.get_user_health_data(user_id, days=7)
             
@@ -565,30 +585,30 @@ class UserDataService:
             )
             
             duration = (datetime.now() - overall_start).total_seconds()
-            logger.info(f"[ANALYSIS_DATA] Initial analysis completed in {duration:.2f}s")
-            logger.info(f"[ANALYSIS_DATA] Latest data found: {latest_data_timestamp.isoformat()}")
+            logger.debug(f"[ANALYSIS_DATA] Initial analysis completed in {duration:.2f}s")
+            logger.debug(f"[ANALYSIS_DATA] Latest data found: {latest_data_timestamp.isoformat()}")
             return result, latest_data_timestamp
         
         # Calculate time span
         hours_since = (datetime.now(timezone.utc) - last_analysis).total_seconds() / 3600
         days_span = max(1, int(hours_since / 24) + 1)
         
-        logger.info(f"[ANALYSIS_DATA] Incremental analysis for {user_id}")
-        logger.info(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago at {last_analysis.isoformat()}")
-        logger.info(f"[ANALYSIS_DATA] Fetching incremental data from {last_analysis.isoformat()} to now")
-        print(f"📊 INCREMENTAL_SYNC: Last analysis was {hours_since:.1f} hours ago")
-        print(f"📊 INCREMENTAL_SYNC: Fetching new data since {last_analysis.strftime('%Y-%m-%d %H:%M')}")
+        logger.debug(f"[ANALYSIS_DATA] Incremental analysis for {user_id}")
+        logger.debug(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago at {last_analysis.isoformat()}")
+        logger.debug(f"[ANALYSIS_DATA] Fetching incremental data from {last_analysis.isoformat()} to now")
+        # print(f"📊 INCREMENTAL_SYNC: Last analysis was {hours_since:.1f} hours ago")  # Commented to reduce noise
+        # print(f"📊 INCREMENTAL_SYNC: Fetching new data since {last_analysis.strftime('%Y-%m-%d %H:%M')}")  # Commented to reduce noise
         
         try:
             # CRITICAL FIX: NEVER update timestamp during data fetching
             # Timestamp should only be updated at the END of successful plan generation
-            print(f"🔒 [TIMESTAMP_PROTECTION] Skipping timestamp update during data fetch - will update at plan completion")
+            # print(f"🔒 [TIMESTAMP_PROTECTION] Skipping timestamp update during data fetch - will update at plan completion")  # Commented for error-only mode
             
             # Get ALL data since last analysis (using locked timestamp if provided)
             scores, biomarkers, archetypes, latest_data_timestamp = await self.fetch_data_since(user_id, last_analysis)
             
             if not scores and not biomarkers:
-                print(f"⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timestamp")
+                # print(f"⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timestamp")  # Commented for error-only mode
                 
                 # Check if last_analysis is beyond all existing data (invalid timestamp scenario)
                 db = await self._ensure_db_connection()
@@ -609,7 +629,7 @@ class UserDataService:
                     latest_result = await db.fetch(latest_timestamp_query, user_id)
                     if latest_result and latest_result[0]:
                         actual_latest_timestamp = self._parse_datetime_field(latest_result[0]['latest_timestamp'])
-                        logger.info(f"[STALE_CHECK] Using SQL query for timestamp check")
+                        logger.debug(f"[STALE_CHECK] Using SQL query for timestamp check")
                     else:
                         # Fallback - use current time if query fails
                         actual_latest_timestamp = datetime.now(timezone.utc)
@@ -621,8 +641,8 @@ class UserDataService:
                 
                 # If last_analysis is in the future relative to actual data, reset to initial analysis
                 if last_analysis > actual_latest_timestamp:
-                    print(f"🔄 RESET_TO_INITIAL: last_analysis ({last_analysis.isoformat()}) > actual_latest ({actual_latest_timestamp.isoformat()})")
-                    print(f"📊 FALLBACK: Fetching 7 days of historical data for initial analysis")
+        # print(f"🔄 RESET_TO_INITIAL: last_analysis ({last_analysis.isoformat()}) > actual_latest ({actual_latest_timestamp.isoformat()})")  # Commented to reduce noise
+        # print(f"📊 FALLBACK: Fetching 7 days of historical data for initial analysis")  # Commented to reduce noise
                     
                     # Fetch 7 days of baseline data (initial analysis mode)
                     result = await self.get_user_health_data(user_id, days=7)
@@ -635,9 +655,9 @@ class UserDataService:
                         biomarker_latest = max(biomarker.created_at for biomarker in result.biomarkers)
                         latest_data_timestamp = max(latest_data_timestamp, biomarker_latest)
                         
-                    print(f"✅ RECOVERY_SUCCESS: Found {result.data_quality.scores_count} scores, {result.data_quality.biomarkers_count} biomarkers")
+        # print(f"✅ RECOVERY_SUCCESS: Found {result.data_quality.scores_count} scores, {result.data_quality.biomarkers_count} biomarkers")  # Commented to reduce noise
                 else:
-                    print(f"✅ ANALYSIS_DATA: No new data since last analysis - up to date")
+        # print(f"✅ ANALYSIS_DATA: No new data since last analysis - up to date")  # Commented to reduce noise
                     # Return empty context with last analysis timestamp (no newer data found)
                     result = create_health_context_from_raw_data(
                         user_id=user_id,
@@ -679,16 +699,16 @@ class UserDataService:
             )
             
             duration = (datetime.now() - overall_start).total_seconds()
-            logger.info(f"[ANALYSIS_DATA] Incremental analysis completed in {duration:.2f}s")
-            logger.info(f"[ANALYSIS_DATA] Fetched {len(scores)} scores, {len(biomarkers)} biomarkers")
-            logger.info(f"[ANALYSIS_DATA] Latest data timestamp: {latest_data_timestamp.isoformat()}")
+            logger.debug(f"[ANALYSIS_DATA] Incremental analysis completed in {duration:.2f}s")
+            logger.debug(f"[ANALYSIS_DATA] Fetched {len(scores)} scores, {len(biomarkers)} biomarkers")
+            logger.debug(f"[ANALYSIS_DATA] Latest data timestamp: {latest_data_timestamp.isoformat()}")
             
             return result, latest_data_timestamp
             
         except Exception as e:
             logger.error(f"[ANALYSIS_DATA_ERROR] Incremental failed for {user_id}: {e}")
             # Fallback to full sync on error
-            logger.info(f"[ANALYSIS_DATA] Falling back to 7-day fetch")
+            logger.debug(f"[ANALYSIS_DATA] Falling back to 7-day fetch")
             result = await self.get_user_health_data(user_id, days=7)
             
             # Calculate latest timestamp from fallback data
@@ -716,10 +736,9 @@ class UserDataService:
         return result
 
     def _clean_cache(self):
-        """Clean old cache entries - prevent memory leaks"""
-        if len(self.cache) > 100:  # Simple limit
-            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k].fetch_timestamp)
-            del self.cache[oldest_key]
+        """Clean old cache entries - REMOVED (handled by LRU cache automatically)"""
+        # LRU cache handles this automatically with size limits and TTL
+        pass
 
     async def health_check(self) -> Dict[str, Any]:
         """Simple health check for monitoring - essential for production"""
@@ -729,10 +748,13 @@ class UserDataService:
             # Simple test query - check if profiles table exists
             result = await db.fetch("SELECT COUNT(*) as count FROM profiles LIMIT 1")
             
+            # Get cache statistics for monitoring
+            cache_stats = cache_manager.get_cache_stats()
+            
             return {
                 'status': 'healthy',
                 'database': 'connected',
-                'cache_size': len(self.cache),
+                'cache_stats': cache_stats,
                 'profiles_accessible': True,
                 'timestamp': datetime.now().isoformat()
             }
@@ -747,7 +769,7 @@ class UserDataService:
         """Clean shutdown - important for production"""
         if self.db_adapter:
             await self.db_adapter.close()
-            logger.info("[USER_DATA_SERVICE] Database connection closed")
+            logger.debug("[USER_DATA_SERVICE] Database connection closed")
 
 # Convenience function for easy import
 async def get_user_health_data(user_id: str, days: int = 7) -> UserHealthContext:

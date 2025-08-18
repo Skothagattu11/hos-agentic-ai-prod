@@ -1,23 +1,36 @@
 """
 Supabase Adapter for AsyncPG compatibility
 This adapter allows existing asyncpg code to work with Supabase client
+Enhanced with connection pooling support for production use
 """
 
 import asyncio
 import json
+import logging
 from typing import Any, Dict, List, Optional, Union
 from supabase import create_client, Client
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Import connection pool and exceptions
+try:
+    from shared_libs.database.connection_pool import db_pool
+    from shared_libs.exceptions.holisticos_exceptions import DatabaseException
+    CONNECTION_POOL_AVAILABLE = True
+except ImportError:
+    CONNECTION_POOL_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+
 
 class SupabaseAsyncPGAdapter:
     """
     Adapter that provides AsyncPG-like interface using Supabase client
+    Enhanced with connection pooling support for production use
     """
     
-    def __init__(self, supabase_url: str = None, supabase_key: str = None):
+    def __init__(self, supabase_url: str = None, supabase_key: str = None, use_connection_pool: bool = True):
         # Load environment variables if not provided
         if not supabase_url or not supabase_key:
             self._load_env()
@@ -25,11 +38,21 @@ class SupabaseAsyncPGAdapter:
         self.supabase_url = supabase_url or os.getenv("SUPABASE_URL")
         self.supabase_key = supabase_key or os.getenv("SUPABASE_KEY")
         
-        if not self.supabase_url or not self.supabase_key:
-            raise ValueError("SUPABASE_URL and SUPABASE_KEY must be provided or set in environment")
+        # Connection pooling configuration
+        self.use_connection_pool = use_connection_pool and CONNECTION_POOL_AVAILABLE
+        self.database_url = os.getenv("DATABASE_URL")
+        
+        # Fallback to Supabase client if no direct database URL or pooling disabled
+        if not self.database_url or not self.use_connection_pool:
+            if not self.supabase_url or not self.supabase_key:
+                raise ValueError("SUPABASE_URL and SUPABASE_KEY must be provided or set in environment")
+            self.use_connection_pool = False
             
         self.client: Optional[Client] = None
         self._connected = False
+        
+        logger.debug(f"Adapter initialized with connection_pool={self.use_connection_pool}, "
+                   f"database_url={'present' if self.database_url else 'missing'}")
 
     def _load_env(self):
         """Load environment variables from .env file"""
@@ -47,36 +70,54 @@ class SupabaseAsyncPGAdapter:
                 break
 
     async def connect(self):
-        """Initialize Supabase client (mimics asyncpg.connect)"""
+        """Initialize database connection (connection pool or Supabase client)"""
         try:
-            print(f"[🔍] Attempting Supabase connection...")
-            print(f"[🔍] URL: {self.supabase_url[:30]}..." if self.supabase_url else "[🔍] URL: None")
-            print(f"[🔍] Key: {'Present' if self.supabase_key else 'Missing'}")
+            if self.use_connection_pool:
+                logger.debug("Initializing connection pool...")
+                await db_pool.initialize(self.database_url)
+                self._connected = True
+                logger.debug("✅ Connected via database connection pool")
+            else:
+                logger.debug("Attempting Supabase client connection...")
+                logger.debug(f"URL: {self.supabase_url[:30]}..." if self.supabase_url else "URL: None")
+                logger.debug(f"Key: {'Present' if self.supabase_key else 'Missing'}")
+                
+                self.client = create_client(self.supabase_url, self.supabase_key)
+                self._connected = True
+                logger.debug(f"✅ Connected to Supabase successfully - client type: {type(self.client)}")
             
-            self.client = create_client(self.supabase_url, self.supabase_key)
-            self._connected = True
-            print(f"[✅] Connected to Supabase successfully - client type: {type(self.client)}")
             return self
         except Exception as e:
-            print(f"[❌] Supabase connection failed: {e}")
+            logger.error(f"Connection failed: {e}")
             self._connected = False
             self.client = None
-            raise
+            if self.use_connection_pool:
+                raise DatabaseException(f"Failed to connect to database: {e}")
+            else:
+                raise
 
     async def close(self):
-        """Close connection (mimics asyncpg connection.close)"""
+        """Close connection (connection pool or Supabase client)"""
         self._connected = False
-        self.client = None
+        if not self.use_connection_pool:
+            self.client = None
+        # Note: Don't close the pool here - it's shared across all adapters
     
     @property
     def is_connected(self) -> bool:
         """Check if adapter is connected"""
-        return self._connected and self.client is not None
+        if self.use_connection_pool:
+            return self._connected
+        else:
+            return self._connected and self.client is not None
 
     def _ensure_connected(self):
         """Ensure we have an active connection"""
-        if not self._connected or not self.client:
-            raise RuntimeError("Not connected to Supabase. Call connect() first.")
+        if not self._connected:
+            if self.use_connection_pool:
+                raise RuntimeError("Not connected to database pool. Call connect() first.")
+            else:
+                raise RuntimeError("Not connected to Supabase. Call connect() first.")
 
     async def execute(self, query: str, *args) -> str:
         """
@@ -86,63 +127,76 @@ class SupabaseAsyncPGAdapter:
         self._ensure_connected()
         
         try:
-            # Parse the SQL query and convert to Supabase operations
-            parsed_query = self._parse_query(query, args)
-            
-            if parsed_query['operation'] == 'INSERT':
-                result = self.client.table(parsed_query['table']).insert(parsed_query['data']).execute()
-                return f"INSERT 0 {len(result.data)}"
-                
-            elif parsed_query['operation'] == 'UPDATE':
-                update_data = parsed_query['data'].copy()
-                
-                # Special handling for total_analyses increment
-                if 'total_analyses' in update_data:
-                    print(f"[MEMORY] Handling total_analyses increment for {parsed_query['where_value']}")
-                    # First get current value
-                    current_record = self.client.table(parsed_query['table']).select('total_analyses').eq(
-                        parsed_query['where_column'], parsed_query['where_value']
-                    ).execute()
-                    
-                    current_count = 0
-                    if current_record.data:
-                        current_count = current_record.data[0].get('total_analyses', 0)
-                    
-                    # Update with incremented value
-                    update_data['total_analyses'] = current_count + 1
-                    print(f"[MEMORY] Incrementing total_analyses from {current_count} to {current_count + 1}")
-                
-                print(f"[MEMORY] Updating {parsed_query['table']} with {len(update_data)} fields")
-                for field, value in update_data.items():
-                    if isinstance(value, (dict, list)):
-                        print(f"[MEMORY] {field}: JSON data with {len(value) if isinstance(value, (dict, list)) else 'unknown'} items")
-                    else:
-                        print(f"[MEMORY] {field}: {str(value)[:50]}{'...' if len(str(value)) > 50 else ''}")
-                
-                # Debug WHERE clause
-                print(f"[MEMORY] WHERE {parsed_query.get('where_column')} = {parsed_query.get('where_value')}")
-                
-                result = self.client.table(parsed_query['table']).update(update_data).eq(
-                    parsed_query['where_column'], parsed_query['where_value']
-                ).execute()
-                
-                print(f"[MEMORY] Update successful: {len(result.data)} rows affected")
-                return f"UPDATE {len(result.data)}"
-                
-            elif parsed_query['operation'] == 'DELETE':
-                result = self.client.table(parsed_query['table']).delete().eq(
-                    parsed_query['where_column'], parsed_query['where_value']
-                ).execute()
-                return f"DELETE {len(result.data)}"
-                
+            if self.use_connection_pool:
+                # Use connection pool for direct PostgreSQL commands
+                result = await db_pool.execute_command(query, *args)
+                return result
             else:
-                raise ValueError(f"Unsupported operation: {parsed_query['operation']}")
+                # Use Supabase client with query parsing
+                return await self._execute_with_supabase_client(query, args)
                 
         except Exception as e:
-            print(f"[❌] Query execution failed: {e}")
-            print(f"[📝] Query: {query}")
-            print(f"[📝] Args: {args}")
-            raise
+            logger.error(f"Query execution failed: {e}")
+            if self.use_connection_pool:
+                raise DatabaseException(f"Database execute failed: {e}")
+            else:
+                logger.error(f"Query: {query}")
+                logger.error(f"Args: {args}")
+                raise
+    
+    async def _execute_with_supabase_client(self, query: str, args: tuple) -> str:
+        """Execute command using Supabase client"""
+        # Parse the SQL query and convert to Supabase operations
+        parsed_query = self._parse_query(query, args)
+        
+        if parsed_query['operation'] == 'INSERT':
+            result = self.client.table(parsed_query['table']).insert(parsed_query['data']).execute()
+            return f"INSERT 0 {len(result.data)}"
+            
+        elif parsed_query['operation'] == 'UPDATE':
+            update_data = parsed_query['data'].copy()
+            
+            # Special handling for total_analyses increment
+            if 'total_analyses' in update_data:
+                logger.debug(f"Handling total_analyses increment for {parsed_query['where_value']}")
+                # First get current value
+                current_record = self.client.table(parsed_query['table']).select('total_analyses').eq(
+                    parsed_query['where_column'], parsed_query['where_value']
+                ).execute()
+                
+                current_count = 0
+                if current_record.data:
+                    current_count = current_record.data[0].get('total_analyses', 0)
+                
+                # Update with incremented value
+                update_data['total_analyses'] = current_count + 1
+                logger.debug(f"Incrementing total_analyses from {current_count} to {current_count + 1}")
+            
+            logger.debug(f"Updating {parsed_query['table']} with {len(update_data)} fields")
+            for field, value in update_data.items():
+                if isinstance(value, (dict, list)):
+                    logger.debug(f"{field}: JSON data with {len(value) if isinstance(value, (dict, list)) else 'unknown'} items")
+                else:
+                    logger.debug(f"{field}: {str(value)[:50]}{'...' if len(str(value)) > 50 else ''}")
+            
+            # Debug WHERE clause
+            logger.debug(f"WHERE {parsed_query.get('where_column')} = {parsed_query.get('where_value')}")
+            
+            result = self.client.table(parsed_query['table']).update(update_data).eq(
+                parsed_query['where_column'], parsed_query['where_value']
+            ).execute()
+            
+            logger.debug(f"Update successful: {len(result.data)} rows affected")
+            return f"UPDATE {len(result.data)}"
+            
+        elif parsed_query['operation'] == 'DELETE':
+            result = self.client.table(parsed_query['table']).delete().eq(
+                parsed_query['where_column'], parsed_query['where_value']
+            ).execute()
+            return f"DELETE {len(result.data)}"
+            
+        else:
+            raise ValueError(f"Unsupported operation: {parsed_query['operation']}")
 
     async def fetch(self, query: str, *args) -> List[Dict[str, Any]]:
         """
@@ -152,69 +206,98 @@ class SupabaseAsyncPGAdapter:
         self._ensure_connected()
         
         try:
-            parsed_query = self._parse_query(query, args)
-            self._validate_query(parsed_query, 'SELECT')
-            
-            # Handle COUNT queries specially
-            if 'COUNT' in query.upper():
-                return await self._handle_count_query(parsed_query, args)
-            
-            # Build Supabase query
-            supabase_query = self.client.table(parsed_query['table']).select(parsed_query['columns'])
-            
-            # Add WHERE clause if present
-            # Apply WHERE conditions
-            if parsed_query.get('where_conditions'):
-                for condition in parsed_query['where_conditions']:
-                    column = condition['column']
-                    operator = condition['operator']
-                    value = condition['value']
-                    
-                    if operator == 'eq':
-                        supabase_query = supabase_query.eq(column, value)
-                    elif operator == 'gte':
-                        supabase_query = supabase_query.gte(column, value)
-                    elif operator == 'lte':
-                        supabase_query = supabase_query.lte(column, value)
-            
-            # Fallback for legacy single where condition
-            elif parsed_query.get('where_column') and parsed_query.get('where_value'):
-                supabase_query = supabase_query.eq(parsed_query['where_column'], parsed_query['where_value'])
-            
-            # Add ORDER BY if present
-            if parsed_query.get('order_by'):
-                supabase_query = supabase_query.order(parsed_query['order_by']['column'], 
-                                                    desc=parsed_query['order_by'].get('desc', False))
-            
-            # Add LIMIT if present
-            if parsed_query.get('limit'):
-                supabase_query = supabase_query.limit(parsed_query['limit'])
-            
-            result = supabase_query.execute()
-            return result.data
-            
+            # Use connection pool for direct PostgreSQL queries if available
+            if self.use_connection_pool:
+                return await self._fetch_with_pool(query, args)
+            else:
+                return await self._fetch_with_supabase_client(query, args)
+                
         except Exception as e:
-            print(f"[ERROR] Query fetch failed: {e}")
-            self._log_query_debug(query, args, parsed_query if 'parsed_query' in locals() else None)
-            raise
+            logger.error(f"Query fetch failed: {e}")
+            if self.use_connection_pool:
+                raise DatabaseException(f"Database query failed: {e}")
+            else:
+                self._log_query_debug(query, args, None)
+                raise
+    
+    async def _fetch_with_pool(self, query: str, args: tuple) -> List[Dict[str, Any]]:
+        """Execute SELECT query using connection pool"""
+        try:
+            results = await db_pool.execute_query(query, *args)
+            # Convert asyncpg Records to dictionaries
+            return [dict(record) for record in results]
+        except Exception as e:
+            logger.error(f"Pool query failed: {query[:100]}... Error: {e}")
+            raise DatabaseException(f"Database query failed: {e}")
+    
+    async def _fetch_with_supabase_client(self, query: str, args: tuple) -> List[Dict[str, Any]]:
+        """Execute SELECT query using Supabase client"""
+        parsed_query = self._parse_query(query, args)
+        self._validate_query(parsed_query, 'SELECT')
+        
+        # Handle COUNT queries specially
+        if 'COUNT' in query.upper():
+            return await self._handle_count_query(parsed_query, args)
+        
+        # Build Supabase query
+        supabase_query = self.client.table(parsed_query['table']).select(parsed_query['columns'])
+        
+        # Add WHERE clause if present
+        # Apply WHERE conditions
+        if parsed_query.get('where_conditions'):
+            for condition in parsed_query['where_conditions']:
+                column = condition['column']
+                operator = condition['operator']
+                value = condition['value']
+                
+                if operator == 'eq':
+                    supabase_query = supabase_query.eq(column, value)
+                elif operator == 'gte':
+                    supabase_query = supabase_query.gte(column, value)
+                elif operator == 'lte':
+                    supabase_query = supabase_query.lte(column, value)
+        
+        # Fallback for legacy single where condition
+        elif parsed_query.get('where_column') and parsed_query.get('where_value'):
+            supabase_query = supabase_query.eq(parsed_query['where_column'], parsed_query['where_value'])
+        
+        # Add ORDER BY if present
+        if parsed_query.get('order_by'):
+            supabase_query = supabase_query.order(parsed_query['order_by']['column'], 
+                                                desc=parsed_query['order_by'].get('desc', False))
+        
+        # Add LIMIT if present
+        if parsed_query.get('limit'):
+            supabase_query = supabase_query.limit(parsed_query['limit'])
+        
+        result = supabase_query.execute()
+        return result.data
 
     async def fetchrow(self, query: str, *args) -> Optional[Dict[str, Any]]:
         """
         Fetch single row (SELECT queries or INSERT with RETURNING)
         Returns dictionary or None like asyncpg
         """
-        self._ensure_connected()  # ADD THIS CHECK - same as execute() has
+        self._ensure_connected()
         
         try:
-            # Handle INSERT with RETURNING specially
-            if 'INSERT' in query.upper() and 'RETURNING' in query.upper():
-                return await self._handle_insert_returning(query, args)
-            
-            rows = await self.fetch(query, *args)
-            return rows[0] if rows else None
+            if self.use_connection_pool:
+                # Use connection pool for direct PostgreSQL queries
+                result = await db_pool.execute_one(query, *args)
+                return dict(result) if result else None
+            else:
+                # Handle INSERT with RETURNING specially for Supabase client
+                if 'INSERT' in query.upper() and 'RETURNING' in query.upper():
+                    return await self._handle_insert_returning(query, args)
+                
+                rows = await self.fetch(query, *args)
+                return rows[0] if rows else None
         except Exception as e:
-            print(f"[❌] Query fetchrow failed: {e}")
-            raise
+            logger.error(f"Query fetchrow failed: {e}")
+            if self.use_connection_pool:
+                raise DatabaseException(f"Database fetchrow failed: {e}")
+            else:
+                raise
 
     async def fetchval(self, query: str, *args) -> Any:
         """
@@ -755,20 +838,59 @@ class SupabaseAsyncPGAdapter:
             print(f"[ERROR] INSERT RETURNING failed: {e}")
             raise
     
+    async def health_check(self) -> Dict[str, Any]:
+        """Health check for database connection"""
+        try:
+            if self.use_connection_pool:
+                # Use connection pool health check
+                result = await db_pool.execute_one("SELECT 1 as health_check")
+                pool_status = await db_pool.get_pool_status()
+                return {
+                    "database": "connected",
+                    "connection_type": "connection_pool",
+                    "pool_status": pool_status,
+                    "query_test": "passed" if result else "failed"
+                }
+            else:
+                # Use Supabase client health check
+                result = await self.fetchval("SELECT 1")
+                return {
+                    "database": "connected", 
+                    "connection_type": "supabase_client",
+                    "query_test": "passed" if result == 1 else "failed"
+                }
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            error_response = {
+                "database": "error",
+                "connection_type": "connection_pool" if self.use_connection_pool else "supabase_client",
+                "error": str(e)
+            }
+            
+            if self.use_connection_pool:
+                try:
+                    error_response["pool_status"] = await db_pool.get_pool_status()
+                except:
+                    error_response["pool_status"] = {"status": "unavailable"}
+            
+            return error_response
+
     def _log_query_debug(self, query: str, args: tuple, parsed_query: Dict[str, Any] = None) -> None:
         """Enhanced debug logging for query issues"""
-        print(f"[DEBUG] Original Query: {query}")
-        print(f"[DEBUG] Query Args: {args}")
+        # print(f"[DEBUG] Original Query: {query}")  # Commented to reduce noise
+        # print(f"[DEBUG] Query Args: {args}")  # Commented to reduce noise
         
         if parsed_query:
-            print(f"[DEBUG] Parsed Operation: {parsed_query.get('operation', 'UNKNOWN')}")
-            print(f"[DEBUG] Target Table: {parsed_query.get('table', 'UNKNOWN')}")
-            print(f"[DEBUG] Processed Query: {parsed_query.get('original_query', 'N/A')}")
+        # print(f"[DEBUG] Parsed Operation: {parsed_query.get('operation', 'UNKNOWN')}")  # Commented to reduce noise
+        # print(f"[DEBUG] Target Table: {parsed_query.get('table', 'UNKNOWN')}")  # Commented to reduce noise
+        # print(f"[DEBUG] Processed Query: {parsed_query.get('original_query', 'N/A')}")  # Commented to reduce noise
             
             if parsed_query.get('where_conditions'):
-                print(f"[DEBUG] WHERE Conditions: {parsed_query['where_conditions']}")
+                # print(f"[DEBUG] WHERE Conditions: {parsed_query['where_conditions']}")  # Commented to reduce noise
+                pass
             if parsed_query.get('order_by'):
-                print(f"[DEBUG] ORDER BY: {parsed_query['order_by']}")
+                # print(f"[DEBUG] ORDER BY: {parsed_query['order_by']}")  # Commented to reduce noise
+                pass
 
 
 # Factory function to create adapter connection (mimics asyncpg.connect)

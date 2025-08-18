@@ -112,7 +112,7 @@ class HolisticAdaptationEngine(BaseAgent):
             "routine_plan_agent"
         ]
         
-        logger.info(f"Initialized HolisticAdaptationEngine with system prompt length: {len(self.system_prompt)}")
+        logger.debug(f"Initialized HolisticAdaptationEngine with system prompt length: {len(self.system_prompt)}")
     
     def get_supported_event_types(self) -> List[str]:
         """Events this adaptation engine supports"""
@@ -137,7 +137,7 @@ class HolisticAdaptationEngine(BaseAgent):
     async def process(self, event: AgentEvent) -> AgentResponse:
         """Process adaptation-related events"""
         try:
-            logger.info("Processing adaptation event",
+            logger.debug("Processing adaptation event",
                        event_type=event.event_type,
                        user_id=event.user_id)
             
@@ -773,7 +773,7 @@ Format as JSON with strategy details, confidence scores, and implementation step
                     # Simulate coordination message
                     coordination_results["coordinated_agents"].append(agent)
                     coordination_results["successful_coordinations"].append(agent)
-                    logger.info(f"Coordinated adaptation with {agent} for {user_id}")
+                    logger.debug(f"Coordinated adaptation with {agent} for {user_id}")
                 except Exception as e:
                     coordination_results["failed_coordinations"].append({"agent": agent, "error": str(e)})
             
@@ -833,7 +833,7 @@ Format as JSON with strategy details, confidence scores, and implementation step
                 "expected_impact": result.expected_impact
             })
             
-            logger.info(f"Stored adaptation history for {user_id}")
+            logger.debug(f"Stored adaptation history for {user_id}")
             
         except Exception as e:
             logger.error(f"Error storing adaptation history: {e}")
@@ -972,7 +972,7 @@ Format as JSON with strategy details, confidence scores, and implementation step
         """Store positive feedback for learning"""
         try:
             # TODO: Integrate with actual memory storage
-            logger.info(f"Stored positive feedback for {user_id}: {feedback_analysis.get('positive_aspects', [])}")
+            logger.debug(f"Stored positive feedback for {user_id}: {feedback_analysis.get('positive_aspects', [])}")
             
         except Exception as e:
             logger.error(f"Error storing positive feedback: {e}")
@@ -1023,7 +1023,7 @@ Format as JSON with strategy details, confidence scores, and implementation step
                 self.effectiveness_history[user_id][agent_type] = []
             
             self.effectiveness_history[user_id][agent_type].append(effectiveness_data)
-            logger.info(f"Stored effectiveness data for {user_id} - {agent_type}")
+            logger.debug(f"Stored effectiveness data for {user_id} - {agent_type}")
             
         except Exception as e:
             logger.error(f"Error storing effectiveness data: {e}")
@@ -1043,7 +1043,7 @@ Format as JSON with strategy details, confidence scores, and implementation step
                 archetype=archetype
             )
             
-            logger.info(f"Published adaptation completion event for {user_id}")
+            logger.debug(f"Published adaptation completion event for {user_id}")
             
         except Exception as e:
             logger.error(f"Error publishing adaptation completion: {e}")

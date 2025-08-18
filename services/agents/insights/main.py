@@ -75,7 +75,7 @@ class HolisticInsightsAgent(BaseAgent):
             "archetype_alignment"
         ]
         
-        logger.info(f"Initialized HolisticInsightsAgent with system prompt length: {len(self.system_prompt)}")
+        logger.debug(f"Initialized HolisticInsightsAgent with system prompt length: {len(self.system_prompt)}")
     
     def get_supported_event_types(self) -> List[str]:
         """Events this insights agent supports"""
@@ -94,7 +94,7 @@ class HolisticInsightsAgent(BaseAgent):
     async def process(self, event: AgentEvent) -> AgentResponse:
         """Process insights-related events"""
         try:
-            logger.info("Processing insights event",
+            logger.debug("Processing insights event",
                        event_type=event.event_type,
                        user_id=event.user_id)
             
@@ -1138,7 +1138,7 @@ Focus on insights that could only be generated with access to the user's complet
         """Store generated insights in memory for future reference"""
         try:
             # TODO: Publish to Memory Agent
-            logger.info(f"Storing insights in memory for {user_id}")
+            logger.debug(f"Storing insights in memory for {user_id}")
             # This would publish a memory_store event to the Memory Agent
             
         except Exception as e:
@@ -1159,7 +1159,7 @@ Focus on insights that could only be generated with access to the user's complet
                 archetype=archetype
             )
             
-            logger.info(f"Published insights completion event for {user_id}")
+            logger.debug(f"Published insights completion event for {user_id}")
             
         except Exception as e:
             logger.error(f"Error publishing insights completion event: {e}")
@@ -1169,7 +1169,7 @@ async def main():
     """Run the insights agent in standalone mode for testing"""
     agent = HolisticInsightsAgent()
     
-    print("🔍 HolisticOS Insights Generation Agent Started")
+        # print("🔍 HolisticOS Insights Generation Agent Started")  # Commented to reduce noise
     print("Capabilities: Pattern Analysis → Trend Detection → AI Insights → Recommendations")
     print("Waiting for events...")
     

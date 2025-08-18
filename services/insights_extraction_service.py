@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from uuid import UUID
 
 from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
+from .insights_logger import insights_logger
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,10 @@ class InsightsExtractionService:
         """Same connection pattern as memory service"""
         if not self.db_adapter or not self.db_adapter.is_connected:
             try:
-                print(f"[🔄 INSIGHTS_SERVICE] Creating new adapter and connecting...")
+        # print(f"[🔄 INSIGHTS_SERVICE] Creating new adapter and connecting...")  # Commented to reduce noise
                 self.db_adapter = SupabaseAsyncPGAdapter()
                 await self.db_adapter.connect()
-                print(f"[✅ INSIGHTS_SERVICE] Connected to Supabase successfully")
+        # print(f"[✅ INSIGHTS_SERVICE] Connected to Supabase successfully")  # Commented to reduce noise
                 logger.debug("[INSIGHTS_SERVICE] Connected to Supabase successfully")
             except Exception as e:
                 print(f"[❌ INSIGHTS_SERVICE_ERROR] Connection failed: {e}")
@@ -50,7 +51,7 @@ class InsightsExtractionService:
             
             # Generate content hash for deduplication
             content_hash = hashlib.md5(content.encode()).hexdigest()
-            expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
+            expires_at = datetime.utcnow() + timedelta(days=7)  # Use datetime object, not string
             
             # Use exact same insert pattern as memory service - step by step debugging
             query = """
@@ -62,11 +63,11 @@ class InsightsExtractionService:
                 RETURNING id
             """
             
-            print(f"🔍 [DEBUG] About to insert insight with params:")
-            print(f"   user_id: {user_id}")
-            print(f"   insight_type: {insight_type}")  
-            print(f"   title: {title[:50]}...")
-            print(f"   content: {content[:100]}...")
+        # print(f"🔍 [DEBUG] About to insert insight with params:")  # Commented to reduce noise
+            # print(f"   user_id: {user_id}")  # Commented for error-only mode
+            # print(f"   insight_type: {insight_type}")  # Commented for error-only mode  
+            # print(f"   title: {title[:50]}...")  # Commented for error-only mode
+            # print(f"   content: {content[:100]}...")  # Commented for error-only mode
             
             # Try the exact same pattern as memory service
             try:
@@ -85,14 +86,20 @@ class InsightsExtractionService:
                     True,  # is_active
                     expires_at
                 )
-                print(f"🔍 [DEBUG] INSERT result: {result}")
+        # print(f"🔍 [DEBUG] INSERT result: {result}")  # Commented to reduce noise
             except Exception as insert_error:
-                print(f"🔍 [DEBUG] INSERT error details: {insert_error}")
-                print(f"🔍 [DEBUG] INSERT error type: {type(insert_error)}")
-                raise insert_error
+        # print(f"🔍 [DEBUG] INSERT error details: {insert_error}")  # Commented to reduce noise
+        # print(f"🔍 [DEBUG] INSERT error type: {type(insert_error)}")  # Commented to reduce noise
+                
+                # Handle duplicate key constraint gracefully (expected behavior)
+                if "duplicate key value violates unique constraint" in str(insert_error):
+                    logger.debug(f"[INSIGHTS_DEDUP] Insight already exists for user {user_id} - skipping duplicate")
+                    return True  # Consider this a success since insight exists
+                else:
+                    raise insert_error
             
             if result:
-                print(f"✨ [INSIGHTS] Stored insight: {title}")
+                # print(f"✨ [INSIGHTS] Stored insight: {title}")  # Commented for error-only mode
                 return True
             else:
                 print(f"❌ [INSIGHTS] Failed to store insight - no result returned")
@@ -169,6 +176,19 @@ class InsightsExtractionService:
                     archetype=archetype
                 ):
                     stored_count += 1
+            
+            # Log insights to text files if any were stored
+            if stored_count > 0 and insights_logger:
+                try:
+                    log_results = await insights_logger.log_insights_comprehensive(
+                        insights=insights,
+                        source=f"{analysis_type}_extraction",
+                        user_id=user_id,
+                        archetype=archetype
+                    )
+                    logger.debug(f"[INSIGHTS_LOGGING] Logged {stored_count} insights to files {log_results['analysis_number']}")
+                except Exception as log_error:
+                    logger.warning(f"[INSIGHTS_LOGGING] Failed to log to files: {log_error}")
             
             logger.info(f"Extracted and stored {stored_count} insights from {analysis_type}")
             return stored_count

@@ -32,7 +32,7 @@ class SimpleAnalysisTracker:
                     raise Exception("Missing SUPABASE_URL or SUPABASE_KEY environment variables")
                 
                 self.supabase_client = create_client(supabase_url, supabase_key)
-                logger.info("[SIMPLE_TRACKER] Connected to Supabase directly")
+                logger.debug("[SIMPLE_TRACKER] Connected to Supabase directly")
                 
             except Exception as e:
                 logger.error(f"[SIMPLE_TRACKER_ERROR] Failed to connect: {e}")
@@ -52,18 +52,18 @@ class SimpleAnalysisTracker:
             response = supabase.table('profiles').select('last_analysis_at').eq('id', user_id).execute()
             
             if not response.data or not response.data[0].get('last_analysis_at'):
-                logger.info(f"[SIMPLE_TRACKER] No previous analysis found for {user_id}")
+                logger.debug(f"[SIMPLE_TRACKER] No previous analysis found for {user_id}")
                 return None
             
             # Parse the timestamp
             timestamp_str = response.data[0]['last_analysis_at']
             last_analysis = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             
-            logger.info(f"[SIMPLE_TRACKER] Last analysis for {user_id}: {last_analysis.isoformat()}")
+            logger.debug(f"[SIMPLE_TRACKER] Last analysis for {user_id}: {last_analysis.isoformat()}")
             
             # Calculate time since last analysis for logging
             hours_since = (datetime.now(timezone.utc) - last_analysis).total_seconds() / 3600
-            logger.info(f"[SIMPLE_TRACKER] Time since last analysis: {hours_since:.1f} hours")
+            logger.debug(f"[SIMPLE_TRACKER] Time since last analysis: {hours_since:.1f} hours")
             
             return last_analysis
             
@@ -87,7 +87,7 @@ class SimpleAnalysisTracker:
             }).eq('id', user_id).execute()
             
             if response.data:
-                logger.info(f"[SIMPLE_TRACKER] Updated analysis time for {user_id}: {analysis_time.isoformat()}")
+                logger.debug(f"[SIMPLE_TRACKER] Updated analysis time for {user_id}: {analysis_time.isoformat()}")
                 return True
             else:
                 logger.error(f"[SIMPLE_TRACKER_ERROR] No rows updated for {user_id}")
@@ -170,7 +170,7 @@ class SimpleAnalysisTracker:
             }).eq('id', user_id).execute()
             
             if update_response.data:
-                logger.info(f"[SIMPLE_TRACKER] Incremented analysis count for {user_id}")
+                logger.debug(f"[SIMPLE_TRACKER] Incremented analysis count for {user_id}")
                 return True
             else:
                 logger.error(f"[SIMPLE_TRACKER_ERROR] Failed to update metadata for {user_id}")
@@ -182,4 +182,4 @@ class SimpleAnalysisTracker:
     
     async def cleanup(self):
         """Clean shutdown - no persistent connections to close"""
-        logger.info("[SIMPLE_TRACKER] Cleanup completed")
+        logger.debug("[SIMPLE_TRACKER] Cleanup completed")

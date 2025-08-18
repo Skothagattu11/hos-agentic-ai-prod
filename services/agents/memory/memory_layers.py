@@ -78,7 +78,7 @@ class WorkingMemoryLayer(MemoryLayer):
                     expires_at
                 )
             
-            logger.info(f"Stored working memory: {user_id}/{category}")
+            logger.debug(f"Stored working memory: {user_id}/{category}")
             return True
             
         except Exception as e:
@@ -137,7 +137,7 @@ class WorkingMemoryLayer(MemoryLayer):
                 result = await conn.execute(query)
                 count = int(result.split()[-1])  # Extract count from "DELETE n"
                 
-                logger.info(f"Cleaned up {count} expired working memory records")
+                logger.debug(f"Cleaned up {count} expired working memory records")
                 return count
                 
         except Exception as e:
@@ -186,7 +186,7 @@ class ShortTermMemoryLayer(MemoryLayer):
                     importance_score
                 )
             
-            logger.info(f"Stored short-term memory: {user_id}/{category}")
+            logger.debug(f"Stored short-term memory: {user_id}/{category}")
             return True
             
         except Exception as e:
@@ -285,7 +285,7 @@ class LongTermMemoryLayer(MemoryLayer):
                         confidence > 0.8  # Higher threshold for new memories
                     )
             
-            logger.info(f"Stored long-term memory: {user_id}/{category}")
+            logger.debug(f"Stored long-term memory: {user_id}/{category}")
             return True
             
         except Exception as e:
@@ -409,7 +409,7 @@ class MetaMemoryLayer(MemoryLayer):
                     analysis_end
                 )
             
-            logger.info(f"Stored meta-memory: {user_id}")
+            logger.debug(f"Stored meta-memory: {user_id}")
             return True
             
         except Exception as e:

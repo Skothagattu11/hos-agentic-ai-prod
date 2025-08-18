@@ -33,7 +33,7 @@ class HolisticBehaviorAgent(BaseAgent):
         # Initialize Supabase adapter (preserve existing data flow)
         self.supabase = SupabaseAsyncPGAdapter()
         
-        self.logger.info("HolisticOS Behavior Agent initialized")
+        self.logger.debug("HolisticOS Behavior Agent initialized")
     
     def get_supported_event_types(self) -> list[str]:
         """Events this agent responds to"""
@@ -46,7 +46,7 @@ class HolisticBehaviorAgent(BaseAgent):
     async def process(self, event: AgentEvent) -> AgentResponse:
         """Process incoming events"""
         try:
-            self.logger.info("Processing event", 
+            self.logger.debug("Processing event", 
                            event_type=event.event_type,
                            user_id=event.user_id)
             
@@ -125,7 +125,7 @@ class HolisticBehaviorAgent(BaseAgent):
                 archetype=archetype
             )
             
-            self.logger.info("Behavioral analysis completed", 
+            self.logger.debug("Behavioral analysis completed", 
                            user_id=user_id,
                            archetype=archetype)
             
@@ -259,7 +259,7 @@ class HolisticBehaviorAgent(BaseAgent):
                     user_id=user_id
                 )
             
-            self.logger.info(f"Stored behavioral analysis in memory for {user_id}")
+            self.logger.debug(f"Stored behavioral analysis in memory for {user_id}")
             
         except Exception as e:
             self.logger.error(f"Error storing analysis in memory: {e}")
@@ -269,17 +269,17 @@ async def main():
     agent = HolisticBehaviorAgent()
     
     try:
-        print(f"Starting HolisticOS Behavior Analysis Agent...")
-        print(f"Agent ID: {agent.agent_id}")
-        print(f"System Prompt Length: {len(agent.system_prompt)} characters")
+        # print(f"Starting HolisticOS Behavior Analysis Agent...")  # Commented for error-only mode
+        # print(f"Agent ID: {agent.agent_id}")  # Commented for error-only mode
+        # print(f"System Prompt Length: {len(agent.system_prompt)} characters")  # Commented for error-only mode
         
         # Start listening for events
         await agent.start_listening()
         
     except KeyboardInterrupt:
-        print("Shutting down behavior agent...")
+        # print("Shutting down behavior agent...")  # Commented for error-only mode
     except Exception as e:
-        print(f"Error running behavior agent: {e}")
+        print(f"Error running behavior agent: {e}")  # Keep error messages
         raise
 
 if __name__ == "__main__":

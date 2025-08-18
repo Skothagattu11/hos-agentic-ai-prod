@@ -50,7 +50,7 @@ class OnDemandAnalysisService:
             self.analysis_tracker = SimpleAnalysisTracker()
             self.memory_service = HolisticMemoryService()
             
-            logger.info("[ONDEMAND] Initialized on-demand analysis service")
+            logger.debug("[ONDEMAND] Initialized on-demand analysis service")
             return True
         except Exception as e:
             logger.error(f"[ONDEMAND_ERROR] Failed to initialize: {e}")
@@ -122,10 +122,10 @@ class OnDemandAnalysisService:
             
             # CRITICAL FIX: Always count data points before making time-based decisions
             # This ensures we don't miss threshold-crossing data due to recent timestamps
-            print(f"🔍 [ONDEMAND_COUNT] Counting data since LOCKED timestamp: {last_analysis.isoformat()}")
+        # print(f"🔍 [ONDEMAND_COUNT] Counting data since LOCKED timestamp: {last_analysis.isoformat()}")  # Commented to reduce noise
             new_data_count = await self._count_new_data_points(user_id, last_analysis)
             metadata["new_data_points"] = new_data_count
-            print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points (using locked timestamp)")
+        # print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points (using locked timestamp)")  # Commented to reduce noise
             
             # Check if we have enough data to override time-based caching
             memory_quality = await self._assess_memory_quality(user_id)
@@ -136,7 +136,7 @@ class OnDemandAnalysisService:
             
             # DATA-FIRST DECISION: If we have enough new data, analyze regardless of time
             if new_data_count >= threshold:
-                print(f"🎯 [DATA_OVERRIDE] {new_data_count} points ≥ {threshold} threshold - overriding time-based cache")
+                # print(f"🎯 [DATA_OVERRIDE] {new_data_count} points ≥ {threshold} threshold - overriding time-based cache")  # Commented for error-only mode
                 metadata["analysis_mode"] = "follow_up" if days_since < 3 else "initial"
                 metadata["days_to_fetch"] = min(7, max(3, int(days_since) + 1))
                 metadata["reason"] = f"Data threshold override: {new_data_count} ≥ {threshold} points (recent but sufficient data)"
@@ -168,6 +168,9 @@ class OnDemandAnalysisService:
         """Count new data points since given timestamp"""
         try:
             db = await self.user_service._ensure_db_connection()
+            if not db or not hasattr(db, 'client') or not db.client:
+                logger.warning(f"[ONDEMAND] Database connection unavailable for {user_id[:8]}... - falling back to threshold=0")
+                return 0
             
             # Count new scores - Fix datetime comparison
             scores_result = db.client.table("scores").select("id", count="exact")\
@@ -185,7 +188,7 @@ class OnDemandAnalysisService:
             
             total_count = scores_count + biomarkers_count
             
-            print(f"📈 [DATA_COUNT] Scores: {scores_count}, Biomarkers: {biomarkers_count}, Total: {total_count}")
+            # print(f"📈 [DATA_COUNT] Scores: {scores_count}, Biomarkers: {biomarkers_count}, Total: {total_count}")  # Commented for error-only mode
             logger.debug(f"[ONDEMAND] User {user_id[:8]}... has {total_count} new data points")
             return total_count
             

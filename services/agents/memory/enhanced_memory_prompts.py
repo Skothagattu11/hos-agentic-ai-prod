@@ -48,7 +48,7 @@ class EnhancedMemoryPromptsService:
             Enhanced prompt with full memory context and personalization instructions
         """
         try:
-            logger.info(f"Enhancing {agent_type} prompt with memory context for user {user_id[:8]}...")
+            logger.debug(f"Enhancing {agent_type} prompt with memory context for user {user_id[:8]}...")
             
             # Get comprehensive memory context
             memory_context = await self._build_comprehensive_memory_context(user_id, agent_type)

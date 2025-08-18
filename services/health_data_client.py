@@ -42,7 +42,7 @@ class HealthDataClient:
         self.success_count = 0
         self.error_count = 0
         
-        logger.info(f"[API_CLIENT] Initialized for {self.base_url}")
+        logger.debug(f"[API_CLIENT] Initialized for {self.base_url}")  # Reduced noise
 
     async def _make_request(self, endpoint: str, params: Dict[str, Any]) -> APIResponse:
         """
@@ -53,7 +53,7 @@ class HealthDataClient:
         start_time = datetime.now()
         self.request_count += 1
         
-        logger.info(f"[API_REQUEST] {endpoint} with params: {params}")
+        # logger.debug(f"[API_REQUEST] {endpoint} with params: {params}")  # Too noisy - commented out
         
         for attempt in range(self.max_retries):
             try:
@@ -80,7 +80,7 @@ class HealthDataClient:
                             actual_data = data if isinstance(data, list) else [data]
                         
                         self.success_count += 1
-                        logger.info(f"[API_SUCCESS] {endpoint}: {len(actual_data)} records in {duration:.0f}ms")
+                        logger.debug(f"[API_SUCCESS] {endpoint}: {len(actual_data)} records in {duration:.0f}ms")
                         
                         return APIResponse(
                             success=True,
@@ -91,7 +91,7 @@ class HealthDataClient:
                     
                     elif response.status_code == 404:
                         # Not found is OK - user might not have data
-                        logger.info(f"[API_NO_DATA] {endpoint}: No data found (404)")
+                        logger.debug(f"[API_NO_DATA] {endpoint}: No data found (404)")
                         return APIResponse(
                             success=True,
                             data=[],

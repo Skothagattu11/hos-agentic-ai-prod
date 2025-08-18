@@ -51,10 +51,10 @@ class HolisticMemoryService:
         # Check if adapter exists AND is connected
         if not self.db_adapter or not self.db_adapter.is_connected:
             try:
-                print(f"[🔄 MEMORY_SERVICE] Creating new adapter and connecting...")
+        # print(f"[🔄 MEMORY_SERVICE] Creating new adapter and connecting...")  # Commented to reduce noise
                 self.db_adapter = SupabaseAsyncPGAdapter()
                 await self.db_adapter.connect()
-                print(f"[✅ MEMORY_SERVICE] Connected to Supabase successfully")
+        # print(f"[✅ MEMORY_SERVICE] Connected to Supabase successfully")  # Commented to reduce noise
                 logger.debug("[MEMORY_SERVICE] Connected to Supabase successfully")
             except Exception as e:
                 print(f"[❌ MEMORY_SERVICE_ERROR] Connection failed: {e}")
@@ -81,8 +81,9 @@ class HolisticMemoryService:
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """
             
+            import json
             await db.execute(
-                query, user_id, session_id, agent_id, memory_type, content,
+                query, user_id, session_id, agent_id, memory_type, json.dumps(content),
                 priority, datetime.now(timezone.utc), expires_at, True
             )
             
@@ -162,8 +163,9 @@ class HolisticMemoryService:
                 RETURNING id
             """
             
+            import json
             result = await db.fetchrow(
-                query, user_id, category, content, confidence_score,
+                query, user_id, category, json.dumps(content), confidence_score,
                 'memory_service', datetime.now(timezone.utc), expires_at
             )
             
@@ -312,7 +314,8 @@ class HolisticMemoryService:
                     SET memory_data = $3, confidence_score = $4, last_updated = $5
                     WHERE user_id = $1 AND memory_category = $2
                 """
-                await db.execute(update_query, user_id, category, memory_data, 
+                import json
+                await db.execute(update_query, user_id, category, json.dumps(memory_data), 
                                confidence_score, datetime.now(timezone.utc))
                 logger.debug(f"[LONGTERM_MEMORY] Updated {category} for user {user_id}")
             else:
@@ -324,7 +327,8 @@ class HolisticMemoryService:
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """
                 now = datetime.now(timezone.utc)
-                await db.execute(insert_query, user_id, category, memory_data, 
+                import json
+                await db.execute(insert_query, user_id, category, json.dumps(memory_data), 
                                confidence_score, now, now, 'memory_service')
                 logger.debug(f"[LONGTERM_MEMORY] Created {category} for user {user_id}")
             
@@ -405,8 +409,9 @@ class HolisticMemoryService:
                     SET adaptation_patterns = $2, learning_velocity = $3, last_updated = $4
                     WHERE user_id = $1
                 """
-                await db.execute(update_query, user_id, adaptation_patterns or {}, 
-                               learning_velocity or {}, now)
+                import json
+                await db.execute(update_query, user_id, json.dumps(adaptation_patterns or {}), 
+                               json.dumps(learning_velocity or {}), now)
             else:
                 # Create new meta-memory record using UPSERT for safety
                 upsert_query = """
@@ -422,8 +427,9 @@ class HolisticMemoryService:
                         analysis_window_end = EXCLUDED.analysis_window_end
                 """
                 window_start = now - timedelta(days=30)
-                await db.execute(upsert_query, user_id, adaptation_patterns or {}, 
-                               learning_velocity or {}, {}, {}, {}, {}, {}, 
+                import json
+                await db.execute(upsert_query, user_id, json.dumps(adaptation_patterns or {}), 
+                               json.dumps(learning_velocity or {}), json.dumps({}), json.dumps({}), json.dumps({}), json.dumps({}), json.dumps({}), 
                                now, now, window_start, now)
             
             logger.debug(f"[META_MEMORY] Updated meta-memory for user {user_id}")
@@ -441,9 +447,9 @@ class HolisticMemoryService:
                                   analysis_result: Dict[str, Any], archetype_used: str = None) -> str:
         """Store complete analysis in holistic_analysis_results table - using SQL adapter"""
         try:
-            print(f"🔍 MEMORY DEBUG: Starting store_analysis_result for {analysis_type}")
+        # print(f"🔍 MEMORY DEBUG: Starting store_analysis_result for {analysis_type}")  # Commented to reduce noise
             db = await self._ensure_db_connection()
-            print(f"🔍 MEMORY DEBUG: DB connection established: {type(db)}")
+        # print(f"🔍 MEMORY DEBUG: DB connection established: {type(db)}")  # Commented to reduce noise
             
             # Prepare data matching the table schema exactly
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
@@ -459,12 +465,14 @@ class HolisticMemoryService:
                 AND created_at >= $3
             """
             
-            print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record from {today}...")
-            existing_record = await db.fetch(check_query, user_id, analysis_type, f"{today}T00:00:00Z")
+        # print(f"🔍 MEMORY DEBUG: Checking for existing {analysis_type} record from {today}...")  # Commented to reduce noise
+            from datetime import datetime, timezone
+            today_datetime = datetime.strptime(f"{today}T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            existing_record = await db.fetch(check_query, user_id, analysis_type, today_datetime)
             
             if existing_record:
                 # Update existing record
-                print(f"🔄 MEMORY DEBUG: Updating existing {analysis_type} record...")
+        # print(f"🔄 MEMORY DEBUG: Updating existing {analysis_type} record...")  # Commented to reduce noise
                 # Use the existing record ID for a simpler update
                 existing_id = existing_record[0]['id']
                 update_query = """
@@ -473,8 +481,9 @@ class HolisticMemoryService:
                     WHERE id = $1
                     RETURNING id
                 """
-                result = await db.fetchrow(update_query, existing_id, analysis_result, 
-                                         archetype_used, input_summary)
+                import json
+                result = await db.fetchrow(update_query, existing_id, json.dumps(analysis_result), 
+                                         archetype_used, json.dumps(input_summary))
             else:
                 # Insert new record
                 print(f"➕ MEMORY DEBUG: Inserting new {analysis_type} record...")
@@ -485,14 +494,15 @@ class HolisticMemoryService:
                     ) VALUES ($1, $2, $3, $4, $5, $6)
                     RETURNING id
                 """
+                import json
                 result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
-                                         analysis_result, input_summary, 'memory_service')
+                                         json.dumps(analysis_result), json.dumps(input_summary), 'memory_service')
             
-            print(f"🔍 MEMORY DEBUG: SQL result: {result}")
+        # print(f"🔍 MEMORY DEBUG: SQL result: {result}")  # Commented to reduce noise
             
             if result:
                 analysis_id = str(result['id'])
-                print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")
+        # print(f"📊 MEMORY: Stored {analysis_type} analysis for user {user_id[:8]}... ID: {analysis_id}")  # Commented to reduce noise
                 
                 # HYBRID APPROACH: Optional automatic insights extraction with error handling
                 try:
@@ -509,11 +519,12 @@ class HolisticMemoryService:
                         )
                         print(f"✨ INSIGHTS: Auto-extracted {insights_count} insights from {analysis_type}")
                     else:
-                        print(f"📊 ANALYSIS: {analysis_type} stored - no insights extracted (update)")
+                        # print(f"📊 ANALYSIS: {analysis_type} stored - no insights extracted (update)")  # Commented to reduce noise
+                        pass
                 except Exception as e:
                     # Don't fail the analysis storage if insights extraction fails
                     print(f"⚠️ INSIGHTS: Failed to auto-extract insights: {str(e)}")
-                    print(f"📊 ANALYSIS: {analysis_type} stored (ID: {analysis_id}) - insights available on demand")
+        # print(f"📊 ANALYSIS: {analysis_type} stored (ID: {analysis_id}) - insights available on demand")  # Commented to reduce noise
                 
                 return analysis_id
             else:
@@ -521,7 +532,7 @@ class HolisticMemoryService:
                 return None
                 
         except Exception as e:
-            print(f"🔍 MEMORY DEBUG: General error: {e}")
+        # print(f"🔍 MEMORY DEBUG: General error: {e}")  # Commented to reduce noise
             logger.debug(f"[ANALYSIS_RESULTS_ERROR] Failed to store for {user_id}: {e}")
             return ""
     
@@ -606,7 +617,8 @@ class HolisticMemoryService:
                 tracker = SimpleAnalysisTracker()
                 last_analysis_from_profile = await tracker.get_last_analysis_time(user_id)
                 if last_analysis_from_profile:
-                    print(f"📊 PROFILE_CHECK: Found last_analysis_at = {last_analysis_from_profile.isoformat()}")
+                    # print(f"📊 PROFILE_CHECK: Found last_analysis_at = {last_analysis_from_profile.isoformat()}")  # Commented to reduce noise
+                    pass
             except Exception as profile_error:
                 print(f"⚠️ PROFILE_CHECK: Could not check profiles table: {profile_error}")
             
@@ -622,17 +634,17 @@ class HolisticMemoryService:
                 else:
                     last_analysis_date = last_analysis_from_profile
                     source = "profiles"
-                print(f"🔍 ANALYSIS_MODE: Using {source} table (more recent)")
+        # print(f"🔍 ANALYSIS_MODE: Using {source} table (more recent)")  # Commented to reduce noise
             elif recent_analyses:
                 # Only analysis history available
                 last_analysis_date = recent_analyses[0].created_at
                 source = "analysis_results"
-                print(f"📋 ANALYSIS_MODE: Using analysis_results table (profiles empty)")
+        # print(f"📋 ANALYSIS_MODE: Using analysis_results table (profiles empty)")  # Commented to reduce noise
             elif last_analysis_from_profile:
                 # Only profile timestamp available - THIS IS THE KEY FIX
                 last_analysis_date = last_analysis_from_profile
                 source = "profiles"
-                print(f"✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)")
+        # print(f"✅ ANALYSIS_MODE: Using profiles table (analysis_results empty)")  # Commented to reduce noise
             
             if not last_analysis_date:
                 print(f"🆕 ANALYSIS_MODE: New user - initial analysis (7 days data)")
@@ -644,7 +656,7 @@ class HolisticMemoryService:
             hours_since_last = time_since_last.total_seconds() / 3600
             minutes_since_last = time_since_last.total_seconds() / 60
             
-            print(f"⏱️ ANALYSIS_MODE: Last analysis was {minutes_since_last:.1f} minutes ago ({hours_since_last:.1f} hours, {days_since_last} days) from {source}")
+            # print(f"⏱️ ANALYSIS_MODE: Last analysis was {minutes_since_last:.1f} minutes ago ({hours_since_last:.1f} hours, {days_since_last} days) from {source}")  # Commented for error-only mode
             
             # Simple logic: If ANY previous analysis exists, next one is ALWAYS follow-up
             # Only exception: very long gaps (2+ weeks) treated as fresh start
@@ -652,7 +664,7 @@ class HolisticMemoryService:
                 print(f"⏰ ANALYSIS_MODE: Very long gap ({days_since_last} days) - treating as fresh initial analysis")
                 return ("initial", 7)  # Only very long gaps get initial treatment
             else:
-                print(f"🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)")
+        # print(f"🔄 ANALYSIS_MODE: Previous analysis found - this is a FOLLOW-UP analysis (incremental data + memory)")  # Commented to reduce noise
                 return ("follow_up", 1)  # ANY previous analysis = follow-up mode
                 
         except Exception as e:
@@ -699,7 +711,7 @@ class HolisticMemoryService:
             if memory_context_parts:
                 memory_context = "\n".join(memory_context_parts)
                 enhanced_prompt = f"{base_prompt}\n\n{memory_context}\n\nImportant: Use this memory context to personalize your analysis."
-                print(f"🧠 MEMORY_ENHANCED: Prompt enhanced with {len(memory_context_parts)} memory elements")
+                # print(f"🧠 MEMORY_ENHANCED: Prompt enhanced with {len(memory_context_parts)} memory elements")  # Commented for error-only mode
                 return enhanced_prompt
             else:
                 print(f"💭 MEMORY_ENHANCED: No memory context - using base prompt")

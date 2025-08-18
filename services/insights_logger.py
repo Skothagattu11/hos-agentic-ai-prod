@@ -32,7 +32,7 @@ class InsightsLogger:
             
             return max(numbers) + 1 if numbers else 1
         except Exception as e:
-            print(f"[INSIGHTS_LOGGER] Error getting analysis number: {e}")
+            # print(f"[INSIGHTS_LOGGER] Error getting analysis number: {e}")  # Commented for error-only mode
             return 1
     
     async def log_insights_to_output_file(self, 
@@ -73,11 +73,11 @@ class InsightsLogger:
             with open(output_file, 'w') as f:
                 json.dump(existing_data, f, indent=2, default=str)
             
-            print(f"📝 [INSIGHTS_LOGGER] Added {len(insights)} insights to output_{analysis_number}.txt")
+            # print(f"📝 [INSIGHTS_LOGGER] Added {len(insights)} insights to output_{analysis_number}.txt")  # Commented for error-only mode
             return True
             
         except Exception as e:
-            print(f"❌ [INSIGHTS_LOGGER] Failed to log to output file: {e}")
+            # print(f"❌ [INSIGHTS_LOGGER] Failed to log to output file: {e}")  # Commented for error-only mode
             return False
     
     async def create_dedicated_insights_log(self, 
@@ -111,11 +111,11 @@ class InsightsLogger:
             with open(insights_file, 'w') as f:
                 json.dump(insights_data, f, indent=2, default=str)
             
-            print(f"📝 [INSIGHTS_LOGGER] Created dedicated insights log: insights_{analysis_number}.txt")
+            # print(f"📝 [INSIGHTS_LOGGER] Created dedicated insights log: insights_{analysis_number}.txt")  # Commented for error-only mode
             return True
             
         except Exception as e:
-            print(f"❌ [INSIGHTS_LOGGER] Failed to create dedicated log: {e}")
+            # print(f"❌ [INSIGHTS_LOGGER] Failed to create dedicated log: {e}")  # Commented for error-only mode
             return False
     
     async def log_insights_comprehensive(self, 
@@ -158,7 +158,7 @@ class InsightsLogger:
             return results
             
         except Exception as e:
-            print(f"❌ [INSIGHTS_LOGGER] Comprehensive logging failed: {e}")
+            # print(f"❌ [INSIGHTS_LOGGER] Comprehensive logging failed: {e}")  # Commented for error-only mode
             return {"error": str(e), "insights_count": len(insights)}
     
     async def get_recent_insights_logs(self, limit: int = 5) -> List[Dict[str, Any]]:
@@ -180,7 +180,7 @@ class InsightsLogger:
                             "source": data.get("source")
                         })
                 except Exception as e:
-                    print(f"⚠️ [INSIGHTS_LOGGER] Could not read {insights_file}: {e}")
+                    # print(f"⚠️ [INSIGHTS_LOGGER] Could not read {insights_file}: {e}")  # Commented for error-only mode
                     continue
             
             return recent_insights

@@ -71,7 +71,7 @@ class HolisticMemoryAgent(BaseAgent):
         self.shortterm_memory_ttl = 3600 * 24 * 30  # 30 days
         self.consolidation_threshold = 0.7  # Confidence threshold for consolidation
         
-        logger.info(f"Initialized HolisticMemoryAgent with system prompt length: {len(self.system_prompt)}")
+        logger.debug(f"Initialized HolisticMemoryAgent with system prompt length: {len(self.system_prompt)}")
     
     def get_supported_event_types(self) -> List[str]:
         """Events this memory agent supports"""
@@ -88,7 +88,7 @@ class HolisticMemoryAgent(BaseAgent):
     async def process(self, event: AgentEvent) -> AgentResponse:
         """Process memory-related events"""
         try:
-            logger.info("Processing memory event", 
+            logger.debug("Processing memory event", 
                        event_type=event.event_type,
                        user_id=event.user_id)
             
@@ -329,7 +329,7 @@ class HolisticMemoryAgent(BaseAgent):
     async def _get_db_connection(self):
         """Get database connection (placeholder - implement with your DB config)"""
         if not ASYNCPG_AVAILABLE:
-            logger.info("Database not available - using in-memory storage for development")
+            logger.debug("Database not available - using in-memory storage for development")
             return None
         
         # TODO: Implement with your actual database connection
@@ -341,7 +341,7 @@ class HolisticMemoryAgent(BaseAgent):
         try:
             # TODO: Implement with actual database
             # For Phase 2 development, use in-memory storage temporarily
-            logger.info(f"Storing working memory for {user_id}: {category}")
+            logger.debug(f"Storing working memory for {user_id}: {category}")
             return True
             
         except Exception as e:
@@ -352,7 +352,7 @@ class HolisticMemoryAgent(BaseAgent):
         """Store data in short-term memory (recent patterns)"""
         try:
             # TODO: Implement with holistic_shortterm_memory table
-            logger.info(f"Storing short-term memory for {user_id}: {category}")
+            logger.debug(f"Storing short-term memory for {user_id}: {category}")
             return True
             
         except Exception as e:
@@ -363,7 +363,7 @@ class HolisticMemoryAgent(BaseAgent):
         """Store data in long-term memory (stable preferences)"""
         try:
             # TODO: Implement with holistic_longterm_memory table
-            logger.info(f"Storing long-term memory for {user_id}: {category}")
+            logger.debug(f"Storing long-term memory for {user_id}: {category}")
             return True
             
         except Exception as e:
@@ -374,7 +374,7 @@ class HolisticMemoryAgent(BaseAgent):
         """Store data in meta-memory (learning patterns)"""
         try:
             # TODO: Implement with holistic_meta_memory table
-            logger.info(f"Storing meta-memory for {user_id}")
+            logger.debug(f"Storing meta-memory for {user_id}")
             return True
             
         except Exception as e:
@@ -509,7 +509,7 @@ Respond with actionable insights in a structured format.
         """Check if memory consolidation is needed"""
         try:
             # TODO: Implement consolidation logic
-            logger.info(f"Checking consolidation needs for {user_id}")
+            logger.debug(f"Checking consolidation needs for {user_id}")
             
         except Exception as e:
             logger.error(f"Error checking consolidation needs: {e}")

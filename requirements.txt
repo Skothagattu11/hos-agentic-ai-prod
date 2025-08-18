@@ -11,5 +11,10 @@ pytest-asyncio
 openai
 typing-extensions
 aiohttp
+tenacity==8.2.3
+psutil==5.9.8
+prometheus_client==0.19.0
+slowapi==0.1.9
+secure-smtplib==0.1.1
 
 

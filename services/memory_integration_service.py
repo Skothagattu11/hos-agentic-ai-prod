@@ -62,7 +62,7 @@ class MemoryIntegrationService:
             if ondemand_metadata and 'analysis_mode' in ondemand_metadata:
                 analysis_mode = ondemand_metadata['analysis_mode']
                 days_to_fetch = ondemand_metadata['days_to_fetch']
-                print(f"📊 [MEMORY_INTEGRATION] Using OnDemandAnalysisService decision: {analysis_mode} mode, {days_to_fetch} days")
+        # print(f"📊 [MEMORY_INTEGRATION] Using OnDemandAnalysisService decision: {analysis_mode} mode, {days_to_fetch} days")  # Commented to reduce noise
             else:
                 # Fallback to memory service for backwards compatibility
                 analysis_mode, days_to_fetch = await self.memory_service.determine_analysis_mode(user_id)
@@ -96,7 +96,7 @@ class MemoryIntegrationService:
             # Store working memory for this session
             await self._store_session_context(context)
             
-            print(f"📋 MEMORY_CONTEXT: {analysis_mode} mode, {days_to_fetch} days, {len(personalized_focus_areas)} focus areas")
+        # print(f"📋 MEMORY_CONTEXT: {analysis_mode} mode, {days_to_fetch} days, {len(personalized_focus_areas)} focus areas")  # Commented to reduce noise
             return context
             
         except Exception as e:
@@ -136,7 +136,7 @@ class MemoryIntegrationService:
             mode_context = self._build_analysis_mode_context(memory_context)
             enhanced_prompt += f"\n\n{mode_context}"
             
-            logger.info(f"[MEMORY_INTEGRATION] Enhanced {agent_type} prompt for {memory_context.user_id}")
+            logger.debug(f"[MEMORY_INTEGRATION] Enhanced {agent_type} prompt for {memory_context.user_id}")
             return enhanced_prompt
             
         except Exception as e:
@@ -150,7 +150,7 @@ class MemoryIntegrationService:
         Updates all relevant memory layers based on analysis results
         """
         try:
-            logger.info(f"[MEMORY_INTEGRATION] Storing insights from {agent_type} analysis for {user_id}")
+            logger.debug(f"[MEMORY_INTEGRATION] Storing insights from {agent_type} analysis for {user_id}")
             
             # Store complete analysis result
             analysis_id = await self.memory_service.store_analysis_result(
@@ -160,7 +160,7 @@ class MemoryIntegrationService:
             # Extract and store insights in different memory layers
             await self._extract_and_store_insights(user_id, agent_type, analysis_result, archetype)
             
-            logger.info(f"[MEMORY_INTEGRATION] Stored analysis insights - ID: {analysis_id}")
+            logger.debug(f"[MEMORY_INTEGRATION] Stored analysis insights - ID: {analysis_id}")
             return True
             
         except Exception as e:
@@ -174,7 +174,7 @@ class MemoryIntegrationService:
         This consolidates insights from all agents into persistent memory
         """
         try:
-            logger.info(f"[MEMORY_INTEGRATION] Updating memory profile for {user_id}")
+            logger.debug(f"[MEMORY_INTEGRATION] Updating memory profile for {user_id}")
             
             # Update behavioral patterns
             if behavior_analysis:
@@ -200,7 +200,7 @@ class MemoryIntegrationService:
             # Update meta-memory with learning patterns
             await self._update_meta_learning_patterns(user_id, behavior_analysis, nutrition_plan, routine_plan)
             
-            logger.info(f"[MEMORY_INTEGRATION] Memory profile updated for {user_id}")
+            logger.debug(f"[MEMORY_INTEGRATION] Memory profile updated for {user_id}")
             return True
             
         except Exception as e:
@@ -215,7 +215,7 @@ class MemoryIntegrationService:
         # From long-term memory - dynamic extraction
         if longterm_memory:
             # Extract from health goals if available
-            if longterm_memory.health_goals:
+            if longterm_memory.health_goals and isinstance(longterm_memory.health_goals, dict):
                 focus_areas.update(longterm_memory.health_goals.keys())
             
             # Extract from behavioral patterns
@@ -265,10 +265,10 @@ class MemoryIntegrationService:
         """Extract strategies that have worked for this user"""
         proven_strategies = {}
         
-        if longterm_memory and longterm_memory.success_predictors:
+        if longterm_memory and longterm_memory.success_predictors and isinstance(longterm_memory.success_predictors, dict):
             proven_strategies.update(longterm_memory.success_predictors)
         
-        if meta_memory.get('success_predictors'):
+        if meta_memory.get('success_predictors') and isinstance(meta_memory['success_predictors'].get('data'), dict):
             proven_strategies.update(meta_memory['success_predictors'].get('data', {}))
         
         return proven_strategies
@@ -282,7 +282,7 @@ class MemoryIntegrationService:
         }
         
         if meta_memory:
-            if 'adaptation_patterns' in meta_memory:
+            if 'adaptation_patterns' in meta_memory and isinstance(meta_memory['adaptation_patterns'].get('data'), dict):
                 preferences.update(meta_memory['adaptation_patterns'].get('data', {}))
         
         return preferences
@@ -634,7 +634,7 @@ class MemoryIntegrationService:
         """Clean shutdown"""
         if self.memory_service:
             await self.memory_service.cleanup()
-            logger.info("[MEMORY_INTEGRATION] Service cleaned up")
+            logger.debug("[MEMORY_INTEGRATION] Service cleaned up")
 
 # Convenience function for easy integration
 async def create_memory_enhanced_analysis_context(user_id: str) -> MemoryEnhancedContext:
