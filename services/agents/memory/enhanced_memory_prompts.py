@@ -15,7 +15,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 
-from .holistic_memory_service import HolisticMemoryService
+try:
+    from .holistic_memory_service import HolisticMemoryService
+except ImportError:
+    from services.agents.memory.holistic_memory_service import HolisticMemoryService
 
 logger = logging.getLogger(__name__)
 

@@ -18,6 +18,22 @@ from shared_libs.exceptions.holisticos_exceptions import (
     RetryableException
 )
 
+# Import environment configuration
+try:
+    from shared_libs.utils.environment_config import EnvironmentConfig
+except ImportError:
+    # Fallback if environment_config doesn't exist yet
+    class EnvironmentConfig:
+        @staticmethod
+        def is_development():
+            return os.getenv("ENVIRONMENT", "development").lower() == "development"
+        @staticmethod
+        def should_use_connection_pool():
+            if EnvironmentConfig.is_development():
+                db_url = os.getenv("DATABASE_URL", "")
+                return bool(db_url) and "db.ijcckqnqruwvqqbkiubb.supabase.co" not in db_url
+            return True
+
 logger = logging.getLogger(__name__)
 
 class DatabasePool:
@@ -43,6 +59,13 @@ class DatabasePool:
         Args:
             database_url: PostgreSQL connection URL (defaults to constructed from Supabase vars)
         """
+        # Check if connection pool should be used based on environment
+        if not EnvironmentConfig.should_use_connection_pool():
+            environment = os.getenv("ENVIRONMENT", "development")
+            logger.debug(f"{environment.capitalize()} mode: Connection pool disabled - using Supabase client fallback")
+            self._initialized = True  # Mark as initialized to prevent retries
+            return  # Exit gracefully without raising exception
+            
         if self._initialized and self._pool is not None:
             logger.debug("Database pool already initialized")
             return
@@ -105,6 +128,12 @@ class DatabasePool:
         Get a connection from the pool using context manager pattern
         Ensures proper connection cleanup and error handling
         """
+        environment = os.getenv("ENVIRONMENT", "development").lower()
+        
+        # In development mode, use fallback if pool wasn't initialized
+        if environment == "development" and (self._pool is None or not self._initialized):
+            raise DatabaseException("Development mode: Using Supabase client fallback")
+            
         if not self._initialized or self._pool is None:
             await self.initialize()
         
@@ -231,6 +260,19 @@ class DatabasePool:
         Returns:
             Dictionary with pool status and metrics
         """
+        environment = os.getenv("ENVIRONMENT", "development").lower()
+        
+        # In development mode with no pool
+        if environment == "development" and (self._pool is None or not self._initialized):
+            return {
+                "status": "development_fallback",
+                "environment": environment,
+                "initialized": self._initialized,
+                "message": "Development mode: Using Supabase client fallback",
+                "fallback": "using_supabase_client",
+                "timestamp": datetime.now().isoformat()
+            }
+            
         if not self._initialized or not self._pool:
             return {
                 "status": "not_initialized",
