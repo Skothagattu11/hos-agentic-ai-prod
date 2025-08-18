@@ -38,9 +38,16 @@ class SupabaseAsyncPGAdapter:
         self.supabase_url = supabase_url or os.getenv("SUPABASE_URL")
         self.supabase_key = supabase_key or os.getenv("SUPABASE_KEY")
         
-        # Connection pooling configuration
-        self.use_connection_pool = use_connection_pool and CONNECTION_POOL_AVAILABLE
+        # Check if we're on Render (production) - disable direct PostgreSQL in production for now
+        is_render = os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID")
+        
+        # Connection pooling configuration  
+        self.use_connection_pool = use_connection_pool and CONNECTION_POOL_AVAILABLE and not is_render
         self.database_url = os.getenv("DATABASE_URL")
+        
+        # Log production mode detection
+        if is_render:
+            logger.info("🌐 Render production environment detected - using Supabase REST API only")
         
         # Fallback to Supabase client if no direct database URL or pooling disabled
         if not self.database_url or not self.use_connection_pool:
@@ -90,9 +97,22 @@ class SupabaseAsyncPGAdapter:
         except Exception as e:
             logger.error(f"Connection failed: {e}")
             self._connected = False
+            
+            # Production fallback: Always try Supabase REST API if pool fails
+            if self.use_connection_pool and self.supabase_url and self.supabase_key:
+                logger.warning("🔄 Database pool failed, falling back to Supabase REST API only")
+                try:
+                    self.client = create_client(self.supabase_url, self.supabase_key)
+                    self.use_connection_pool = False
+                    self._connected = True
+                    logger.info("✅ Fallback to Supabase REST API successful")
+                    return self
+                except Exception as fallback_error:
+                    logger.error(f"Supabase fallback also failed: {fallback_error}")
+            
             self.client = None
             if self.use_connection_pool:
-                raise DatabaseException(f"Failed to connect to database: {e}")
+                raise DatabaseException(f"Failed to create database pool: {e}")
             else:
                 raise
 

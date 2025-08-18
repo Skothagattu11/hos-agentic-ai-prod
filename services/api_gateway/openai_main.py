@@ -13,6 +13,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
+# Custom JSON encoder for datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Response, Request
 from pydantic import BaseModel
 import openai
@@ -3105,7 +3112,7 @@ async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behav
 {user_context}
 
 BEHAVIORAL INSIGHTS:
-{json.dumps(behavior_analysis, indent=2)}
+{json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
 Create a comprehensive {archetype} nutrition plan for TODAY using the HolisticOS approach.
 
@@ -3170,7 +3177,7 @@ async def run_routine_planning_gpt4o(system_prompt: str, user_context: str, beha
 {user_context}
 
 BEHAVIORAL INSIGHTS:
-{json.dumps(behavior_analysis, indent=2)}
+{json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
 Create a comprehensive {archetype} daily routine plan for TODAY using the HolisticOS approach.
 
@@ -3231,7 +3238,7 @@ async def run_routine_planning_4o(system_prompt: str, user_context: str, behavio
 {user_context}
 
 BEHAVIORAL INSIGHTS:
-{json.dumps(behavior_analysis, indent=2)}
+{json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
 Create a comprehensive {archetype} routine plan for TODAY using the HolisticOS approach.
 

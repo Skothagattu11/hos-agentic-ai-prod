@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configuration
 REAL_PROFILE_ID = "35pDPUIfAoRl2Y700bFkxPKYjjf2"
-BASE_URL = "http://localhost:8001"
+BASE_URL = "https://hos-agentic-ai-prod.onrender.com"
 TEST_ARCHETYPE = "Foundation Builder"
 
 def print_section(title, emoji="🎯"):
