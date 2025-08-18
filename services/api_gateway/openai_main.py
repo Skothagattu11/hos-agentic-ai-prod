@@ -419,82 +419,6 @@ async def comprehensive_health_check():
         # Fallback to simple health check if monitoring not available
         return await simple_health_check()
 
-@app.get("/api/health/simple")
-async def simple_health_check():
-    """Simple health check for load balancers and basic monitoring"""
-    try:
-        # Quick database test
-        from shared_libs.database.connection_pool import db_pool
-        await db_pool.execute_one("SELECT 1")
-        
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "message": "Basic health check passed"
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy", 
-            "timestamp": datetime.now().isoformat(),
-            "message": f"Health check failed: {str(e)}"
-        }
-
-@app.get("/api/health/legacy", response_model=HealthResponse)
-async def legacy_health_check():
-    """Legacy health check endpoint for backward compatibility"""
-    agent_status = {}
-    
-    # Check each agent's status
-    if orchestrator:
-        agent_status["orchestrator"] = "healthy"
-    else:
-        agent_status["orchestrator"] = "not_initialized"
-        
-    if memory_agent:
-        agent_status["memory"] = "healthy"
-    else:
-        agent_status["memory"] = "not_initialized"
-        
-    if insights_agent:
-        agent_status["insights"] = "healthy"
-    else:
-        agent_status["insights"] = "not_initialized"
-        
-    if adaptation_agent:
-        agent_status["adaptation"] = "healthy"
-    else:
-        agent_status["adaptation"] = "not_initialized"
-    
-    # Check database pool status
-    database_status = {}
-    try:
-        from shared_libs.database.connection_pool import db_pool
-        database_status = await db_pool.get_pool_status()
-    except Exception as e:
-        database_status = {
-            "status": "error",
-            "error": str(e),
-            "initialized": False
-        }
-    
-    # Overall system health (include database in assessment)
-    all_agents_healthy = all(status == "healthy" for status in agent_status.values())
-    database_healthy = database_status.get("status") == "healthy"
-    system_status = "healthy" if all_agents_healthy and database_healthy else "degraded"
-    
-    healthy_agents = len([s for s in agent_status.values() if s == "healthy"])
-    db_status_msg = "DB: OK" if database_healthy else "DB: Error"
-    
-    return HealthResponse(
-        status=system_status,
-        message=f"HolisticOS Enhanced API Gateway - {healthy_agents}/4 agents healthy, {db_status_msg}",
-        timestamp=datetime.now().isoformat(),
-        version="2.0.0", 
-        system="HolisticOS Multi-Agent MVP",
-        agents_status=agent_status,
-        database_status=database_status
-    )
-
 @app.get("/metrics")
 async def prometheus_metrics():
     """Prometheus metrics endpoint for monitoring and alerting"""
@@ -567,49 +491,6 @@ async def get_alert_history(hours: int = 24):
     except Exception as e:
         logger.error(f"Error getting alert history: {e}")
         return {"error": f"Failed to get alert history: {str(e)}"}
-
-@app.post("/api/monitoring/test-alert")
-async def test_alert_system(request: Request):
-    """Test alert system by sending a test alert"""
-    if not MONITORING_AVAILABLE:
-        return {"error": "Monitoring system not available"}
-    
-    try:
-        # Get request data
-        data = await request.json() if request.headers.get("content-type") == "application/json" else {}
-        message = data.get("message", "Test alert from API")
-        severity = data.get("severity", "info").upper()
-        
-        # Map severity to AlertSeverity enum
-        severity_map = {
-            "INFO": AlertSeverity.INFO,
-            "WARNING": AlertSeverity.WARNING,
-            "CRITICAL": AlertSeverity.CRITICAL
-        }
-        
-        alert_severity = severity_map.get(severity, AlertSeverity.INFO)
-        
-        # Send test alert
-        await alert_manager.send_alert(
-            severity=alert_severity,
-            title="Test Alert",
-            details={"message": message, "source": "API test endpoint"},
-            service="api_testing"
-        )
-        
-        return {
-            "success": True,
-            "message": "Test alert sent successfully",
-            "alert_details": {
-                "message": message,
-                "severity": severity,
-                "timestamp": datetime.now().isoformat()
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Error sending test alert: {e}")
-        return {"error": f"Failed to send test alert: {str(e)}"}
 
 @app.get("/api/admin/rate-limits")
 async def get_rate_limit_stats():
@@ -1233,7 +1114,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         memory_service = HolisticMemoryService()
         
         # Check if fresh analysis is needed (50-item threshold)
-        decision, metadata = await ondemand_service.should_run_analysis(user_id, request.force_refresh)
+        decision, metadata = await ondemand_service.should_run_analysis(user_id, request.force_refresh, request.archetype)
         
         # Safe enum access for logging
         decision_str = decision.value if hasattr(decision, 'value') else str(decision)
@@ -1273,13 +1154,13 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             else:
                 # Fallback to cached if fresh analysis fails
                 print(f"⚠️ [BEHAVIOR_ANALYZE] Fresh analysis failed, attempting cached...")
-                behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id)
+                behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
                 analysis_type = "cached_fallback"
                 
         else:
             # Use cached analysis
             print(f"💾 [BEHAVIOR_ANALYZE] Using cached analysis (below threshold)")
-            behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id)
+            behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, request.archetype)
             analysis_type = "cached"
         
         # Validate we have behavior analysis
@@ -1331,312 +1212,6 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         raise HTTPException(status_code=500, detail=f"Failed to analyze behavior: {str(e)}")
 
 
-@app.get("/api/scheduler/status")
-async def get_scheduler_status():
-    """Get current status of the on-demand analysis system (replaces background scheduler)"""
-    try:
-        from services.ondemand_analysis_service import get_ondemand_service
-        
-        # Get on-demand service status
-        ondemand_service = await get_ondemand_service()
-        
-        return {
-            "status": "independent_endpoints",
-            "message": "Restructured API with independent behavior analysis endpoint and 50-item threshold",
-            "system": "Phase 4.2 - Independent Endpoint Architecture",
-            "active_users": 1,  # Can be updated to get actual count
-            "data_threshold": 50,  # Fixed 50-item threshold for behavior analysis
-            "analysis_mode": "constraint_based_triggering",
-            "timestamp": datetime.now().isoformat(),
-            "endpoints": {
-                "behavior_analyze": "POST /api/user/{user_id}/behavior/analyze",
-
-                "routine_latest": "GET /api/user/{user_id}/routine/latest",
-                "routine_generate": "POST /api/user/{user_id}/routine/generate", 
-                "nutrition_latest": "GET /api/user/{user_id}/nutrition/latest",
-                "nutrition_generate": "POST /api/user/{user_id}/nutrition/generate"
-            },
-            "architecture": {
-                "behavior_endpoint": "Standalone endpoint with 50-item threshold constraint",
-                "plan_endpoints": "Call behavior analysis endpoint internally when needed",
-                "constraint_logic": "Only run behavior analysis if 50+ new data points since last analysis",
-                "reusability": "Routine and nutrition endpoints share behavior analysis results"
-            },
-            "features": {
-                "threshold_constraint": "50 new data points required for fresh behavior analysis",
-                "caching_strategy": "Use cached analysis until threshold is met",
-                "force_refresh": "Optional override of 50-item threshold",
-                "memory_integration": "4-layer memory system (working, short-term, long-term, meta)",
-                "endpoint_coordination": "Routine/nutrition can trigger behavior analysis when needed"
-
-            }
-        }
-    except Exception as e:
-        return {
-            "status": "error", 
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
-
-# =====================================================================# PHASE 2 - COMPLETE MULTI-AGENT WORKFLOWS
-# =====================================================================
-@app.post("/api/complete-analysis", response_model=CompleteAnalysisResponse)
-async def start_complete_analysis(request: CompleteAnalysisRequest, background_tasks: BackgroundTasks):
-    """
-    Start complete multi-agent analysis workflow
-    Orchestrates: Behavior → Memory → Plans → Insights → Adaptation
-    """
-    try:
-        if not orchestrator:
-            raise HTTPException(status_code=503, detail="Orchestrator not initialized")
-        
-        print(f"🚀 Starting complete multi-agent workflow for {request.user_id}")
-        
-        # Import required classes
-        from shared_libs.event_system.base_agent import AgentEvent
-        
-        # Create workflow start event
-        workflow_event = AgentEvent(
-            event_id=f"api_workflow_{datetime.now().timestamp()}",
-            event_type="start_complete_workflow",
-            source_agent="api_gateway",
-            payload={
-                "analysis_number": request.analysis_number,
-                "preferences": request.preferences or {}
-            },
-            timestamp=datetime.now(),
-            user_id=request.user_id,
-            archetype=request.archetype
-        )
-        
-        # Start workflow via orchestrator
-        response = await orchestrator.process(workflow_event)
-        
-        if not response.success:
-            raise HTTPException(status_code=500, detail=f"Failed to start workflow: {response.error_message}")
-        
-        workflow_id = response.result.get("workflow_id")
-        current_stage = response.result.get("current_stage", "started")
-        
-        # print(f"✅ Complete workflow started: {workflow_id}")  # Commented to reduce noise
-        
-        return CompleteAnalysisResponse(
-            status="workflow_started",
-            workflow_id=workflow_id,
-            user_id=request.user_id,
-            archetype=request.archetype,
-            message=f"Complete multi-agent analysis started for {request.archetype} user",
-            current_stage=current_stage,
-            estimated_completion_minutes=5
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error starting complete analysis: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
-@app.get("/api/workflow-status/{workflow_id}", response_model=WorkflowStatusResponse)
-async def get_workflow_status(workflow_id: str):
-    """Get status of a running workflow"""
-    try:
-        if not orchestrator:
-            raise HTTPException(status_code=503, detail="Orchestrator not initialized")
-        
-        # Import required classes
-        from shared_libs.event_system.base_agent import AgentEvent
-        
-        # Create status request event
-        status_event = AgentEvent(
-            event_id=f"api_status_{datetime.now().timestamp()}",
-            event_type="workflow_status_request",
-            source_agent="api_gateway",
-            payload={"workflow_id": workflow_id},
-            timestamp=datetime.now(),
-            user_id="api_request"  # Generic user for status requests
-        )
-        
-        # Get status from orchestrator
-        response = await orchestrator.process(status_event)
-        
-        if not response.success:
-            raise HTTPException(status_code=404, detail=f"Workflow not found: {workflow_id}")
-        
-        result = response.result
-        completed_stages = result.get("completed_stages", [])
-        
-        # Calculate progress percentage
-        total_stages = 6  # behavior, memory, plans, insights, adaptation, complete
-        progress = min(100, int((len(completed_stages) / total_stages) * 100))
-        
-        return WorkflowStatusResponse(
-            workflow_id=workflow_id,
-            user_id=result.get("user_id"),
-            current_stage=result.get("current_stage"),
-            completed_stages=completed_stages,
-            progress_percentage=progress,
-            start_time=result.get("start_time"),
-            results_available=result.get("results_available", [])
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error getting workflow status: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
-@app.post("/api/insights/generate", response_model=InsightsResponse)
-async def generate_insights(request: InsightsRequest):
-    """Generate AI-powered insights for a user"""
-    try:
-        if not insights_agent:
-            raise HTTPException(status_code=503, detail="Insights agent not initialized")
-        
-        print(f"💡 Generating insights for {request.user_id}")
-        
-        # Import required classes
-        from shared_libs.event_system.base_agent import AgentEvent
-        
-        # Create insights generation event
-        insights_event = AgentEvent(
-            event_id=f"api_insights_{datetime.now().timestamp()}",
-            event_type="generate_insights",
-            source_agent="api_gateway",
-            payload={
-                "insight_type": request.insight_type,
-                "time_horizon": request.time_horizon,
-                "focus_areas": request.focus_areas or ["behavioral_patterns", "goal_progression"]
-            },
-            timestamp=datetime.now(),
-            user_id=request.user_id,
-            archetype=request.archetype
-        )
-        
-        # Generate insights
-        response = await insights_agent.process(insights_event)
-        
-        if not response.success:
-            raise HTTPException(status_code=500, detail=f"Failed to generate insights: {response.error_message}")
-        
-        result = response.result
-        
-        return InsightsResponse(
-            status="success",
-            user_id=request.user_id,
-            insights=result.get("insights", []),
-            confidence_score=result.get("confidence_score", 0.7),
-            recommendations=result.get("recommendations", []),
-            patterns_identified=result.get("patterns_identified", 0)
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error generating insights: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
-@app.post("/api/adaptation/trigger", response_model=AdaptationResponse)
-async def trigger_adaptation(request: AdaptationRequest):
-    """Trigger strategy adaptation based on user feedback or performance"""
-    try:
-        if not adaptation_agent:
-            raise HTTPException(status_code=503, detail="Adaptation agent not initialized")
-        
-        print(f"⚡ Triggering adaptation for {request.user_id}")
-        
-        # Import required classes
-        from shared_libs.event_system.base_agent import AgentEvent
-        
-        # Create adaptation event
-        adaptation_event = AgentEvent(
-            event_id=f"api_adaptation_{datetime.now().timestamp()}",
-            event_type="adapt_strategy",
-            source_agent="api_gateway",
-            payload={
-                "trigger": request.trigger,
-                "context": request.context,
-                "urgency": request.urgency,
-                "user_feedback": request.user_feedback,
-                "affected_areas": request.context.get("affected_areas", ["behavior"])
-            },
-            timestamp=datetime.now(),
-            user_id=request.user_id,
-            archetype=request.archetype
-        )
-        
-        # Trigger adaptation
-        response = await adaptation_agent.process(adaptation_event)
-        
-        if not response.success:
-            raise HTTPException(status_code=500, detail=f"Failed to trigger adaptation: {response.error_message}")
-        
-        result = response.result
-        
-        return AdaptationResponse(
-            status="success",
-            user_id=request.user_id,
-            adaptations_made=result.get("adaptations_made", []),
-            confidence=result.get("confidence", 0.7),
-            expected_impact=result.get("expected_impact", "positive"),
-            monitoring_plan=result.get("monitoring_plan", {})
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error triggering adaptation: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
-@app.get("/api/memory/{user_id}", response_model=MemoryResponse)
-async def get_user_memory(user_id: str, memory_type: str = "all", category: Optional[str] = None):
-    """Retrieve user memory data"""
-    try:
-        if not memory_agent:
-            raise HTTPException(status_code=503, detail="Memory agent not initialized")
-        
-        print(f"🧠 Retrieving memory for {user_id}")
-        
-        # Import required classes
-        from shared_libs.event_system.base_agent import AgentEvent
-        
-        # Create memory retrieval event
-        memory_event = AgentEvent(
-            event_id=f"api_memory_{datetime.now().timestamp()}",
-            event_type="memory_retrieve",
-            source_agent="api_gateway",
-            payload={
-                "memory_type": memory_type,
-                "category": category,
-                "query_context": "api_request"
-            },
-            timestamp=datetime.now(),
-            user_id=user_id
-        )
-        
-        # Retrieve memory
-        response = await memory_agent.process(memory_event)
-        
-        if not response.success:
-            raise HTTPException(status_code=500, detail=f"Failed to retrieve memory: {response.error_message}")
-        
-        result = response.result
-        
-        return MemoryResponse(
-            status="success",
-            user_id=user_id,
-            memory_data=result.get("memory_data", {}),
-            insights=result.get("insights", []),
-            retrieved_at=datetime.now().isoformat()
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error retrieving memory: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
-# =====================================================================# PHASE 1 - LEGACY ENDPOINTS (PRESERVED)
-# =====================================================================
 @app.post("/api/analyze", response_model=AnalysisResponse)
 @track_endpoint_metrics("legacy_analysis") if MONITORING_AVAILABLE else lambda x: x
 async def analyze_user(request: AnalysisRequest, http_request: Request):
@@ -3411,88 +2986,44 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         
         return await run_routine_planning_gpt4o(system_prompt, user_context_summary, behavior_analysis, archetype)
 
-@app.get("/api/status/{user_id}")
-async def get_analysis_status(user_id: str):
-    """Get analysis status for a user"""
-    return {
-        "user_id": user_id,
-        "status": "completed",
-        "message": "Phase 1 - OpenAI Direct Integration",
-        "timestamp": datetime.now().isoformat()
-    }
+# =====================================================================
+# LEGACY ENDPOINT - PRESERVED FOR BACKWARD COMPATIBILITY
+# =====================================================================
 
-async def get_next_analysis_number() -> int:
-    """Get next analysis number for logging"""
-    try:
-        import glob
-        existing_files = glob.glob("logs/input_*.txt")
-        if not existing_files:
-            return 1
+# Import legacy endpoint
+try:
+    from .legacy.legacy_analyze_endpoint import legacy_analyze_user, AnalysisRequest, AnalysisResponse
+    
+    @app.post("/api/analyze", response_model=AnalysisResponse)
+    @track_endpoint_metrics("legacy_analysis") if MONITORING_AVAILABLE else lambda x: x
+    async def analyze_user_legacy_wrapper(request: AnalysisRequest, http_request: Request):
+        """
+        LEGACY ENDPOINT - PRESERVED FOR BACKWARD COMPATIBILITY
         
-        numbers = []
-        for filename in existing_files:
-            try:
-                number = int(filename.split("_")[1].split(".")[0])
-                numbers.append(number)
-            except ValueError:
-                continue
+        This endpoint has been moved to services/api_gateway/legacy/ and is no longer actively maintained.
         
-        return max(numbers) + 1 if numbers else 1
+        ⚠️  DEPRECATED: Please migrate to modern endpoints:
+        - POST /api/user/{user_id}/behavior/analyze
+        - POST /api/user/{user_id}/routine/generate  
+        - POST /api/user/{user_id}/nutrition/generate
         
-    except Exception:
-        return 1
-
-async def log_analysis_data(input_data: dict, output_data: dict, analysis_number: int):
-    """Log analysis data to files with enhanced details"""
-    try:
-        os.makedirs("logs", exist_ok=True)
-        os.makedirs("logs/agent_handoffs", exist_ok=True)
-        
-        # Enhanced input log with raw data
-        with open(f"logs/input_{analysis_number}.txt", 'w') as f:
-            json.dump(input_data, f, indent=2, default=str)
-        
-        # Enhanced output log
-        with open(f"logs/output_{analysis_number}.txt", 'w') as f:
-            json.dump(output_data, f, indent=2, default=str)
-            
-        print(f"📝 Analysis logged: logs/input_{analysis_number}.txt, logs/output_{analysis_number}.txt")
-        
-    except Exception as e:
-        print(f"Error logging: {e}")
-
-async def log_agent_handoff(agent_name: str, input_data: dict, output_data: dict, analysis_number: int):
-    """Log data at each agent handoff point"""
-    try:
-        os.makedirs("logs/agent_handoffs", exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        filename = f"logs/agent_handoffs/{analysis_number}_{agent_name}_{timestamp}.txt"
-        
-        with open(filename, 'w') as f:
-            f.write(f"{'='*60}\n")
-            f.write(f"AGENT HANDOFF: {agent_name.upper()}\n")
-            f.write(f"Analysis #: {analysis_number}\n")
-            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
-            f.write(f"{'='*60}\n\n")
-            
-            f.write("INPUT DATA:\n")
-            f.write("-"*40 + "\n")
-            json.dump(input_data, f, indent=2, default=str)
-            f.write("\n\n")
-            
-            f.write("OUTPUT DATA:\n")
-            f.write("-"*40 + "\n")
-            json.dump(output_data, f, indent=2, default=str)
-            f.write("\n\n")
-            
-            f.write(f"{'='*60}\n")
-            
-        # print(f"   📋 Agent handoff logged: {agent_name} → {filename}")  # Commented to reduce noise
-        
-    except Exception as e:
-        print(f"Error logging agent handoff: {e}")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+        The modern endpoints provide:
+        - Better performance with 50-item threshold logic
+        - Improved caching and memory management
+        - More focused analysis results
+        - Better error handling and monitoring
+        """
+        return await legacy_analyze_user(request, http_request)
+    
+    print("📁 [LEGACY] Legacy /api/analyze endpoint loaded from legacy folder")
+    
+except ImportError as e:
+    print(f"⚠️  [LEGACY] Could not load legacy endpoint: {e}")
+    
+    @app.post("/api/analyze", response_model=AnalysisResponse)
+    async def analyze_user_fallback(request: AnalysisRequest, http_request: Request):
+        """Fallback for legacy endpoint when legacy module is not available"""
+        raise HTTPException(
+            status_code=503, 
+            detail="Legacy endpoint temporarily unavailable. Please use modern endpoints: POST /api/user/{user_id}/behavior/analyze"
+        )
