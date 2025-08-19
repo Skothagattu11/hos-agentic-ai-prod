@@ -562,10 +562,8 @@ class UserDataService:
             logger.debug(f"[ANALYSIS_DATA] First analysis for {user_id}, fetching 7 days baseline")
         # print(f"📊 INCREMENTAL_SYNC: No previous analysis found - fetching 7 days baseline")  # Commented to reduce noise
             
-            # CRITICAL FIX: Update analysis timestamp BEFORE fetching data
-            analysis_start_time = datetime.now(timezone.utc)
-            await tracker.update_analysis_time(user_id, analysis_start_time)
-            logger.debug(f"[ANALYSIS_DATA] Updated last_analysis_at to: {analysis_start_time.isoformat()}")
+            # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
+            # No need to update global profiles.last_analysis_at here
             
             result = await self.get_user_health_data(user_id, days=7)
             

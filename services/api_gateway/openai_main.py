@@ -621,15 +621,21 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
     Generate a routine plan using shared behavior analysis (eliminates duplicate analysis calls)
     Uses the same pattern as nutrition generation for consistency
     """
-    # Apply rate limiting if available
-    if RATE_LIMITING_AVAILABLE:
-        try:
-            await rate_limiter.apply_rate_limit(http_request, "routine_generation")
-        except Exception as rate_limit_error:
-            print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
-            raise rate_limit_error
+    from services.request_deduplication_service import request_deduplicator
+    
+    # Check for duplicate requests
+    archetype = request.archetype or "Foundation Builder"
+    if request_deduplicator.is_duplicate_request(user_id, archetype, "routine"):
+        raise HTTPException(status_code=429, detail="Duplicate routine request detected. Please wait 60 seconds before retrying.")
     
     try:
+        # Apply rate limiting if available
+        if RATE_LIMITING_AVAILABLE:
+            try:
+                await rate_limiter.apply_rate_limit(http_request, "routine_generation")
+            except Exception as rate_limit_error:
+                print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
+                raise rate_limit_error
         # print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")  # Commented to reduce noise
         
         # Get behavior analysis from the standalone endpoint
@@ -682,17 +688,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 behavior_analysis=behavior_analysis
             )
             
-            # CRITICAL FIX: Only update timestamp AFTER successful plan generation
-            # This prevents race conditions where next call sees premature timestamp update
-            try:
-                from services.simple_analysis_tracker import SimpleAnalysisTracker
-                tracker = SimpleAnalysisTracker()
-                completion_time = datetime.now(timezone.utc)
-                await tracker.update_analysis_time(user_id, completion_time)
-        # print(f"✅ [PLAN_COMPLETION] Routine plan complete - updated last_analysis_at: {completion_time.isoformat()}")  # Commented to reduce noise
-            except Exception as timestamp_error:
-                print(f"⚠️ [PLAN_COMPLETION] Failed to update timestamp: {timestamp_error}")
-                # Don't fail the request for timestamp update errors
+            # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
+            # when storing behavior analysis results - no need for global timestamp update
             
             # Track API cost for rate limiting
             if RATE_LIMITING_AVAILABLE:
@@ -700,6 +697,9 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                     await rate_limiter.track_api_cost(user_id, "routine_generation")
                 except Exception as cost_error:
                     print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
+            
+            # Mark request as complete
+            request_deduplicator.mark_request_complete(user_id, archetype, "routine")
             
             return RoutinePlanResponse(
                 status="success",
@@ -724,6 +724,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             raise HTTPException(status_code=500, detail=f"Failed to get user data for routine generation: {str(context_error)}")
             
     except Exception as e:
+        # Mark request as complete even on error
+        request_deduplicator.mark_request_complete(user_id, archetype, "routine")
         print(f"❌ [ROUTINE_GENERATE_ERROR] Failed to generate routine for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate routine plan: {str(e)}")
 
@@ -795,15 +797,21 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
     Generate a nutrition plan using the standalone behavior analysis endpoint
     Calls POST /api/user/{user_id}/behavior/analyze to get analysis, then generates nutrition plan
     """
-    # Apply rate limiting if available
-    if RATE_LIMITING_AVAILABLE:
-        try:
-            await rate_limiter.apply_rate_limit(http_request, "nutrition_generation")
-        except Exception as rate_limit_error:
-            print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
-            raise rate_limit_error
+    from services.request_deduplication_service import request_deduplicator
+    
+    # Check for duplicate requests
+    archetype = request.archetype or "Foundation Builder"
+    if request_deduplicator.is_duplicate_request(user_id, archetype, "nutrition"):
+        raise HTTPException(status_code=429, detail="Duplicate nutrition request detected. Please wait 60 seconds before retrying.")
     
     try:
+        # Apply rate limiting if available
+        if RATE_LIMITING_AVAILABLE:
+            try:
+                await rate_limiter.apply_rate_limit(http_request, "nutrition_generation")
+            except Exception as rate_limit_error:
+                print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
+                raise rate_limit_error
         # print(f"🔄 [NUTRITION_GENERATE] Processing nutrition request for user {user_id[:8]}...")  # Commented to reduce noise
         
         # Get behavior analysis from the standalone endpoint
@@ -872,17 +880,8 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 behavior_analysis=behavior_analysis
             )
             
-            # CRITICAL FIX: Only update timestamp AFTER successful plan generation
-            # This prevents race conditions where next call sees premature timestamp update
-            try:
-                from services.simple_analysis_tracker import SimpleAnalysisTracker
-                tracker = SimpleAnalysisTracker()
-                completion_time = datetime.now(timezone.utc)
-                await tracker.update_analysis_time(user_id, completion_time)
-        # print(f"✅ [PLAN_COMPLETION] Nutrition plan complete - updated last_analysis_at: {completion_time.isoformat()}")  # Commented to reduce noise
-            except Exception as timestamp_error:
-                print(f"⚠️ [PLAN_COMPLETION] Failed to update timestamp: {timestamp_error}")
-                # Don't fail the request for timestamp update errors
+            # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
+            # when storing behavior analysis results - no need for global timestamp update
             
             # Track API cost for rate limiting
             if RATE_LIMITING_AVAILABLE:
@@ -890,6 +889,9 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                     await rate_limiter.track_api_cost(user_id, "nutrition_generation")
                 except Exception as cost_error:
                     print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
+            
+            # Mark request as complete
+            request_deduplicator.mark_request_complete(user_id, archetype, "nutrition")
             
             return NutritionPlanResponse(
                 status="success",
@@ -915,6 +917,8 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
 
             
     except Exception as e:
+        # Mark request as complete even on error
+        request_deduplicator.mark_request_complete(user_id, archetype, "nutrition")
         print(f"❌ [NUTRITION_GENERATE_ERROR] Failed to generate nutrition for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate nutrition plan: {str(e)}")
 
@@ -1143,12 +1147,16 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             if behavior_analysis and behavior_analysis.get("status") == "success":
                 analysis_type = "fresh"
                 
+                # Determine trigger type based on analysis decision
+                analysis_trigger = "threshold_exceeded" if decision == AnalysisDecision.FRESH_ANALYSIS else "scheduled"
+                
                 # Store the analysis in memory system for future use
                 await memory_service.store_analysis_result(
                     user_id=user_id,
                     analysis_type="behavior_analysis",
                     analysis_result=behavior_analysis,
-                    archetype_used=archetype
+                    archetype_used=archetype,
+                    analysis_trigger=analysis_trigger
                 )
         # print(f"✅ [BEHAVIOR_ANALYZE] Fresh analysis completed and stored")  # Commented to reduce noise
             else:
@@ -1211,367 +1219,6 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         print(f"❌ [BEHAVIOR_ANALYZE_ERROR] Failed to analyze behavior for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze behavior: {str(e)}")
 
-
-@app.post("/api/analyze", response_model=AnalysisResponse)
-@track_endpoint_metrics("legacy_analysis") if MONITORING_AVAILABLE else lambda x: x
-async def analyze_user(request: AnalysisRequest, http_request: Request):
-    """
-    User analysis endpoint - PHASE 3.1 REAL DATA INTEGRATION
-    Now uses real user data from Supabase via UserDataService
-    """
-    # Apply rate limiting if available (strictest for expensive legacy analysis)
-    if RATE_LIMITING_AVAILABLE:
-        try:
-            await rate_limiter.apply_rate_limit(http_request, "behavior_analysis")
-        except Exception as rate_limit_error:
-            print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {request.user_id}: {rate_limit_error}")
-            raise rate_limit_error
-    
-    try:
-        user_id = request.user_id
-        archetype = request.archetype
-        
-        # print(f"🔍 Starting REAL DATA analysis for user: {user_id}, archetype: {archetype}")  # Commented to reduce noise
-        
-        # PHASE 3.1: Import real data services
-        from services.user_data_service import UserDataService
-        from shared_libs.utils.system_prompts import get_system_prompt, get_archetype_adaptation
-        
-        # PHASE 4.1: Import memory integration services
-        from services.memory_integration_service import MemoryIntegrationService
-        # PHASE 4.2: Import enhanced memory prompts service
-        from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService
-        
-        # Initialize UserDataService and AnalysisTracker for real data
-        user_service = UserDataService()
-        from services.simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
-        analysis_tracker = AnalysisTracker()
-        
-        # PHASE 4.1: Initialize Memory Integration Service
-        memory_service = MemoryIntegrationService()
-        print(f"🧠 Preparing memory-enhanced analysis context for {user_id}...")
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
-        
-        # PHASE 4.2: Initialize Enhanced Memory Prompts Service
-        enhanced_prompts_service = EnhancedMemoryPromptsService()
-        print(f"✨ Initializing memory-enhanced prompt generation for {user_id}...")
-        
-        try:
-            # SIMPLIFIED INCREMENTAL SYNC: Fetch data since last analysis
-            # Use memory context to determine optimal data fetching strategy
-            days_to_fetch = memory_context.days_to_fetch
-        # print(f"📊 Fetching user data with memory-guided incremental sync for {user_id}...")  # Commented to reduce noise
-            print(f"🧠 Analysis mode: {memory_context.analysis_mode}, fetching {days_to_fetch} days of data")
-            user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
-            
-            # Extract real data for analysis
-            data_quality = user_context.data_quality
-        # print(f"✅ Real data retrieved:")  # Commented to reduce noise
-            # print(f"   • Data Quality: {data_quality.quality_level}")  # Commented for error-only mode
-            # print(f"   • Scores: {data_quality.scores_count}")  # Commented for error-only mode
-            # print(f"   • Biomarkers: {data_quality.biomarkers_count}")  # Commented for error-only mode
-            # print(f"   • Completeness: {data_quality.completeness_score:.2f}")  # Commented for error-only mode
-            
-            # Get system prompts and enhance with memory context
-            base_behavior_prompt = get_system_prompt("behavior_analysis")
-            base_nutrition_prompt = get_system_prompt("plan_generation") 
-            base_routine_prompt = get_system_prompt("plan_generation")
-            archetype_guidance = get_archetype_adaptation(archetype)
-            
-            # PHASE 4.2: Enhance prompts with comprehensive memory context using new service
-            print("✨ Enhancing prompts with 4-layer memory intelligence...")
-            behavior_prompt = await enhanced_prompts_service.enhance_agent_prompt(base_behavior_prompt, user_id, "behavior_analysis")
-            nutrition_prompt = await enhanced_prompts_service.enhance_agent_prompt(base_nutrition_prompt, user_id, "nutrition_planning")
-            routine_prompt = await enhanced_prompts_service.enhance_agent_prompt(base_routine_prompt, user_id, "routine_planning")
-            
-            print(f"🧠 Memory-enhanced prompts prepared - Focus areas: {memory_context.personalized_focus_areas}")
-            print(f"🧠 Proven strategies available: {len(memory_context.proven_strategies)} strategies")
-            
-        # print(f"✅ System prompts loaded: {len(behavior_prompt):,} chars")  # Commented to reduce noise
-            
-            # PHASE 3.2 + 4.1: Create health context summary with AI-friendly language + Memory Context
-            memory_summary = ""
-            if memory_context.longterm_memory:
-                memory_summary = f"""
-MEMORY-ENHANCED CONTEXT:
-- Analysis Mode: {memory_context.analysis_mode.upper()}
-- User Memory Profile Available: YES
-- Personalized Focus Areas: {', '.join(memory_context.personalized_focus_areas)}
-- Proven Strategies: {len(memory_context.proven_strategies)} strategies identified
-- Recent Pattern Analysis: {len(memory_context.recent_patterns)} patterns tracked
-- Historical Analysis Count: {len(memory_context.analysis_history)}"""
-            else:
-                # Check if it's actually a follow-up despite no longterm memory yet
-                if memory_context.analysis_mode == "follow_up":
-                    memory_summary = f"""
-MEMORY-ENHANCED CONTEXT:
-- Analysis Mode: FOLLOW-UP (Building memory profile)
-- User Memory Profile Available: PARTIAL (Previous analysis detected)
-- Days Since Last Analysis: {memory_context.days_to_fetch}
-- Analysis History: {len(memory_context.analysis_history)} previous analyses"""
-                else:
-                    memory_summary = f"""
-MEMORY-ENHANCED CONTEXT:
-- Analysis Mode: {memory_context.analysis_mode.upper()} (New user)
-- User Memory Profile Available: NO (Building initial memory)"""
-
-            user_context_summary = f"""
-HEALTH ANALYSIS REQUEST - MEMORY-ENHANCED COMPREHENSIVE DATA:
-- Profile Reference: {user_id}
-- Health Archetype: {archetype}
-- Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
-- Mode: Memory-Enhanced Health Analysis (Phase 4.1)
-
-{memory_summary}
-
-HEALTH DATA PROFILE:
-- Data Quality Level: {data_quality.quality_level} 
-- Health Score Samples: {data_quality.scores_count}
-- Biomarker Measurements: {data_quality.biomarkers_count}
-- Data Coverage: {data_quality.completeness_score:.1%}
-- Recent Measurements: {data_quality.has_recent_data}
-- Time Period: {user_context.date_range.start_date.strftime('%Y-%m-%d')} to {user_context.date_range.end_date.strftime('%Y-%m-%d')}
-
-HEALTH TRACKING DATA SUMMARY:
-{await format_health_data_for_ai(user_context)}
-
-ARCHETYPE FRAMEWORK:
-{archetype_guidance}
-
-ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.
-"""
-            
-        except Exception as data_error:
-            print(f"⚠️  Real data fetch failed for {user_id}: {data_error}")
-        # print(f"🔄 Falling back to mock data analysis...")  # Commented to reduce noise
-            
-            # Fallback to original mock data approach if real data fails
-            user_context_summary = f"""
-HEALTH ANALYSIS REQUEST - SAMPLE MODE:
-- Profile Reference: {user_id}
-- Health Archetype: {archetype}
-- Analysis Date: {datetime.now().strftime('%Y-%m-%d')}
-- Mode: Sample Analysis (Health data unavailable)
-
-ARCHETYPE FRAMEWORK:
-{get_archetype_adaptation(archetype)}
-
-Note: Comprehensive health data was unavailable for {user_id}, using sample analysis patterns.
-Please provide a detailed analysis that demonstrates the {archetype} approach to health optimization.
-"""
-        finally:
-            # Always cleanup the services
-            await user_service.cleanup()
-            if 'analysis_tracker' in locals():
-                await analysis_tracker.cleanup()
-            if 'memory_service' in locals():
-                await memory_service.cleanup()
-            if 'enhanced_prompts_service' in locals():
-                await enhanced_prompts_service.cleanup()
-
-        # Note: Removed complex logging infrastructure to focus on core functionality
-        
-        # Step 1: Behavior Analysis (using o3 for deep analysis) - Phase 3.3 Agent-Specific Data
-        print("🧠 Running behavior analysis with o3 model...")
-        behavior_agent_data = await prepare_behavior_agent_data(user_context if 'user_context' in locals() else None, user_context_summary)
-        behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
-        # Note: Agent handoff logging removed - focus on core functionality
-        # print(f"✅ Behavior analysis complete with comprehensive pattern data")  # Commented to reduce noise
-        
-        # Step 2: Nutrition Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data  
-        print("🥗 Generating nutrition plan with gpt-4o...")
-        nutrition_agent_data = await prepare_nutrition_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
-        nutrition_plan = await run_nutrition_planning_4o(nutrition_prompt, user_context_summary, behavior_analysis, archetype)
-        # Note: Agent handoff logging removed - focus on core functionality
-        # print(f"✅ Nutrition plan complete with nutrition-specific data filtering")  # Commented to reduce noise
-        
-        # Step 3: Routine Plan (using 4o for plan generation) - Phase 3.3 Agent-Specific Data
-        print("🏃‍♂️ Generating routine plan with gpt-4o...")
-        routine_agent_data = await prepare_routine_agent_data(user_context if 'user_context' in locals() else None, behavior_analysis)
-        routine_plan = await run_routine_planning_4o(routine_prompt, user_context_summary, behavior_analysis, archetype)
-        # Note: Agent handoff logging removed - focus on core functionality
-        # print(f"✅ Routine plan complete with routine-specific data filtering")  # Commented to reduce noise
-        
-        # Log analysis data - PHASE 3.3 UPDATE
-        # Determine if we used real data or fallback
-        analysis_mode = "Agent-Specific Data Filtering - Phase 3.3" if "Comprehensive Health Analysis" in user_context_summary else "Sample Mode"
-        
-        # Enhanced input logging with raw data
-        input_log_data = {
-            "timestamp": datetime.now().isoformat(),
-            "user_id": user_id,
-            "archetype": archetype,
-            "mode": analysis_mode,
-            "analysis_number": analysis_number,
-            "phase": "3.3 - Agent-Specific Data Filtering",
-            "models_used": {
-                "behavior_analysis": "o3",
-                "nutrition_plan": "gpt-4o",
-                "routine_plan": "gpt-4o"
-            },
-            "raw_health_data": {
-                "data_quality": {
-                    "level": (data_quality.quality_level.value if hasattr(data_quality, 'quality_level') and hasattr(data_quality.quality_level, 'value') else str(data_quality)) if 'data_quality' in locals() else "unknown",
-
-                    "scores_count": data_quality.scores_count if 'data_quality' in locals() else 0,
-                    "biomarkers_count": data_quality.biomarkers_count if 'data_quality' in locals() else 0,
-                    "completeness_score": data_quality.completeness_score if 'data_quality' in locals() else 0,
-                    "has_recent_data": data_quality.has_recent_data if 'data_quality' in locals() else False
-                } if 'data_quality' in locals() else {},
-                "date_range": {
-                    "start": user_context.date_range.start_date.isoformat() if 'user_context' in locals() else None,
-                    "end": user_context.date_range.end_date.isoformat() if 'user_context' in locals() else None,
-                    "days": user_context.date_range.days if 'user_context' in locals() else 0
-                } if 'user_context' in locals() else {},
-                "sql_queries_used": {
-                    "scores_query": """
-                        SELECT id, profile_id, type, score, data, 
-                               score_date_time, created_at, updated_at
-                        FROM scores 
-                        WHERE profile_id = $1
-                        LIMIT $2
-                    """,
-                    "biomarkers_query": """
-                        SELECT id, profile_id, category, type, data,
-                               start_date_time, end_date_time, created_at, updated_at
-                        FROM biomarkers 
-                        WHERE profile_id = $1
-                        LIMIT $2
-                    """,
-                    "archetypes_query": """
-                        SELECT id, profile_id, name, periodicity, value, data,
-                               start_date_time, end_date_time, created_at, updated_at
-                        FROM archetypes 
-                        WHERE profile_id = $1
-                    """,
-                    "query_parameters": {
-                        "profile_id": user_id,
-                        "max_records": 1000,
-                        "date_filter": "No date filtering in current queries (gets all records)"
-                    }
-                },
-                "complete_behavior_analysis_input": behavior_agent_data if 'behavior_agent_data' in locals() else {},
-                "all_scores_fetched": [
-                    {
-                        "id": score.id,
-                        "type": score.type,
-                        "score": score.score,
-                        "data": score.data,
-                        "score_date_time": score.score_date_time.isoformat() if hasattr(score.score_date_time, 'isoformat') else str(score.score_date_time),
-                        "created_at": score.created_at.isoformat() if hasattr(score, 'created_at') else None
-                    } for score in (user_context.scores if 'user_context' in locals() else [])
-                ] if 'user_context' in locals() else [],
-                "all_biomarkers_fetched": [
-                    {
-                        "id": bio.id,
-                        "type": bio.type,
-                        "category": bio.category,
-                        "data": bio.data,
-                        "start_date_time": bio.start_date_time.isoformat() if hasattr(bio, 'start_date_time') else None,
-                        "end_date_time": bio.end_date_time.isoformat() if hasattr(bio, 'end_date_time') and bio.end_date_time else None
-                    } for bio in (user_context.biomarkers if 'user_context' in locals() else [])
-                ] if 'user_context' in locals() else [],
-                "behavior_analysis_filtered_data": {
-                    "activity_sleep_readiness_scores": [
-                        {
-                            "date": get_score_actual_date(score) if hasattr(score, 'created_at') else "unknown",
-                            "type": score.type,
-                            "score": score.score,
-                            "state": score.data.get("state", "unknown") if score.data else "unknown"
-                        }
-                        for score in (user_context.scores if 'user_context' in locals() else []) 
-                        if score.type in ["activity", "sleep", "readiness"]
-                    ][:15] if 'user_context' in locals() else [],
-                    "first_20_biomarkers_all_types": [
-                        {
-                            "type": bio.type,
-                            "category": bio.category,
-                            "date": bio.start_date_time.strftime("%Y-%m-%d") if hasattr(bio, 'start_date_time') else "unknown"
-                        }
-                        for bio in (user_context.biomarkers[:20] if 'user_context' in locals() else [])
-                    ] if 'user_context' in locals() else []
-                }
-            }
-        }
-        
-        await log_analysis_data(input_log_data, {
-            "timestamp": datetime.now().isoformat(),
-            "user_id": user_id,
-            "archetype": archetype,
-            "behavior_analysis": behavior_analysis,
-            "nutrition_plan": nutrition_plan,
-            "routine_plan": routine_plan,
-            "analysis_number": analysis_number,
-            "mode": analysis_mode,
-            "phase": "3.3 - Agent-Specific Data Filtering",
-            "models_used": {
-                "behavior_analysis": "o3",
-                "nutrition_plan": "gpt-4o", 
-                "routine_plan": "gpt-4o"
-            }
-        }, analysis_number)
-        
-        # print(f"✅ Complete multi-model analysis finished for {user_id}")  # Commented to reduce noise
-        
-        # PHASE 4.1: Store analysis results in memory and update user memory profile
-        print(f"🧠 Updating user memory with analysis insights...")
-        
-        # Store individual analysis insights
-        await memory_service.store_analysis_insights(user_id, "behavior_analysis", behavior_analysis, archetype)
-        await memory_service.store_analysis_insights(user_id, "nutrition_plan", nutrition_plan, archetype)
-        await memory_service.store_analysis_insights(user_id, "routine_plan", routine_plan, archetype)
-        
-        # Update consolidated memory profile
-        await memory_service.update_user_memory_profile(user_id, behavior_analysis, nutrition_plan, routine_plan)
-        
-        # print(f"✅ Memory profile updated with new insights")  # Commented to reduce noise
-        
-        # NOTE: Analysis timestamp update moved to data fetching phase for proper incremental boundaries
-        # print(f"✅ Analysis completed - timestamp boundary set during data fetch phase")  # Commented to reduce noise
-        
-        # Track API cost for rate limiting (legacy endpoint is expensive)
-        if RATE_LIMITING_AVAILABLE:
-            try:
-                await rate_limiter.track_api_cost(user_id, "behavior_analysis")
-            except Exception as cost_error:
-                print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
-        
-        return AnalysisResponse(
-            status="success",
-            user_id=user_id,
-            archetype=archetype,
-            message="Analysis completed successfully using comprehensive health data with memory-enhanced multi-model approach - Phase 4.1",
-            analysis={
-                "behavior_analysis": behavior_analysis,
-                "nutrition_plan": nutrition_plan,
-                "routine_plan": routine_plan,
-                "system_info": {
-                    "mode": analysis_mode,
-                    "prompt_system": "HolisticOS",
-                    "archetype_applied": archetype,
-                    "phase": "4.2 - Memory-Enhanced Intelligence with Insights",
-                    "data_source": "Supabase via UserDataService",
-                    "models_used": {
-                        "behavior_analysis": "o3 (deep analysis)",
-                        "nutrition_plan": "gpt-4o (plan generation)",
-                        "routine_plan": "gpt-4o (plan generation)",
-                        "ai_insights": "gpt-4o (insights generation)"
-                    }
-                }
-            }
-        )
-        
-    except Exception as e:
-        print(f"❌ Analysis failed for {request.user_id}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
-        return AnalysisResponse(
-            status="error",
-            user_id=request.user_id,
-            archetype=request.archetype,
-            message=f"Analysis failed: {str(e)}"
-        )
 
 async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
     """
@@ -2085,7 +1732,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         
         # Step 1: Prepare memory-enhanced context
         # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for user {user_id[:8]}...")  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for analysis
         from services.user_data_service import UserDataService
@@ -2165,10 +1812,10 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
     Applies 50-item threshold logic from OnDemandAnalysisService
     """
     try:
-        # Step 1: Check if fresh analysis needed (50-item threshold logic)
+        # Step 1: Check if fresh analysis needed (50-item threshold logic WITH ARCHETYPE)
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
         ondemand_service = await get_ondemand_service()
-        decision, metadata = await ondemand_service.should_run_analysis(user_id, force_refresh)
+        decision, metadata = await ondemand_service.should_run_analysis(user_id, force_refresh, archetype)
         
         # Enhanced debugging for threshold issues
         decision_str = decision.value if hasattr(decision, 'value') else str(decision)
@@ -2188,7 +1835,8 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         # Step 2: Use cached if sufficient (only for MEMORY_ENHANCED_CACHE decision)
         if decision == AnalysisDecision.MEMORY_ENHANCED_CACHE:
             # print(f"💾 [THRESHOLD_DEBUG] Decision is MEMORY_ENHANCED_CACHE - fetching cached analysis...")  # Commented for error-only mode
-            cached_analysis = await get_cached_behavior_analysis_from_memory(user_id)
+            # Use OnDemandAnalysisService's archetype-aware cache retrieval
+            cached_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
             if cached_analysis:
         # print(f"✅ [THRESHOLD_DEBUG] Found cached analysis - using cached behavior analysis")  # Commented to reduce noise
                 print(f"   📝 Cache contains: {len(str(cached_analysis))} characters")
@@ -2268,7 +1916,7 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
         
         try:
             # Use OnDemandAnalysisService metadata for memory context preparation
-            memory_context = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata)
+            memory_context = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata, archetype)
             
             # CRITICAL FIX: Pass locked timestamp to prevent race conditions
             locked_timestamp = ondemand_metadata.get('fixed_timestamp') if ondemand_metadata else None
@@ -2427,10 +2075,10 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
             "analysis_result": output_data
         }
         
-        # Log using existing function
-        await log_analysis_data(complete_input, complete_output, analysis_number)
+        # Note: Analysis logging removed - focus on core functionality
+        # Analysis data available in memory system for retrieval
         
-        print(f"📝 [MEMORY_ENHANCED] Complete standalone analysis logged to files {analysis_number}")
+        # print(f"📝 [MEMORY_ENHANCED] Complete analysis stored in memory system")  # Commented for error-only mode
         
     except Exception as e:
         print(f"⚠️ [MEMORY_ENHANCED] Failed to log complete analysis: {e}")
@@ -2456,7 +2104,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         
         # Step 1: Prepare memory-enhanced context
         # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...")  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for routine generation
         from services.user_data_service import UserDataService
@@ -2505,7 +2153,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             
             # Store the complete routine result
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "routine_plan", routine_result, archetype
+                user_id, "routine_plan", routine_result, archetype, "scheduled"
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
             
@@ -2571,7 +2219,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         
         # Step 1: Prepare memory-enhanced context
         # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for nutrition generation...")  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for nutrition generation
         from services.user_data_service import UserDataService
@@ -2620,7 +2268,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             
             # Store the complete nutrition result
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "nutrition_plan", nutrition_result, archetype
+                user_id, "nutrition_plan", nutrition_result, archetype, "scheduled"
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete nutrition plan stored with ID: {analysis_id}")  # Commented to reduce noise
             
@@ -2889,7 +2537,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         
         # Step 1: Prepare memory-enhanced context
         # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...")  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id)
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for routine generation
         from services.user_data_service import UserDataService
@@ -2938,7 +2586,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             
             # Store the complete routine result
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "routine_plan", routine_result, archetype
+                user_id, "routine_plan", routine_result, archetype, "scheduled"
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
             

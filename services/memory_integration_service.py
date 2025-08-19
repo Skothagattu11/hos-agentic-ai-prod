@@ -46,7 +46,7 @@ class MemoryIntegrationService:
         
         logger.debug("[MEMORY_INTEGRATION] Initialized with existing HolisticMemoryService")
     
-    async def prepare_memory_enhanced_context(self, user_id: str, ondemand_metadata: dict = None) -> MemoryEnhancedContext:
+    async def prepare_memory_enhanced_context(self, user_id: str, ondemand_metadata: dict = None, archetype: str = None) -> MemoryEnhancedContext:
         """
         Prepare memory-enhanced context for analysis
         This is the main entry point for memory-enhanced analysis
@@ -65,8 +65,8 @@ class MemoryIntegrationService:
         # print(f"📊 [MEMORY_INTEGRATION] Using OnDemandAnalysisService decision: {analysis_mode} mode, {days_to_fetch} days")  # Commented to reduce noise
             else:
                 # Fallback to memory service for backwards compatibility
-                analysis_mode, days_to_fetch = await self.memory_service.determine_analysis_mode(user_id)
-                print(f"⚠️ [MEMORY_INTEGRATION] Fallback to memory service decision: {analysis_mode} mode, {days_to_fetch} days")
+                analysis_mode, days_to_fetch = await self.memory_service.determine_analysis_mode(user_id, archetype)
+                print(f"⚠️ [MEMORY_INTEGRATION] Fallback to memory service decision: {analysis_mode} mode, {days_to_fetch} days (archetype={archetype})")
             
             # Get all memory layers
             longterm_memory = await self.memory_service.get_user_longterm_memory(user_id)

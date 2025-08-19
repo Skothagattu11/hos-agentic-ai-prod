@@ -444,19 +444,20 @@ class HolisticMemoryService:
     # ========== ANALYSIS RESULTS (Historical analysis storage) ==========
     
     async def store_analysis_result(self, user_id: str, analysis_type: str, 
-                                  analysis_result: Dict[str, Any], archetype_used: str = None) -> str:
-        """Store complete analysis in holistic_analysis_results table"""
+                                  analysis_result: Dict[str, Any], archetype_used: str = None, 
+                                  analysis_trigger: str = "scheduled") -> str:
+        """Store complete analysis in holistic_analysis_results table with trigger context"""
         try:
             db = await self._ensure_db_connection()
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
             
-            # Use UPSERT to handle duplicates gracefully
+            # Use UPSERT to handle duplicates gracefully with new trigger-based constraint
             insert_query = """
                 INSERT INTO holistic_analysis_results (
                     user_id, analysis_type, archetype, analysis_result, 
-                    input_summary, agent_id, analysis_date
-                ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE)
-                ON CONFLICT (user_id, analysis_type, analysis_date, archetype) 
+                    input_summary, agent_id, analysis_date, analysis_trigger
+                ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7)
+                ON CONFLICT (user_id, analysis_type, analysis_date, archetype, analysis_trigger) 
                 DO UPDATE SET
                     analysis_result = EXCLUDED.analysis_result,
                     input_summary = EXCLUDED.input_summary,
@@ -466,10 +467,29 @@ class HolisticMemoryService:
             
             import json
             result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
-                                     json.dumps(analysis_result), json.dumps(input_summary), 'memory_service')
+                                     json.dumps(analysis_result), json.dumps(input_summary), 'memory_service', analysis_trigger)
             
             if result:
                 analysis_id = str(result['id'])
+                
+                # UPDATE ARCHETYPE-SPECIFIC TIMESTAMP: Track when this archetype was last analyzed
+                if archetype_used and analysis_type == "behavior_analysis":
+                    try:
+                        from services.archetype_analysis_tracker import get_archetype_tracker
+                        archetype_tracker = await get_archetype_tracker()
+                        
+                        success = await archetype_tracker.update_last_analysis_date(
+                            user_id, archetype_used, datetime.now(timezone.utc)
+                        )
+                        
+                        if success:
+                            logger.info(f"[MEMORY_SERVICE] Updated archetype tracking: {user_id} + {archetype_used}")
+                        else:
+                            logger.warning(f"[MEMORY_SERVICE] Failed to update archetype tracking: {user_id} + {archetype_used}")
+                            
+                    except Exception as e:
+                        logger.warning(f"[MEMORY_SERVICE] Archetype tracking error for {user_id}: {e}")
+                        # Don't fail the main operation if archetype tracking fails
                 
                 # Optional automatic insights extraction with error handling
                 try:
@@ -498,8 +518,8 @@ class HolisticMemoryService:
             return ""
     
     async def get_analysis_history(self, user_id: str, analysis_type: str = None, 
-                                 limit: int = 10) -> List[AnalysisHistory]:
-        """Get analysis history from holistic_analysis_results table"""
+                                 archetype: str = None, limit: int = 10) -> List[AnalysisHistory]:
+        """Get analysis history from holistic_analysis_results table with optional archetype filtering"""
         try:
             db = await self._ensure_db_connection()
             
@@ -512,6 +532,11 @@ class HolisticMemoryService:
                 param_count += 1
                 conditions.append(f"analysis_type = ${param_count}")
                 params.append(analysis_type)
+                
+            if archetype:
+                param_count += 1
+                conditions.append(f"archetype = ${param_count}")
+                params.append(archetype)
             
             query = f"""
                 SELECT id, user_id, analysis_type, analysis_result, archetype, created_at
@@ -554,12 +579,55 @@ class HolisticMemoryService:
     
     # ========== ANALYSIS TYPE DETECTION ==========
     
-    async def determine_analysis_mode(self, user_id: str) -> Tuple[str, int]:
+    async def determine_analysis_mode(self, user_id: str, archetype: str = None) -> Tuple[str, int]:
         """
-        Determine analysis type based on existing analysis history
+        Determine analysis type based on archetype-specific analysis history
+        
+        Args:
+            user_id: User identifier
+            archetype: Specific archetype to check (if None, falls back to global check)
+            
         Returns: (analysis_type, days_to_fetch)
         """
         try:
+            if archetype:
+                # NEW: Archetype-aware analysis mode detection
+                print(f"🎯 [ANALYSIS_MODE] Checking archetype-specific history for {archetype}")
+                
+                # Use ArchetypeAnalysisTracker for archetype-specific timestamps
+                try:
+                    from services.archetype_analysis_tracker import get_archetype_tracker
+                    tracker = await get_archetype_tracker()
+                    
+                    # Get archetype-specific last analysis date
+                    last_analysis_date = await tracker.get_last_analysis_date(user_id, archetype)
+                    
+                    if not last_analysis_date:
+                        print(f"🆕 [ANALYSIS_MODE] No previous analysis for archetype '{archetype}' - INITIAL analysis (7 days data)")
+                        return ("initial", 7)
+                    
+                    # Calculate time since last analysis for THIS archetype
+                    time_since_last = datetime.now(timezone.utc) - last_analysis_date
+                    days_since_last = time_since_last.days
+                    hours_since_last = time_since_last.total_seconds() / 3600
+                    
+                    print(f"⏱️ [ANALYSIS_MODE] Last {archetype} analysis: {hours_since_last:.1f}h ago ({days_since_last} days)")
+                    
+                    # Archetype-specific logic
+                    if days_since_last >= 14:
+                        print(f"🔄 [ANALYSIS_MODE] Long gap ({days_since_last} days) - treating as INITIAL analysis")
+                        return ("initial", 7)
+                    else:
+                        print(f"📈 [ANALYSIS_MODE] Recent archetype analysis - FOLLOW-UP mode (1 day data)")
+                        return ("follow_up", 1)
+                        
+                except Exception as archetype_error:
+                    print(f"⚠️ [ANALYSIS_MODE] Archetype tracker failed: {archetype_error} - falling back to global check")
+                    # Fall through to global analysis check
+            
+            # LEGACY: Global analysis check (when no archetype provided or archetype check fails)
+            print(f"🔍 [ANALYSIS_MODE] Using global analysis history check")
+            
             # Get recent analysis history from holistic_analysis_results table
             recent_analyses = await self.get_analysis_history(user_id, limit=5)
             

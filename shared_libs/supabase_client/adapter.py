@@ -547,12 +547,12 @@ class SupabaseAsyncPGAdapter:
         data = {}
         args_index = 0
         
-        print(f"[DEBUG] Parsing INSERT: columns={columns}, values={values}")
+        # Debug logging removed for production
         
         for i, col in enumerate(columns):
             if i < len(values):
                 value_placeholder = values[i]
-                print(f"[DEBUG] Column '{col}' -> Value '{value_placeholder}'")
+                # Debug: Column mapping
                 
                 if value_placeholder.startswith('$'):
                     # Parameter placeholder like $1, $2
@@ -566,30 +566,30 @@ class SupabaseAsyncPGAdapter:
                             data[col] = value.isoformat()
                         else:
                             data[col] = value
-                        print(f"[DEBUG] Mapped parameter {value_placeholder} to {col} = {str(value)[:50]}...")
+                        # Debug: Parameter mapped
                 elif value_placeholder.upper() == 'CURRENT_DATE':
                     # Handle CURRENT_DATE function
                     data[col] = date.today().isoformat()
-                    print(f"[DEBUG] Set CURRENT_DATE for {col} = {date.today().isoformat()}")
+                    # Debug: CURRENT_DATE set
                 elif value_placeholder.upper() == 'NOW()':
                     # Handle NOW() function
                     from datetime import datetime
                     data[col] = datetime.now().isoformat()
-                    print(f"[DEBUG] Set NOW() for {col} = {datetime.now().isoformat()}")
+                    # Debug: NOW() set
                 elif value_placeholder.startswith("'") and value_placeholder.endswith("'"):
                     # String literal
                     data[col] = value_placeholder[1:-1]
-                    print(f"[DEBUG] Set string literal for {col} = {value_placeholder[1:-1]}")
+                    # Debug: String literal set
                 elif value_placeholder.isdigit():
                     # Numeric literal
                     data[col] = int(value_placeholder)
-                    print(f"[DEBUG] Set numeric for {col} = {int(value_placeholder)}")
+                    # Debug: Numeric set
                 else:
                     # Fallback: treat as string
                     data[col] = value_placeholder
-                    print(f"[DEBUG] Set fallback for {col} = {value_placeholder}")
+                    # Debug: Fallback set
         
-        print(f"[DEBUG] Final INSERT data: {data}")
+        # Debug: Final INSERT data prepared
         return data
     
     def _find_next_keyword_pos(self, query_upper: str, start_pos: int, keywords: list) -> int:
@@ -834,10 +834,10 @@ class SupabaseAsyncPGAdapter:
                 # Special case for incrementing total_analyses
                 data[field_name] = 1  # Will be handled by upsert logic
         
-        print(f"[MEMORY DEBUG] Parsed {len(assignments)} assignments into {len(data)} data fields")
+        # Debug: Memory assignments parsed
         for key, value in data.items():
             value_preview = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
-            print(f"[MEMORY DEBUG] {key}: {value_preview}")
+            # Debug: Memory field preview
         
         return data
     

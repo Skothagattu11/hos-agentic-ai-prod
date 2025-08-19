@@ -95,12 +95,37 @@ class OnDemandAnalysisService:
                 metadata["reason"] = "Force refresh requested by user"
                 return (AnalysisDecision.FRESH_ANALYSIS, metadata)
             
-            # CRITICAL FIX: Get and lock the timestamp BEFORE any other operations
-            last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
+            # ARCHETYPE-SPECIFIC TIMESTAMP: Get timestamp for THIS archetype
+            last_analysis = None
+            timestamp_source = "none"
+            
+            if requested_archetype:
+                # Try archetype-specific timestamp first
+                try:
+                    from services.archetype_analysis_tracker import get_archetype_tracker
+                    archetype_tracker = await get_archetype_tracker()
+                    
+                    last_analysis, timestamp_source = await archetype_tracker.get_last_analysis_date_with_fallback(
+                        user_id, requested_archetype
+                    )
+                    
+                    metadata["timestamp_source"] = timestamp_source
+                    
+                except Exception as e:
+                    logger.warning(f"[ONDEMAND] Archetype tracker failed, using global fallback: {e}")
+                    # Fallback to old logic
+                    last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
+                    timestamp_source = "global_fallback"
+            else:
+                # No archetype specified - use global timestamp
+                last_analysis = await self.analysis_tracker.get_last_analysis_time(user_id)
+                timestamp_source = "global_fallback"
+            
             metadata["fixed_timestamp"] = last_analysis  # Lock this timestamp for consistent use
             
-            # ARCHETYPE FIX: Check if archetype has changed since last analysis
-            if requested_archetype and last_analysis:
+            # ARCHETYPE CHANGE DETECTION: Check if switching archetypes
+            if requested_archetype and last_analysis and timestamp_source == "global_fallback":
+                # Only check archetype changes when using global timestamp (legacy behavior)
                 last_archetype = await self.get_last_archetype(user_id)
                 if last_archetype and last_archetype != requested_archetype:
                     # Import archetype manager to assess if fresh analysis needed
@@ -144,10 +169,10 @@ class OnDemandAnalysisService:
         # print(f"📊 [ONDEMAND_COUNT] Found {new_data_count} new data points (using locked timestamp)")  # Commented to reduce noise
             
             # Check if we have enough data to override time-based caching
-            memory_quality = await self._assess_memory_quality(user_id)
+            memory_quality = await self._assess_memory_quality(user_id, requested_archetype)
             metadata["memory_quality"] = memory_quality
             
-            threshold = self._calculate_dynamic_threshold(memory_quality, user_id, days_since)
+            threshold = self._calculate_dynamic_threshold(memory_quality, user_id, days_since, requested_archetype)
             metadata["threshold_used"] = threshold
             
             # DATA-FIRST DECISION: If we have enough new data, analyze regardless of time
@@ -212,8 +237,8 @@ class OnDemandAnalysisService:
             logger.error(f"[ONDEMAND_ERROR] Failed to count data for {user_id}: {e}")
             return 0
     
-    async def _assess_memory_quality(self, user_id: str) -> MemoryQuality:
-        """Assess the quality of user's memory profile"""
+    async def _assess_memory_quality(self, user_id: str, archetype: str = None) -> MemoryQuality:
+        """Assess the quality of user's memory profile, optionally considering archetype-specific history"""
         try:
             # Get user's memory profile
             longterm_memory = await self.memory_service.get_user_longterm_memory(user_id)
@@ -232,7 +257,7 @@ class OnDemandAnalysisService:
                 if hasattr(longterm_memory, 'success_strategies') and longterm_memory.success_strategies:
                     score += 3
             
-            # Check analysis history depth
+            # Check analysis history depth (global)
             if analysis_history:
                 if len(analysis_history) >= 5:
                     score += 3
@@ -241,17 +266,44 @@ class OnDemandAnalysisService:
                 elif len(analysis_history) >= 1:
                     score += 1
             
+            # NEW: Check archetype-specific history if archetype provided
+            if archetype:
+                try:
+                    archetype_history = await self.memory_service.get_analysis_history(
+                        user_id, archetype=archetype, limit=5
+                    )
+                    if archetype_history:
+                        if len(archetype_history) >= 3:
+                            score += 2  # Bonus for archetype-specific experience
+                        elif len(archetype_history) >= 1:
+                            score += 1
+                except Exception as e:
+                    logger.debug(f"[MEMORY_QUALITY] Could not get archetype history: {e}")
+            
             # Check meta-memory learning
             if meta_memory:
-                if hasattr(meta_memory, 'learning_velocity') and meta_memory.learning_velocity:
+                # Check if meta-memory has meaningful data
+                adaptation_data = meta_memory.get('adaptation_patterns', {}).get('data')
+                learning_data = meta_memory.get('learning_velocity', {}).get('data')
+                
+                if adaptation_data and isinstance(adaptation_data, dict) and adaptation_data:
                     score += 2
-                if hasattr(meta_memory, 'adaptation_patterns') and meta_memory.adaptation_patterns:
+                if learning_data and isinstance(learning_data, dict) and learning_data:
                     score += 2
             
-            # Determine quality level
-            if score >= 10:
+            # NEW: Check recent patterns for additional context
+            try:
+                recent_patterns = await self.memory_service.get_recent_patterns(user_id, days=7)
+                if recent_patterns:
+                    if len(recent_patterns) >= 5:
+                        score += 1  # Bonus for recent activity
+            except Exception as e:
+                logger.debug(f"[MEMORY_QUALITY] Could not get recent patterns: {e}")
+            
+            # Enhanced scoring thresholds for better granularity
+            if score >= 12:
                 return MemoryQuality.RICH
-            elif score >= 5:
+            elif score >= 6:
                 return MemoryQuality.DEVELOPING
             else:
                 return MemoryQuality.SPARSE
@@ -264,13 +316,16 @@ class OnDemandAnalysisService:
         self, 
         memory_quality: MemoryQuality,
         user_id: str,
-        days_since_analysis: float
+        days_since_analysis: float,
+        archetype: str = None
     ) -> int:
         """
-        Calculate dynamic threshold based on memory quality and other factors
+        Calculate dynamic threshold based on memory quality, archetype complexity, and other factors
         
         Rich memory = lower threshold (can work with less data)
         Sparse memory = higher threshold (needs more data)
+        Complex archetypes = higher threshold (need more data for accurate analysis)
+        Simple archetypes = lower threshold (can work with less data)
         """
         base = self.base_data_threshold
         
@@ -285,6 +340,15 @@ class OnDemandAnalysisService:
             # Sparse memory needs more data
             threshold = int(base * 1.2)  # 60 points
         
+        # NEW: Adjust based on archetype complexity
+        if archetype:
+            archetype_complexity = self._get_archetype_complexity(archetype)
+            if archetype_complexity >= 8:  # Complex archetypes (Peak Performer, Systematic Improver)
+                threshold = int(threshold * 1.15)  # 15% more data needed
+            elif archetype_complexity <= 4:  # Simple archetypes (Foundation Builder, Resilience Rebuilder)  
+                threshold = int(threshold * 0.9)   # 10% less data needed
+            # Medium complexity archetypes (5-7) use base threshold
+        
         # Adjust based on time gap - longer gaps need less data to trigger
         if days_since_analysis >= 5:
             threshold = int(threshold * 0.7)  # 30% reduction for old analyses
@@ -294,28 +358,46 @@ class OnDemandAnalysisService:
         # Ensure reasonable bounds
         threshold = max(10, min(100, threshold))  # Between 10 and 100
         
-        logger.debug(f"[ONDEMAND] Threshold: {threshold} (memory: {memory_quality.value})")
+        logger.debug(f"[ONDEMAND] Threshold: {threshold} (memory: {memory_quality.value}, archetype: {archetype})")
         
         return threshold
+    
+    def _get_archetype_complexity(self, archetype: str) -> int:
+        """
+        Get complexity level for archetype (1-10 scale)
+        Higher complexity = needs more data for accurate analysis
+        """
+        complexity_map = {
+            'Foundation Builder': 3,        # Simple, basic approach
+            'Resilience Rebuilder': 4,      # Recovery focus, straightforward
+            'Connected Explorer': 5,        # Social elements, moderate complexity
+            'Transformation Seeker': 6,     # Ambitious changes, medium-high complexity
+            'Systematic Improver': 8,       # Methodical, evidence-based, high complexity  
+            'Peak Performer': 9             # Elite optimization, highest complexity
+        }
+        return complexity_map.get(archetype, 5)  # Default to medium complexity
     
     async def get_cached_behavior_analysis(self, user_id: str, archetype: str = None) -> Optional[Dict[str, Any]]:
         """Get the most recent cached behavior analysis, optionally filtered by archetype"""
         try:
-            # Get from memory system with archetype filtering
+            # Get from memory system with archetype filtering built into the query
             if archetype:
-                # Get recent analyses and filter by archetype
-                analysis_history = await self.memory_service.get_analysis_history(user_id, limit=3)
-                matching_analyses = [
-                    result for result in analysis_history 
-                    if hasattr(result, 'archetype_used') and result.archetype_used == archetype
-                ]
-                if matching_analyses:
-                    analysis_history = [matching_analyses[0]]  # Use most recent matching archetype
-                elif analysis_history:
+                # Use the enhanced get_analysis_history with archetype parameter
+                analysis_history = await self.memory_service.get_analysis_history(
+                    user_id=user_id, 
+                    analysis_type="behavior_analysis",
+                    archetype=archetype,  # Direct archetype filtering in query
+                    limit=1
+                )
+                if not analysis_history:
                     logger.info(f"[ONDEMAND] No cached analysis found for archetype '{archetype}' for user {user_id[:8]}")
                     return None
             else:
-                analysis_history = await self.memory_service.get_analysis_history(user_id, limit=1)
+                analysis_history = await self.memory_service.get_analysis_history(
+                    user_id=user_id,
+                    analysis_type="behavior_analysis", 
+                    limit=1
+                )
             
             if analysis_history and len(analysis_history) > 0:
                 latest = analysis_history[0]

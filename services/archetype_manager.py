@@ -5,7 +5,7 @@ Handles archetype switching, compatibility checking, and transition planning
 
 from enum import Enum
 from typing import Dict, Tuple, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -340,7 +340,7 @@ class ArchetypeManager:
             return True
         
         # If last analysis is old, fresh is good anyway
-        days_since = (datetime.now() - last_analysis_date).days
+        days_since = (datetime.now(timezone.utc) - last_analysis_date).days
         if days_since > 3:
             logger.info(f"Recommending fresh analysis: {days_since} days since last analysis")
             return True
