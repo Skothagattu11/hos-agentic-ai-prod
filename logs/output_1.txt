@@ -1,0 +1,1109 @@
+{
+  "insights": [
+    {
+      "timestamp": "2025-08-19T11:57:22.689583",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Transformation Seeker",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Maintain current sleep schedule; aim to keep Sleep In-Bed Duration \u2265 7 h and Sleep Mid-Time consistency within \u00b130 min.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Starting tomorrow, add a 10-minute dynamic stretch or mobility drill immediately after waking (tag activity category: low-intensity).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Plan three moderate-intensity sessions (\u2265 20 min, heart-rate 60-75 % max) during the next 7 days; log as Activity Medium Intensity Duration to track adaptation.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Full-spectrum lifestyle upgrade with emphasis on higher daily movement and overall vitality",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T11:58:17.560764",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Transformation Seeker",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a foundational routine that enhances physical activity, maintains strong sleep hygiene, and leverages your high motivation and data-tracking diligence. The key goals are to introduce structured movement sessions, optimize energy levels throughout the day, and ensure recovery is prioritized to support your transformation journey.\n\n**1. Morning Wak...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T12:00:40.726597",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Choose a single wearable or phone app today and complete initial pairing/sync.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Set two recurring reminders: a) \u2018Post-coffee walk\u2019 calendar block; b) 15-min pre-bedtime wind-down alert.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Log wake-up and bedtime manually for the next 3 mornings to build the logging habit even before automated sleep detection is set up.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish reliable daily tracking and one core health habit (e.g., 10-minute walk + sleep logging).",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T12:01:41.770636",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's routine is designed to establish foundational habits for health optimization. The focus is on integrating simple, achievable activities that build consistency and confidence. The key goals are to initiate health-tracking behaviors, improve energy levels, and set the groundwork for future habit formation. This routine is tailored to a Foundation Builder's needs, emphasizi...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T12:03:12.406572",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Systematic Improver",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Pair chosen wearable or smartphone step counter today and confirm data appears in the dashboard.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Enable automatic sleep detection; if the device lacks this feature, commit to entering bedtime/wake-time manually for two weeks.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Select ONE easy biomarker (e.g., morning resting heart rate or body weight) and log it immediately after waking every other day.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable baseline data-collection routine covering activity, sleep, and one key biomarker category.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T12:03:50.413712",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Systematic Improver",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a foundational routine that initiates reliable data collection and supports the development of consistent health habits. The key goals are to begin tracking steps and sleep, introduce a simple biomarker measurement, and reinforce the importance of routine through structured activities. This routine is designed to create a baseline for future opti...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:06:23.283995",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Aim for two 10-minute walks daily, 5 days this week; track steps to target 6 000/day.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Insert 60-second mobility or stretch breaks after every 90 minutes of sitting (set phone timer).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Maintain bedtime and wake time within a 30-minute window to retain high sleep scores.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Build a reliable, enjoyable daily movement routine while preserving current sleep quality.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:08:24.393970",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary**\n\n**Key Focus Areas and Goals:**\n- Establish a consistent baseline for tracking daily steps and sleep duration.\n- Build confidence through simple, achievable tasks.\n- Initiate healthy routines that integrate seamlessly into daily life.\n- Enhance motivation with visible progress and positive feedback.\n\n**1. Morning Wake-up (6:00-7:00 AM): Foundation Setting and Energy Building**\n\n*...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:08:46.481416",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Select and pair a primary wearable (e.g., Garmin, Oura, Apple Watch) within the next 24 hours and verify data feed into HolisticOS.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Perform a 2-day test run focusing solely on consistent wear and successful data sync; ignore performance targets until baseline confirmed.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Schedule a comprehensive biomarker panel (bloodwork) within the first week; upload lab results immediately upon receipt.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable baseline data stream for sleep, activity, and biomarkers.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:10:26.078127",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary**\n\n**Key Focus Areas and Goals:**\n- Establish a reliable baseline for tracking activity, sleep, and biomarkers.\n- Integrate tracking into daily routines to enhance data capture.\n- Utilize quantitative feedback for motivation and self-benchmarking.\n- Initiate a structured approach to health optimization, aligning with Peak Performer tendencies.\n\n**1. Morning Wake-up (6:00-7:00 AM): ...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:19:50.635732",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Set an initial daily step target of 5 500 and auto-increment by 500 every second week until 7 000 is comfortable.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Insert two 3-minute movement snacks (stretch or walk) for every 60 minutes of logged sedentary time.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Maintain a fixed lights-out window (e.g., 22:30\u201323:00) to preserve sleep trend; track adherence in-app.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable movement and sleep foundation that converts current readiness into higher daily energy and reduced sedentary time.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:21:21.076135",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "### Daily Summary\n**Key Focus Areas and Goals:**\n- Establish a consistent daily movement routine\n- Maintain high sleep quality\n- Build confidence through small, achievable wins\n- Increase daily steps and moderate activity\n\n### Routine Plan for TODAY\n\n#### 1. Morning Wake-up (6:00-7:00 AM)\n**Foundation Setting and Energy Building**\n\n**Tasks and Activities:**\n- **6:00 AM - Wake-up and Hydrate:** Sta...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:21:55.316715",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Add 2 structured strength or HIIT sessions per week (Rating of Perceived Exertion 6\u20137) and 1 low-intensity endurance session; reassess in 3 weeks.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Set dynamic step target: baseline average +1,500 steps for the next 14 days, aiming toward 8\u201310k.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Keep bedtime within \u00b130 min window (current consistency is strong\u2014protect it).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Align physical activity volume and intensity with excellent sleep and readiness scores to raise overall health-performance composite from 0.69 \u2192 \u22650.80.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:23:20.285341",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "### Daily Summary\n**Key Focus Areas and Goals:**\n- Elevate daily activity load and performance capacity\n- Preserve high-quality sleep and recovery metrics\n- Achieve measurable progress through structured routines\n- Integrate data-driven optimization into daily habits\n\n### Routine Plan for TODAY\n\n#### 1. Morning Wake-up (6:00-7:00 AM)\n**Foundation Setting and Energy Building**\n\n**Tasks and Activiti...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:30:57.541756",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Start Week 1 with a 15-20 min walk on 4 days; increase duration or add a 5th day each subsequent week until \u2265150 min total is routine.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Insert one 3-5 min movement break every 2\u20133 seated hours (use timer or smart-watch reminder).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Keep bedtime and wake-time within a 30-min window to preserve strong sleep scores.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a consistent baseline activity habit without compromising already good sleep quality.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:32:35.573323",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "### Daily Summary\n**Key Focus Areas:**\n- Establish consistent tracking habits for either steps or sleep duration.\n- Build confidence with simple, achievable tasks.\n- Integrate gentle movement to enhance overall activity levels.\n- Maintain strong sleep patterns to support wellbeing.\n\n**Goals:**\n- Successfully log at least one health metric today.\n- Complete a 10-minute tech setup session.\n- Engage ...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:33:05.004606",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Increase medium-intensity duration from current 2 sessions (~40\u201350 min total) to 3 sessions (> 90 min total) this week; review Heart-Rate Zone distribution for progressive overload.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Introduce two resistance-training days (compound movements or body-weight circuit); aim for > 250 kCal active energy per session.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Implement hourly 5-minute mobility/micro-walk breaks to cut sedentary duration by \u2265 20 %.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Translate physiological readiness and high-quality recovery into measurable performance gains through structured, progressive training volume.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:34:45.897597",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary**\n\n**Key Focus Areas:**\n- Establish a reliable, automated data-capture baseline for performance optimization.\n- Integrate health tracking into daily routines to ensure consistent data collection.\n- Focus on maintaining high cognitive and physical performance through structured activities.\n\n**Goals:**\n- Achieve complete data capture for sleep and activity metrics today.\n- Complete a...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:50:27.050448",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Keep bedtime within a 30-minute window; aim for 7\u20138 h time-in-bed and review sleep efficiency each morning.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Maintain four movement sessions per week; prioritize low-impact cardio (walk, bike, swim) at RPE 4\u20135/10 to align with current readiness.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Log resting heart rate at least twice weekly upon waking; note any >5 bpm deviations and pair them with sleep/strain notes.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a stable core routine for sleep and daily movement to create a sustainable health foundation.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:52:05.519234",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Routine Plan for Foundation Builder**\n\n**Daily Summary:**\nToday's focus is on establishing a consistent routine that integrates health-tracking habits with simple, achievable activities. The primary goals are to maintain engagement with health metrics, build a foundation for sustainable habits, and ensure a balance of activity and rest. Key focus areas include consistent sleep tracking, mo...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:52:32.172430",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Add HRV and subjective RPE after each workout to sharpen readiness prediction.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Shift 1\u20132 workouts per week from moderate to polarized intensity (one high, one low) to test performance response while keeping total load constant.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Institute a 30-minute digital-sunset before bed to push Sleep Efficiency from current ~0.73 index toward \u22650.80.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Optimize performance while preserving high recovery quality (increase overall Health Score \u22650.85)",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T13:54:09.245793",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Routine Plan for Peak Performer**\n\n**Daily Summary:**\nToday's focus is on establishing a reliable baseline for health optimization while maintaining high engagement with health metrics. The primary goals are to capture comprehensive data, integrate health-tracking habits into daily life, and ensure a balance of activity, productivity, and rest. Key focus areas include consistent data captu...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T14:38:08.885116",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Complete device/app setup today; perform a manual sync and confirm at least one data point appears.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Choose one core metric to start (step count OR bedtime/wake-time) and commit to logging it for the next 3 days\u2014nothing else.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Schedule a 3-minute evening \u2018checkpoint\u2019 alarm labelled \u201cQuick Sync\u201d to build the routine.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable daily tracking routine and capture a baseline for sleep and activity",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T14:38:47.832241",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a simple, reliable daily tracking routine and capturing a baseline for sleep and activity. The goal is to overcome initial habit-formation gaps by integrating tracking into existing routines and providing small, visible wins to build confidence.\n\n**1. Morning Wake-up (6:00-7:00 AM): Foundation Setting and Energy Building**\n- **Wake-up Routine (6:...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T14:39:31.254569",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Complete device/app setup: ensure smartwatch or fitness tracker, sleep sensor, and at least one biomarker-friendly service (e.g., at-home lab or continuous glucose monitor) are connected to HolisticOS within 48 h.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Perform a 24-h syncing test: verify that activity, heart-rate, and sleep data populate the dashboard; address any gaps immediately.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Schedule a baseline blood/biomarker panel (or at minimum HRV, resting heart rate, fasting glucose) within the next two weeks.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable, high-fidelity baseline data stream for activity, sleep, and biomarkers to enable advanced performance optimization.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T14:41:21.590627",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a foundational habit of consistent data capture for a Peak Performer who is currently at the beginner level in operational sophistication. The primary goal is to create a reliable quantitative baseline for sleep, activity, and key biomarkers. This will enable advanced optimization in the future. Key focus areas include overcoming technical setup ...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T15:52:39.941821",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Continue going to bed and waking within the same 30-min window; current sleep metrics are your strongest pillar\u2014protect them.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Upgrade from 4 to 5 activity sessions per week; target 150\u2013180 min of moderate intensity across the week (e.g., 3\u00d7 30-min walks + 2\u00d7 short strength circuits).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Add one 10-min mobility or stretching routine before bed to maintain sleep quality and aid recovery.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a rock-solid daily routine that keeps sleep high while lifting activity and readiness to the same level.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T15:53:54.088313",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a consistent routine that supports sleep quality, builds activity habits, and enhances readiness. The goal is to maintain strong sleep hygiene while gradually increasing physical activity and ensuring that health data is consistently logged. This plan will leverage your current strengths in sleep and mental wellbeing to build confidence and suppo...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T15:54:36.854904",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Align sleep window so Sleep Mid-Time remains within \u00b130 min across the week; current single-point data shows consistency but validate over next 14 days.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Introduce one structured mobility or yoga session (\u2264 25 min) post-training to enhance parasympathetic rebound and support Readiness gains.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Adopt a 3-day hard / 1-day easy micro-cycle: Auto-downgrade intensity if morning Readiness < 0.68.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Move average Readiness Score from 0.72 \u2192 \u2265 0.80 while maintaining Activity Score \u2265 0.78 and Mental-Wellbeing \u2265 0.76",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T15:55:59.617533",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a high-fidelity baseline dataset to enable subsequent peak-performance optimization. The goal is to ensure robust data capture across sleep, activity, and a core biomarker panel, leveraging the Peak Performer archetype's drive for measurable progress and rapid feedback loops. This routine will utilize existing strengths in mental wellbeing and sl...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T16:20:47.618647",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Standardize sleep window: target consistent lights-out within a 30-min range (e.g., 10:30 PM-11:00 PM) for the next 14 days.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Pre-sleep routine: 5-min breathing or guided relaxation to lower sleep latency and improve efficiency (aim \u2265 85 %).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Daily movement minimum: accumulate at least 6,000 steps OR a 25-min moderate walk each day; log RPE.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Build a stable, repeatable foundation of restorative sleep and regular light-to-moderate activity.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T16:22:20.329352",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "### Daily Summary\n**Key Focus Areas:**\n- Establish consistent logging habits for sleep and activity.\n- Build a foundation of simple, confidence-boosting routines.\n- Encourage positive reinforcement through visible progress.\n\n**Goals for Today:**\n- Achieve at least 80% logging compliance for sleep and one activity metric.\n- Integrate simple health behaviors into daily routine.\n- Use supportive remi...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T16:23:02.668758",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Capture every night of sleep this week; aim for lights-out within a 30-minute window nightly.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Target sleep latency <15 min by implementing a blue-light cutoff and 5-minute breathing protocol.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Increase activity frequency to at least 1 session/day; include two low-intensity mobility or walk sessions for active recovery.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Raise composite Readiness Score to \u22650.85 by consolidating sleep and activity routines",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-19T16:24:44.580078",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "### Daily Summary\n**Key Focus Areas:**\n- Establish a reliable baseline for data tracking across sleep, activity, and biomarkers.\n- Optimize daily routines to enhance readiness and wellbeing.\n- Leverage structured time blocks to maximize productivity and recovery.\n\n**Goals for Today:**\n- Achieve 90% data coverage for sleep, activity, and at least one biomarker reading.\n- Integrate health-boosting a...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:29:47.638172",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Set fixed lights-out target at the same time for the next 14 days; review sleep efficiency afterward.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Add one additional low-impact activity session (e.g., cycling, brisk walk) to reach 4 sessions/week.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Track subjective energy (1-10 scale) each morning for correlation with readiness score.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a stable, repeatable daily rhythm that supports consistent energy and mood",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:30:30.182926",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Complete device/app setup today; verify data appears in dashboard.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Choose ONE metric to start with (steps OR sleep). Ignore everything else for the first week.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Set a daily reminder at 9 pm to confirm the device synced and logged data.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable baseline by recording at least one core metric (steps or sleep) on \u2265 5 days per week",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:31:19.356585",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary**\n\n**Key Focus Areas:**\n- Establish a consistent daily rhythm\n- Build confidence through small, achievable actions\n- Improve data tracking consistency\n\n**Goals for Today:**\n- Successfully track at least one health metric (steps or sleep)\n- Complete all scheduled activities to reinforce habit formation\n- Reflect on energy levels and mood to enhance self-awareness\n\n---\n\n**Time Blocks...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:32:06.767468",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "1. Standardize bedtime and wake-time within 30 minutes; aim for 7 h unified sleep with \u226415 min latency (sleep latency biomarker follow-up).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "2. Introduce two high-intensity or strength sessions this week; log RPE and recovery to calibrate workload.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "3. Track morning HRV (or equivalent readiness input) daily to strengthen readiness score precision and identify recovery debt early.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Elevate physiological readiness to \u22650.80 while sustaining high sleep and mental-wellbeing scores",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:32:37.657227",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Confirm wearable/device pairing today and perform a test sync.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Enable background data permissions on the mobile app to prevent drop-outs.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Select three core performance metrics (e.g., HRV, deep-sleep minutes, training load) to prioritize; this narrows focus and keeps the data capture task concrete.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Create a reliable baseline dataset (sleep, activity, core biomarkers) so advanced performance optimization can begin.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T10:33:19.038098",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary**\n\n**Key Focus Areas:**\n- Establish a reliable data capture routine\n- Optimize daily energy and focus through structured activities\n- Initiate baseline health data collection for future performance optimization\n\n**Goals for Today:**\n- Successfully sync and verify data capture from wearable devices\n- Complete all scheduled activities to reinforce habit formation\n- Begin tracking key...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:31:56.978798",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Set stable sleep window: target lights-out between 22:30\u201323:00 for the next 14 days; adjust only in 15-min increments if needed.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Schedule three 30-min moderate-intensity sessions (brisk walk, light jog, cycling) on non-consecutive days; aim for 90 min total in week 1, 120 min in week 3, 150 min by week 5.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Morning sunlight exposure: 5\u201310 min outside within 30 min of waking to reinforce circadian rhythm and improve readiness.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a consistent sleep\u2013activity foundation that lifts overall readiness from 0.72 \u2192 \u22650.80 while preserving mental well-being \u22650.75",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:32:36.218414",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Day 0: Ensure tracking device/app is functioning; perform a 2-minute test entry or sync.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Pick ONE anchor habit: 10-minute relaxed walk directly after lunch or dinner every day.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Nightly routine: put tracker on wrist at least 10 minutes before bedtime; no other tracking required yet.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a simple, reliable health-tracking routine and one core daily health habit.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:33:20.285463",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on establishing a simple, reliable health-tracking routine and integrating one core daily health habit. The goal is to build confidence through small, achievable wins and to lay the foundation for consistent data collection. We will focus on maintaining mental well-being and readiness while gradually introducing structured activities.\n\n**1. Morning Wake-up (6:00...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:34:17.048312",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "1. Expand tracking window to full 14-day baseline (aim \u226510 nights sleep, \u226510 activity logs) before making aggressive protocol changes.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "2. Standardize sleep timing: target consistent sleep-start within \u00b130 min; current single data point shows variability risk\u2014this will directly elevate Sleep Efficiency and Readiness.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "3. Introduce structured medium-intensity workouts 3\u00d7/week (\u226525 min) and capture RPE (rate of perceived exertion) immediately after each session to correlate activity strain with next-day readiness.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Enhance recovery quality and cognitive readiness while building a sustainable, high-performance routine.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:34:54.041116",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "1. Complete a device audit today: verify sensors, apps, and account connections are functioning (timebox 20 min).",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "2. Activate passive tracking first\u2014ensure 24/7 wear of primary wearable for the next 14 days.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "3. Set a nightly reminder at 9 pm: \u2018Sync & Preview\u2019. Use automation (iOS Shortcuts / Android Routines) to open the health dashboard automatically.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a reliable, high-fidelity data collection baseline to enable future performance optimization.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:35:47.035789",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Daily Summary:**\nToday's focus is on re-establishing a reliable data collection routine to support future performance optimization. The goal is to integrate foundational habits that enhance readiness, mental well-being, and activity levels while addressing the current data blackout. This routine is designed for a Peak Performer, emphasizing quantifiable progress and rapid feedback loops to drive...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:51:11.250461",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "1. Protect Bedtime: Choose a consistent 30-minute wind-down window; aim for lights-out within \u00b115 min each night this week.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "2. Activity Baseline: Schedule three 20-minute brisk walks or equivalent moderate sessions on non-consecutive days; log RPE (perceived effort 1-10 scale) right after each session.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "3. Morning Light: Get 5\u201310 minutes of outdoor light within an hour of waking to strengthen circadian rhythm and improve readiness.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Lay a rock-solid daily routine that protects sleep and introduces consistent, moderate physical activity.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:52:12.347634",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Foundation Builder",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Comprehensive Foundation Builder Daily Routine Plan for TODAY**\n\n**Daily Summary:**\n- **Key Focus Areas:** Establish a consistent sleep routine, introduce moderate physical activity, and maintain mental wellbeing through simple, confidence-building tasks.\n- **Goals:** Achieve a restful night with improved sleep efficiency, incorporate a moderate-intensity activity session, and foster a positive ...",
+          "type": "routine"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:52:47.863156",
+      "source": "behavior_analysis_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 4,
+      "insights": [
+        {
+          "title": "Key Recommendation #1",
+          "content": "Collect at least 14 consecutive nights of sleep data to confirm current high trend and identify true chronotype.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #2",
+          "content": "Introduce HRV or daily morning RHR measurement if not already captured; this will add granularity to readiness scoring.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Key Recommendation #3",
+          "content": "Implement a 3:1 loading cycle (three progressive weeks, one deload) to align activity (0.78) with slightly lower readiness (0.72) and avoid accumulated fatigue.",
+          "type": "behavioral"
+        },
+        {
+          "title": "Primary Health Goal",
+          "content": "Establish a high-performance baseline by synchronizing training load and recovery to elevate Readiness from 0.72 \u2192 \u22650.80 while preserving high activity engagement.",
+          "type": "behavioral"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-20T11:53:48.063559",
+      "source": "routine_plan_extraction",
+      "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+      "archetype": "Peak Performer",
+      "insights_count": 1,
+      "insights": [
+        {
+          "title": "Routine Plan Focus",
+          "content": "**Comprehensive Peak Performer Daily Routine Plan for TODAY**\n\n**Daily Summary:**\n- **Key Focus Areas:** Synchronize training load with recovery, enhance readiness, and maintain high activity engagement.\n- **Goals:** Elevate readiness metrics, improve sleep efficiency, and sustain mental wellbeing while engaging in consistent physical activity.\n\n**Time Blocks:**\n\n1. **Morning Wake-up (6:00-7:00 AM...",
+          "type": "routine"
+        }
+      ]
+    }
+  ]
+}

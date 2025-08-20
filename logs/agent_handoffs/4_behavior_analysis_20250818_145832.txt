@@ -1,0 +1,65 @@
+============================================================
+AGENT HANDOFF: BEHAVIOR_ANALYSIS
+Analysis #: 4
+Timestamp: 2025-08-18T14:58:32.646228
+============================================================
+
+INPUT DATA:
+----------------------------------------
+{
+  "comprehensive_health_context": "\nHEALTH ANALYSIS REQUEST - MEMORY-ENHANCED COMPREHENSIVE DATA:\n- Profile Reference: 35pDPUIfAoRl2Y700bFkxPKYjjf2\n- Health Archetype: Foundation Builder\n- Analysis Date: 2025-08-18\n- Mode: Memory-Enhanced Health Analysis (Phase 4.1)\n\n\nMEMORY-ENHANCED CONTEXT:\n- Analysis Mode: INITIAL (New user)\n- User Memory Profile Available: NO (Building initial memory)\n\nHEALTH DATA PROFILE:\n- Data Quality Level: DataQualityLevel.POOR \n- Health Score Samples: 0\n- Biomarker Measurements: 0\n- Data Coverage: 0.0%\n- Recent Measurements: False\n- Time Period: 2025-08-17 to 2025-08-18\n\nHEALTH TRACKING DATA SUMMARY:\n\nACTIVITY PATTERNS:\n  \u2022 Activity sessions: 0 tracked periods\n  \u2022 Sleep cycles: 0 recorded periods\n\nANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the Foundation Builder framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.\n",
+  "detailed_metrics": {
+    "data_quality": {
+      "level": "poor",
+      "completeness": 0.0,
+      "scores_count": 0,
+      "biomarkers_count": 0,
+      "recent_data_available": false
+    },
+    "time_coverage": {
+      "start_date": "2025-08-17T18:58:15.569151+00:00",
+      "end_date": "2025-08-18T18:58:15.569151+00:00",
+      "total_days": 1
+    },
+    "activity_patterns": [],
+    "biomarker_categories": {}
+  },
+  "analysis_focus": "comprehensive_behavior_pattern_analysis"
+}
+
+OUTPUT DATA:
+----------------------------------------
+{
+  "behavioral_signature": {
+    "signature": "At present no objective health-tracking data is available (0% coverage for activity, sleep, and biomarkers). The dominant behavioral pattern is \u2018non-tracking / setup not completed\u2019, characteristic of an early-stage Foundation Builder who has not yet established basic measurement routines.",
+    "confidence": 0.15
+  },
+  "sophistication_assessment": {
+    "score": 15,
+    "category": "Beginner",
+    "justification": "Absence of any recorded data or established routines suggests the user is just starting their health-optimization journey and has not yet mastered basic self-monitoring skills."
+  },
+  "primary_goal": {
+    "goal": "Establish a reliable baseline of daily activity and sleep data",
+    "timeline": "Next 14 days",
+    "success_metrics": "\u226510 of the next 14 days with valid step count and sleep duration recorded; completion of an initial self-assessment questionnaire"
+  },
+  "personalized_strategy": {
+    "motivation_drivers": "Simplicity, quick wins, and visible progress feedback",
+    "habit_integration": "Pair nightly phone charging with starting sleep tracking; enable automatic step syncing each morning",
+    "barrier_mitigation": "Provide one-click device/app setup instructions, send gentle daily reminders, and offer an accountability check-in after the first week"
+  },
+  "readiness_level": "Low",
+  "recommendations": [
+    "Download and install a basic tracker (e.g., Google Fit, Apple Health, or a simple wearable) and confirm it records steps automatically.",
+    "Enable sleep-tracking (automatic if using a smartwatch, or manually tap \u2018start\u2019/\u2018stop\u2019 in the chosen app) every night for the next two weeks.",
+    "Set a single daily reminder at 9 pm to prepare for sleep tracking and at 8 am to confirm data synced; disable other notifications to avoid overload.",
+    "Complete a 5-minute self-assessment survey covering current energy, mood, and perceived stress to create a subjective baseline.",
+    "Schedule a 15-minute review session after two weeks to evaluate data coverage and adjust the plan."
+  ],
+  "data_insights": "Because no activity, sleep, or biomarker entries are present, the immediate insight is a setup gap rather than a physiological trend. The priority is to establish consistent data capture so that meaningful patterns can be identified in future analyses.",
+  "model_used": "o3",
+  "analysis_type": "comprehensive_behavior"
+}
+
+============================================================

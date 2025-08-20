@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-08-20T11:53:48.065655",
+  "analysis_number": 1,
+  "source": "routine_plan_extraction",
+  "user_id": "35pDPUIfAoRl2Y700bFkxPKYjjf2",
+  "archetype": "Peak Performer",
+  "total_insights": 1,
+  "insights": [
+    {
+      "title": "Routine Plan Focus",
+      "content": "**Comprehensive Peak Performer Daily Routine Plan for TODAY**\n\n**Daily Summary:**\n- **Key Focus Areas:** Synchronize training load with recovery, enhance readiness, and maintain high activity engagement.\n- **Goals:** Elevate readiness metrics, improve sleep efficiency, and sustain mental wellbeing while engaging in consistent physical activity.\n\n**Time Blocks:**\n\n1. **Morning Wake-up (6:00-7:00 AM...",
+      "type": "routine"
+    }
+  ],
+  "metadata": {
+    "generated_by": "HolisticOS Insights System",
+    "log_type": "insights",
+    "version": "1.0"
+  }
+}

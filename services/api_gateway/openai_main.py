@@ -1148,7 +1148,13 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                 analysis_type = "fresh"
                 
                 # Determine trigger type based on analysis decision
-                analysis_trigger = "threshold_exceeded" if decision == AnalysisDecision.FRESH_ANALYSIS else "scheduled"
+                if decision == AnalysisDecision.FRESH_ANALYSIS:
+                    # Add timestamp to make each threshold trigger unique for multiple daily analyses
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%H%M%S")
+                    analysis_trigger = f"threshold_exceeded_{timestamp}"
+                else:
+                    analysis_trigger = "scheduled"
                 
                 # Store the analysis in memory system for future use
                 await memory_service.store_analysis_result(
@@ -1810,8 +1816,59 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
     MVP Shared Behavior Analysis - Extracted from /api/analyze (lines 1257-1386)
     Used by routine/nutrition endpoints to avoid duplicate analysis
     Applies 50-item threshold logic from OnDemandAnalysisService
+    
+    RACE CONDITION FIX: Uses global coordination to prevent duplicate analyses
     """
+    from services.request_deduplication_service import enhanced_deduplicator
+    
     try:
+        # COORDINATION FIX: Check if analysis is in progress or cached
+        should_process, cached_result = await enhanced_deduplicator.coordinate_request(
+            user_id, archetype, "behavior_analysis"
+        )
+        
+        if not should_process and cached_result:
+            print(f"✅ [SHARED_ANALYSIS] Using coordinated cache for {user_id[:8]}... + {archetype}")
+            return cached_result
+        
+        # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
+        if not force_refresh:
+            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            from services.ondemand_analysis_service import get_ondemand_service
+            
+            memory_service = HolisticMemoryService()
+            try:
+                # Get most recent behavior analysis for this archetype
+                recent_analyses = await memory_service.get_analysis_history(
+                    user_id, 
+                    analysis_type="behavior_analysis", 
+                    archetype=archetype, 
+                    limit=1
+                )
+                
+                if recent_analyses:
+                    latest_analysis = recent_analyses[0]
+                    
+                    # Check if threshold exceeded SINCE this analysis was created
+                    ondemand_service = await get_ondemand_service()
+                    new_data_since_analysis = await ondemand_service._count_new_data_points(
+                        user_id, latest_analysis.created_at
+                    )
+                    
+                    # If threshold not exceeded since last analysis, reuse it
+                    if new_data_since_analysis < 50:  # Threshold not met
+                        print(f"✅ [SHARED_ANALYSIS] Threshold not exceeded since last analysis ({new_data_since_analysis} < 50) - reusing for {archetype}")
+                        await memory_service.cleanup()
+                        # Complete coordination with the result
+                        enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", latest_analysis.analysis_result)
+                        return latest_analysis.analysis_result
+                    else:
+                        print(f"🔄 [SHARED_ANALYSIS] Threshold exceeded since last analysis ({new_data_since_analysis} >= 50) - creating fresh for {archetype}")
+                
+                await memory_service.cleanup()
+            except Exception as e:
+                print(f"⚠️ [SHARED_ANALYSIS] Threshold check failed, proceeding with normal flow: {e}")
+        
         # Step 1: Check if fresh analysis needed (50-item threshold logic WITH ARCHETYPE)
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
         ondemand_service = await get_ondemand_service()
@@ -1841,6 +1898,8 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         # print(f"✅ [THRESHOLD_DEBUG] Found cached analysis - using cached behavior analysis")  # Commented to reduce noise
                 print(f"   📝 Cache contains: {len(str(cached_analysis))} characters")
                 logger.debug(f"[SHARED_ANALYSIS] {user_id[:8]}... Using cached analysis")
+                # Complete coordination with cached result
+                enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", cached_analysis)
                 return cached_analysis
             else:
                 print(f"❌ [THRESHOLD_DEBUG] No cached analysis found - falling back to fresh")
@@ -1850,10 +1909,15 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         logger.debug(f"[SHARED_ANALYSIS] {user_id[:8]}... Running fresh analysis")
         fresh_result = await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype, metadata)
         logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Fresh analysis completed")
+        
+        # Complete coordination with fresh result
+        enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", fresh_result)
         return fresh_result
         
     except Exception as e:
         logger.error(f"[SHARED_ANALYSIS] {user_id[:8]}... Error: {e}")
+        # Complete coordination with error
+        enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", {"error": str(e)})
         # No fallback - all analysis must go through OnDemandAnalysisService
         raise Exception(f"Shared behavior analysis failed for user {user_id}: {e}")
 
@@ -2152,8 +2216,18 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             holistic_memory = HolisticMemoryService()
             
             # Store the complete routine result
+            # Determine trigger based on whether threshold was exceeded
+            decision, _ = await ondemand_service.should_trigger_analysis(user_id, archetype)
+            if decision == AnalysisDecision.FRESH_ANALYSIS:
+                # Add timestamp to make each threshold trigger unique for multiple daily analyses
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%H%M%S")
+                analysis_trigger = f"threshold_exceeded_{timestamp}"
+            else:
+                analysis_trigger = "scheduled"
+            
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "routine_plan", routine_result, archetype, "scheduled"
+                user_id, "routine_plan", routine_result, archetype, analysis_trigger
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
             
@@ -2267,8 +2341,18 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             holistic_memory = HolisticMemoryService()
             
             # Store the complete nutrition result
+            # Determine trigger based on whether threshold was exceeded
+            decision, _ = await ondemand_service.should_trigger_analysis(user_id, archetype)
+            if decision == AnalysisDecision.FRESH_ANALYSIS:
+                # Add timestamp to make each threshold trigger unique for multiple daily analyses
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%H%M%S")
+                analysis_trigger = f"threshold_exceeded_{timestamp}"
+            else:
+                analysis_trigger = "scheduled"
+            
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "nutrition_plan", nutrition_result, archetype, "scheduled"
+                user_id, "nutrition_plan", nutrition_result, archetype, analysis_trigger
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete nutrition plan stored with ID: {analysis_id}")  # Commented to reduce noise
             
@@ -2585,8 +2669,18 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             holistic_memory = HolisticMemoryService()
             
             # Store the complete routine result
+            # Determine trigger based on whether threshold was exceeded
+            decision, _ = await ondemand_service.should_trigger_analysis(user_id, archetype)
+            if decision == AnalysisDecision.FRESH_ANALYSIS:
+                # Add timestamp to make each threshold trigger unique for multiple daily analyses
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%H%M%S")
+                analysis_trigger = f"threshold_exceeded_{timestamp}"
+            else:
+                analysis_trigger = "scheduled"
+            
             analysis_id = await holistic_memory.store_analysis_result(
-                user_id, "routine_plan", routine_result, archetype, "scheduled"
+                user_id, "routine_plan", routine_result, archetype, analysis_trigger
             )
         # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
             
