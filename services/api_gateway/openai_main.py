@@ -21,6 +21,7 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Response, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import time
@@ -65,6 +66,23 @@ app = FastAPI(
     title="HolisticOS Enhanced API Gateway", 
     version="2.0.0",
     description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation"
+)
+
+# Configure CORS for dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",  # Bio-coach-hub dashboard
+        "http://localhost:5173",  # Vite dev server
+        "http://localhost:3000",  # React dev server
+        "http://localhost:3001",  # Alternative React port
+        "https://bio-coach-hub.vercel.app",  # Production dashboard
+        "https://admin-hos.onrender.com",  # Production dashboard on Render
+        "*"  # Allow all origins for development (remove in production)
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Configure rate limiting
@@ -112,6 +130,19 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate insights endpoints: {e}")
     import traceback
+
+# Integrate Admin API Endpoints
+try:
+    from .admin_apis import register_admin_routes
+    register_admin_routes(app)
+    print("✅ [INTEGRATION] Admin API endpoints added successfully")
+    print("  - GET /api/admin/users")
+    print("  - GET /api/admin/user/{user_id}/overview")
+    print("  - GET /api/admin/user/{user_id}/analysis-data")
+except ImportError as e:
+    print(f"⚠️  [WARNING] Admin API endpoints not available: ImportError - {e}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate admin API endpoints: {e}")
     print("Full traceback:")
     traceback.print_exc()
 
