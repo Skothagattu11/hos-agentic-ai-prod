@@ -10,6 +10,9 @@ from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+# Import timezone utility
+from shared_libs.utils.timezone_utils import utc_to_est
+
 # Setup logging
 logger = logging.getLogger(__name__)
 
@@ -165,11 +168,11 @@ async def get_admin_users_list(
                 name=name,
                 age=age,
                 total_analyses=total_analyses,
-                last_analysis_date=latest_analysis.get('created_at'),
+                last_analysis_date=utc_to_est(latest_analysis.get('created_at')),
                 latest_archetype=latest_analysis.get('archetype'),
                 has_health_data=total_analyses > 0,
                 overall_score=None,
-                profile_created=profile_row.get('created_at')
+                profile_created=utc_to_est(profile_row.get('created_at'))
             ))
         
         # Get total count for pagination
@@ -268,7 +271,7 @@ async def get_admin_user_overview(user_id: str):
             'nutrition_analyses': nutrition_analyses,
             'routine_analyses': routine_analyses,
             'complete_analyses': complete_analyses,
-            'last_analysis_date': latest_analysis.get('created_at'),
+            'last_analysis_date': utc_to_est(latest_analysis.get('created_at')),
             'latest_archetype': latest_analysis.get('archetype')
         }
         
@@ -276,7 +279,7 @@ async def get_admin_user_overview(user_id: str):
             id=profile['id'],
             name=name,
             age=age,
-            profile_created=profile.get('created_at'),
+            profile_created=utc_to_est(profile.get('created_at')),
             analysis_summary=AnalysisSummary(
                 total_analyses=analysis_summary.get('total_analyses', 0),
                 behavior_analyses=analysis_summary.get('behavior_analyses', 0),
@@ -460,10 +463,10 @@ async def get_admin_user_analysis_data(
             
             analyses.append(AnalysisData(
                 analysis_id=str(row['id']),
-                analysis_date=row['analysis_date'],
+                analysis_date=utc_to_est(row['analysis_date']),
                 analysis_type=row['analysis_type'],
                 archetype=row['archetype'],
-                created_at=row['created_at'],
+                created_at=utc_to_est(row['created_at']),
                 analysis_trigger=row.get('analysis_trigger'),
                 confidence_score=row.get('confidence_score'),
                 completeness_score=row.get('completeness_score'),

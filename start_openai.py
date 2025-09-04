@@ -95,9 +95,9 @@ def main():
         print(f"❌ System Prompts error: {e}")
         return False
     
-    print("✅ Environment ready - Starting server on http://localhost:8001")
-    print("   Docs: http://localhost:8001/docs")
-    print("   Health: http://localhost:8001/api/health")
+    print("✅ Environment ready - Starting server on http://localhost:8002")
+    print("   Docs: http://localhost:8002/docs")
+    print("   Health: http://localhost:8002/api/health")
     print("=" * 50)
     
     # Start the server
@@ -106,7 +106,7 @@ def main():
             sys.executable, "-m", "uvicorn",
             "services.api_gateway.openai_main:app",
             "--host", "0.0.0.0",
-            "--port", "8001",
+            "--port", "8002",
             "--reload",
             "--log-level", "error"
         ]

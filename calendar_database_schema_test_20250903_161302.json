@@ -1,0 +1,37 @@
+{
+  "timestamp": "2025-09-03T16:12:56.867093",
+  "tests_run": 11,
+  "tests_passed": 6,
+  "tests_failed": 5,
+  "errors": [
+    "Insert into 'plan_items': {'message': 'invalid input syntax for type uuid: \"test-analysis-001\"', 'code': '22P02', 'hint': None, 'details': None}",
+    "Insert into 'time_blocks': {'message': 'invalid input syntax for type uuid: \"test-analysis-001\"', 'code': '22P02', 'hint': None, 'details': None}",
+    "Insert into 'calendar_selections': {'message': 'invalid input syntax for type uuid: \"test-calendar-selection-001\"', 'code': '22P02', 'hint': None, 'details': None}",
+    "Insert into 'task_checkins': {'message': 'invalid input syntax for type uuid: \"test-analysis-001\"', 'code': '22P02', 'hint': None, 'details': None}"
+  ],
+  "schema_info": {
+    "Table 'plan_items' exists": {
+      "row_count_sample": 1
+    },
+    "Table 'time_blocks' exists": {
+      "row_count_sample": 1
+    },
+    "Table 'calendar_selections' exists": {
+      "row_count_sample": 1
+    },
+    "Table 'task_checkins' exists": {
+      "row_count_sample": 0
+    },
+    "Complex Query: Plan Items with Time Blocks": {
+      "results_count": 0,
+      "join_successful": false
+    },
+    "Complex Query: Calendar Selections with Plan Items": {
+      "results_count": 0,
+      "nested_join_successful": true
+    },
+    "Foreign Key Constraint Validation": {
+      "constraint": "Foreign key properly rejects invalid plan_item_id"
+    }
+  }
+}

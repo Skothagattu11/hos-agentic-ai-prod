@@ -117,19 +117,41 @@ try:
         # print("🔍 [DEBUG] Insights endpoints imported successfully")  # Commented to reduce noise
     app.include_router(insights_router)
         # print("✅ [INTEGRATION] Insights endpoints added successfully")  # Commented to reduce noise
-    # print("✨ [ENDPOINTS] Insights API endpoints now available:")  # Commented for error-only mode
-    print("  - POST /api/v1/insights/generate")
-    print("  - GET /api/v1/insights/{user_id}")
-    print("  - PATCH /api/v1/insights/{insight_id}/acknowledge")
-    print("  - POST /api/v1/insights/{insight_id}/rate")
-except ImportError as e:
-    print(f"⚠️  [WARNING] Insights endpoints not available: ImportError - {e}")
-    import traceback
-    print("Full traceback:")
-    traceback.print_exc()
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate insights endpoints: {e}")
-    import traceback
+
+# Integrate User Engagement Endpoints - TEMPORARILY DISABLED FOR OPENAPI FIX
+try:
+    from .engagement_endpoints import router as engagement_router
+    app.include_router(engagement_router)
+    print("✅ [INTEGRATION] User engagement endpoints added successfully")
+    print("  - POST /api/v1/engagement/task-checkin")
+    print("  - GET /api/v1/engagement/tasks/{profile_id}")
+    print("  - POST /api/v1/engagement/journal")
+    print("  - POST /api/v1/engagement/extract-plan-items")
+except ImportError as e:
+    print(f"⚠️ [WARNING] User engagement endpoints not available: {e}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate engagement endpoints: {e}")
+
+# Integrate Calendar Selection Endpoints
+try:
+    from .calendar_endpoints import router as calendar_router
+    app.include_router(calendar_router)
+    print("✅ [INTEGRATION] Calendar selection endpoints added successfully")
+    print("  - GET /api/calendar/available-items/{profile_id}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate calendar selection endpoints: {e}")
+
+# Integrate Archetype Management Endpoints
+try:
+    from .archetype_router import router as archetype_router
+    app.include_router(archetype_router, prefix="/api")
+    print("✅ [INTEGRATION] Archetype management endpoints added successfully")
+    print("  - GET /api/user/{user_id}/available-archetypes")
+    print("  - GET /api/user/{user_id}/archetype/{analysis_id}/summary")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate archetype management endpoints: {e}")
 
 # Integrate Admin API Endpoints
 try:
@@ -441,6 +463,25 @@ async def root():
         ]
     }
 
+@app.get("/debug/openapi")
+async def debug_openapi_generation():
+    """Debug endpoint to test OpenAPI schema generation"""
+    try:
+        schema = app.openapi()
+        return {
+            "status": "success",
+            "message": "OpenAPI schema generated successfully",
+            "path_count": len(schema.get("paths", {})),
+            "component_count": len(schema.get("components", {}).get("schemas", {}))
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error", 
+            "message": f"OpenAPI generation failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/api/health")
 async def comprehensive_health_check():
     """Comprehensive health check endpoint with full system monitoring"""
@@ -643,6 +684,146 @@ async def get_latest_routine_plan(user_id: str):
             
     except Exception as e:
         print(f"❌ [ROUTINE_API_ERROR] Failed to get routine for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve routine plan: {str(e)}")
+
+# =====================================================================
+# SIMPLE CONSOLIDATED ENDPOINT
+# =====================================================================
+
+@app.get("/api/user/{user_id}/plans/{date}")
+async def get_user_plans_for_date(user_id: str, date: str):
+    """Simple endpoint: Get routine plan and extract time blocks for calendar"""
+    try:
+        from shared_libs.database.supabase_async_pg_adapter import SupabaseAsyncPGAdapter
+        from services.plan_extraction_service import PlanExtractionService
+        from datetime import datetime
+        
+        # Validate date
+        datetime.strptime(date, '%Y-%m-%d')
+        
+        adapter = SupabaseAsyncPGAdapter()
+        extraction_service = PlanExtractionService()
+        
+        try:
+            # Get routine plan from existing analysis
+            query = """
+                SELECT id, user_id, archetype, routine_plan, extracted_at, analysis_result
+                FROM holistic_analysis_results 
+                WHERE user_id = %s 
+                AND DATE(extracted_at) = %s
+                AND routine_plan IS NOT NULL
+                ORDER BY extracted_at DESC
+                LIMIT 1
+            """
+            
+            analysis_result = await adapter.fetch_one(query, (user_id, date))
+            
+            if not analysis_result:
+                raise HTTPException(status_code=404, detail=f"No routine plan found for user {user_id} on {date}")
+            
+            # Extract time blocks from routine plan
+            plan_content = extraction_service._parse_plan_content(analysis_result)
+            if not plan_content:
+                raise HTTPException(status_code=422, detail="Unable to parse routine plan")
+            
+            extracted_plan = extraction_service.extract_plan_with_time_blocks(plan_content, analysis_result)
+            
+            # Return simple response
+            return {
+                "user_id": user_id,
+                "date": date,
+                "archetype": extracted_plan.archetype,
+                "time_blocks": [
+                    {
+                        "title": block.title,
+                        "time_range": block.time_range,
+                        "why_it_matters": block.why_it_matters,
+                        "connection_to_insights": block.connection_to_insights,
+                        "tasks": [
+                            {
+                                "title": task.title,
+                                "description": task.description,
+                                "scheduled_time": task.scheduled_time.strftime("%H:%M") if task.scheduled_time else None,
+                                "duration_minutes": task.estimated_duration_minutes,
+                                "task_type": task.task_type
+                            }
+                            for task in extracted_plan.tasks if task.time_block_id == block.block_id
+                        ]
+                    }
+                    for block in extracted_plan.time_blocks
+                ]
+            }
+            
+        finally:
+            await adapter.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/user/{user_id}/routine/{date}", response_model=RoutinePlanResponse)
+async def get_routine_plan_by_date(user_id: str, date: str):
+    """
+    LEGACY ENDPOINT: Get routine plan for a specific date (YYYY-MM-DD format)
+    Use /api/user/{user_id}/plans/{date} for new time-block-centric approach
+    """
+    try:
+        from shared_libs.database.supabase_async_pg_adapter import SupabaseAsyncPGAdapter
+        from shared_libs.services.memory_service import MemoryManagementService
+        
+        # Validate date format
+        try:
+            from datetime import datetime
+            parsed_date = datetime.strptime(date, '%Y-%m-%d')
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Date must be in YYYY-MM-DD format")
+        
+        # Initialize services
+        adapter = SupabaseAsyncPGAdapter()
+        memory_service = MemoryManagementService(adapter)
+        
+        try:
+            # Query holistic_analysis_results for routine plans on the specified date
+            query = """
+                SELECT id, user_id, archetype, routine_plan, extracted_at
+                FROM holistic_analysis_results 
+                WHERE user_id = %s 
+                AND DATE(extracted_at) = %s
+                AND routine_plan IS NOT NULL
+                ORDER BY extracted_at DESC
+                LIMIT 1
+            """
+            
+            result = await adapter.fetch_one(query, (user_id, date))
+            
+            if not result:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No routine plan found for user {user_id} on {date}"
+                )
+            
+            return RoutinePlanResponse(
+                status="success",
+                user_id=user_id,
+                routine_plan=result.get("routine_plan", {}),
+                generation_metadata={
+                    "date": date,
+                    "analysis_id": result.get("id"),
+                    "archetype": result.get("archetype"),
+                    "extracted_at": result.get("extracted_at").isoformat() if result.get("extracted_at") else None,
+                    "source": "historical_analysis"
+                },
+                cached=True
+            )
+            
+        finally:
+            await memory_service.cleanup()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [ROUTINE_DATE_API_ERROR] Failed to get routine for {user_id} on {date}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve routine plan: {str(e)}")
 
 @app.post("/api/user/{user_id}/routine/generate", response_model=RoutinePlanResponse)
