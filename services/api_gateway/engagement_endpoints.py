@@ -9,7 +9,7 @@ This module provides FastAPI endpoints for the dual engagement system:
 
 import asyncio
 import logging
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -119,6 +119,7 @@ class PlanExtractionRequest(BaseModel):
     """Request model for extracting plan items"""
     analysis_result_id: str = Field(..., description="Analysis result ID to extract from")
     profile_id: str = Field(..., description="User profile ID")
+    plan_date: Optional[str] = Field(None, description="Date to assign to plan items (YYYY-MM-DD format). If not provided, uses analysis_date from holistic_analysis_results.")
 
 class PlanItemResponse(BaseModel):
     """Response model for plan items"""
@@ -244,19 +245,31 @@ async def get_user_tasks(
     Returns the user's current plan items organized by time blocks with their completion status.
     """
     try:
-        # Use provided date or default to today
-        target_date = date.fromisoformat(date_param) if date_param else date.today()
+        # Use provided date or default to today in UTC
+        if date_param:
+            target_date = date.fromisoformat(date_param)
+        else:
+            # Get today's date in UTC to match database timezone
+            utc_now = datetime.now(timezone.utc)
+            target_date = utc_now.date()
         
         # Get current plan items for user
         plan_data = await plan_service.get_current_plan_items_for_user(
             profile_id, target_date.isoformat()
         )
         
-        # Get completion status for the target date
+        # Get completion status for items that have plan_date matching target_date
+        # JOIN with plan_items to get check-ins for items planned for the target date
         checkin_result = supabase.table("task_checkins")\
-            .select("plan_item_id, completion_status, satisfaction_rating, completed_at")\
+            .select("""
+                plan_item_id, 
+                completion_status, 
+                satisfaction_rating, 
+                completed_at,
+                plan_items!inner(plan_date)
+            """)\
             .eq("profile_id", profile_id)\
-            .eq("planned_date", target_date.isoformat())\
+            .eq("plan_items.plan_date", target_date.isoformat())\
             .execute()
         
         # Create completion lookup
@@ -440,7 +453,8 @@ async def extract_plan_items(
     try:
         extracted_items = await plan_service.extract_and_store_plan_items(
             request.analysis_result_id,
-            request.profile_id
+            request.profile_id,
+            request.plan_date
         )
         
         return {
@@ -478,6 +492,114 @@ async def get_current_plans(
     except Exception as e:
         logger.error(f"Error fetching current plans: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch current plans: {str(e)}")
+
+# =====================================================
+# Batch Check-in Endpoints (MVP)
+# =====================================================
+
+class BatchCheckinItem(BaseModel):
+    """Individual item in a batch check-in request"""
+    plan_item_id: str = Field(..., description="Plan item UUID")
+    completion_status: str = Field(default="completed", description="Task completion status")
+
+class BatchCheckinRequest(BaseModel):
+    """Request model for batch task check-in"""
+    profile_id: str = Field(..., description="User profile ID")
+    planned_date: date = Field(..., description="Date the tasks were planned for")
+    checkins: List[BatchCheckinItem] = Field(..., description="List of tasks to check in")
+
+class BatchUndoRequest(BaseModel):
+    """Request model for batch check-in undo"""
+    profile_id: str = Field(..., description="User profile ID")
+    planned_date: date = Field(..., description="Date of the check-ins to undo")
+    plan_item_ids: List[str] = Field(..., description="List of plan item IDs to undo")
+
+@router.post("/batch-checkin")
+async def submit_batch_checkin(
+    request: BatchCheckinRequest,
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    Submit multiple task check-ins at once (MVP - simple completed status only)
+    """
+    try:
+        checkin_data = []
+        
+        for checkin_item in request.checkins:
+            # Get analysis_result_id and plan_date from plan_items table
+            plan_item_result = supabase.table("plan_items")\
+                .select("analysis_result_id, plan_date")\
+                .eq("id", checkin_item.plan_item_id)\
+                .execute()
+            
+            if not plan_item_result.data:
+                logger.warning(f"Plan item not found: {checkin_item.plan_item_id}")
+                continue
+            
+            analysis_result_id = plan_item_result.data[0]["analysis_result_id"]
+            plan_date = plan_item_result.data[0]["plan_date"]
+            
+            checkin_data.append({
+                'profile_id': request.profile_id,
+                'plan_item_id': checkin_item.plan_item_id,
+                'analysis_result_id': analysis_result_id,
+                'completion_status': 'completed',  # MVP: only completed status
+                'planned_date': plan_date,  # Use plan_date from plan_items, not request.planned_date
+                'completed_at': datetime.now().isoformat(),
+                'actual_completion_time': datetime.now().isoformat()
+            })
+        
+        if not checkin_data:
+            return {"success": False, "message": "No valid plan items found", "items_processed": 0}
+        
+        # Batch upsert to handle updates to existing check-ins
+        result = supabase.table("task_checkins")\
+            .upsert(checkin_data, on_conflict="profile_id,plan_item_id,planned_date")\
+            .execute()
+        
+        items_processed = len(result.data) if result.data else 0
+        
+        logger.info(f"Batch check-in recorded for profile {request.profile_id}: {items_processed} tasks")
+        return {
+            "success": True,
+            "message": f"Successfully checked in {items_processed} tasks",
+            "items_processed": items_processed
+        }
+            
+    except Exception as e:
+        logger.error(f"Error recording batch check-in: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to record batch check-in: {str(e)}")
+
+@router.delete("/batch-checkin")
+async def undo_batch_checkin(
+    request: BatchUndoRequest,
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    Undo multiple task check-ins at once (MVP - simple delete)
+    """
+    try:
+        # Delete check-ins for the specified plan items
+        # Note: We don't filter by planned_date because check-ins should be associated 
+        # with plan_date from plan_items, regardless of when the check-in was submitted
+        result = supabase.table("task_checkins")\
+            .delete()\
+            .eq("profile_id", request.profile_id)\
+            .in_("plan_item_id", request.plan_item_ids)\
+            .execute()
+        
+        items_removed = len(result.data) if result.data else 0
+        
+        logger.info(f"Batch check-in undo for profile {request.profile_id}: {items_removed} tasks")
+        return {
+            "success": True,
+            "message": f"Successfully undid {items_removed} check-ins",
+            "items_removed": items_removed
+        }
+            
+    except Exception as e:
+        logger.error(f"Error undoing batch check-in: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to undo batch check-in: {str(e)}")
 
 # =====================================================
 # Analytics Endpoints (Basic)

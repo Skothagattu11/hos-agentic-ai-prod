@@ -46,6 +46,19 @@ class HolisticMemoryService:
     def __init__(self):
         self.db_adapter = None
         
+    async def _test_connection(self) -> bool:
+        """Test database connection for health checks (lightweight)"""
+        try:
+            if not self.db_adapter:
+                self.db_adapter = SupabaseAsyncPGAdapter()
+            
+            # Quick connection test with short timeout
+            await self.db_adapter._execute_query("SELECT 1 as health_check", timeout=2)
+            return True
+        except Exception as e:
+            logger.warning(f"Database connection test failed: {e}")
+            return False
+    
     async def _ensure_db_connection(self) -> SupabaseAsyncPGAdapter:
         """Reuse existing connection pattern - but check if actually connected"""
         # Check if adapter exists AND is connected

@@ -306,10 +306,38 @@ class DatabasePool:
                 result = await conn.fetchval("SELECT 1")
                 if result != 1:
                     raise DatabaseException("Health check failed - unexpected result")
-            logger.debug("Database pool health check passed")
+            logger.debug("✅ Database pool health check passed")
         except Exception as e:
-            logger.error(f"Database pool health check failed: {e}")
+            logger.error(f"❌ Database pool health check failed: {e}")
             raise DatabaseException(f"Database pool health check failed: {e}")
+    
+    async def monitor_connection_health(self) -> Dict[str, Any]:
+        """Enhanced health monitoring for production"""
+        try:
+            start_time = datetime.now()
+            
+            # Test connection acquisition speed
+            async with self.get_connection() as conn:
+                # Test basic query performance
+                result = await conn.fetchval("SELECT 1")
+                query_time = (datetime.now() - start_time).total_seconds() * 1000
+                
+                return {
+                    "status": "healthy",
+                    "connection_test": "passed",
+                    "query_response_time_ms": round(query_time, 2),
+                    "pool_size": self._pool.get_size() if self._pool else 0,
+                    "idle_connections": self._pool.get_idle_size() if self._pool else 0,
+                    "timestamp": datetime.now().isoformat()
+                }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "connection_test": "failed",
+                "error": str(e),
+                "pool_size": self._pool.get_size() if self._pool else 0,
+                "timestamp": datetime.now().isoformat()
+            }
 
 # Global pool instance - singleton pattern
 db_pool = DatabasePool()

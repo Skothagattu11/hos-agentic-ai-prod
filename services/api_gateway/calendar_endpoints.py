@@ -55,11 +55,15 @@ async def get_time_blocks_for_archetype(
         if time_blocks:
             time_block_ids = [tb['id'] for tb in time_blocks]
             
-            # Get calendar selections first (SAFE - no joins)
+            # Get calendar selections filtered by archetype (SAFE - no joins)
             calendar_query = supabase.table("calendar_selections")\
-                .select("id, plan_item_id, selection_timestamp, calendar_notes")\
+                .select("id, plan_item_id, selection_timestamp, calendar_notes, analysis_result_id")\
                 .eq("profile_id", profile_id)\
                 .eq("selected_for_calendar", True)
+            
+            # Filter by archetype if specified
+            if archetype_filter:
+                calendar_query = calendar_query.eq("analysis_result_id", archetype_filter)
             
             calendar_result = calendar_query.execute()
             
@@ -87,48 +91,25 @@ async def get_time_blocks_for_archetype(
                 plan_items_result = plan_items_query.execute()
                 plan_items_lookup = {item['id']: item for item in (plan_items_result.data or [])}
                 
-                # Combine calendar selections with plan items
-                time_block_ids_set = set(time_block_ids) if time_block_ids else set()
-                
+                # Combine calendar selections with plan items (SIMPLIFIED)
+                # Calendar selections are already filtered by archetype, so just combine
                 for selection in calendar_result.data:
                     plan_item = plan_items_lookup.get(selection['plan_item_id'])
                     if plan_item:
-                        # If archetype filter is specified, only include items from that archetype
-                        if archetype_filter:
-                            matches_archetype = plan_item.get('analysis_result_id') == archetype_filter
-                            if matches_archetype:
-                                calendar_items.append({
-                                "selection_id": selection['id'],
-                                "plan_item_id": selection['plan_item_id'],
-                                "time_block_id": plan_item['time_block_id'],
-                                "title": plan_item['title'],
-                                "description": plan_item.get('description'),
-                                "scheduled_time": plan_item.get('scheduled_time'),
-                                "scheduled_end_time": plan_item.get('scheduled_end_time'),
-                                "estimated_duration_minutes": plan_item.get('estimated_duration_minutes'),
-                                "task_type": plan_item.get('task_type'),
-                                "priority_level": plan_item.get('priority_level'),
-                                "selected_at": selection.get('selection_timestamp'),
-                                "calendar_notes": selection.get('calendar_notes')
-                            })
-                        else:
-                            # No archetype filter - include items that belong to current time blocks
-                            belongs_to_timeblock = plan_item.get('time_block_id') in time_block_ids_set
-                            if belongs_to_timeblock:
-                                calendar_items.append({
-                                    "selection_id": selection['id'],
-                                    "plan_item_id": selection['plan_item_id'],
-                                    "time_block_id": plan_item['time_block_id'],
-                                    "title": plan_item['title'],
-                                    "description": plan_item.get('description'),
-                                    "scheduled_time": plan_item.get('scheduled_time'),
-                                    "scheduled_end_time": plan_item.get('scheduled_end_time'),
-                                    "estimated_duration_minutes": plan_item.get('estimated_duration_minutes'),
-                                    "task_type": plan_item.get('task_type'),
-                                    "priority_level": plan_item.get('priority_level'),
-                                    "selected_at": selection.get('selection_timestamp'),
-                                    "calendar_notes": selection.get('calendar_notes')
-                                })
+                        calendar_items.append({
+                            "selection_id": selection['id'],
+                            "plan_item_id": selection['plan_item_id'],
+                            "time_block_id": plan_item['time_block_id'],
+                            "title": plan_item['title'],
+                            "description": plan_item.get('description'),
+                            "scheduled_time": plan_item.get('scheduled_time'),
+                            "scheduled_end_time": plan_item.get('scheduled_end_time'),
+                            "estimated_duration_minutes": plan_item.get('estimated_duration_minutes'),
+                            "task_type": plan_item.get('task_type'),
+                            "priority_level": plan_item.get('priority_level'),
+                            "selected_at": selection.get('selection_timestamp'),
+                            "calendar_notes": selection.get('calendar_notes')
+                        })
         
         return {
             "success": True,
@@ -279,26 +260,9 @@ async def get_calendar_selections(
         
         supabase = create_client(supabase_url, supabase_key)
         
+        # SIMPLIFIED: Get calendar selections without JOINs to avoid 500 errors
         query = supabase.table("calendar_selections")\
-            .select("""
-                *,
-                plan_items!inner (
-                    id,
-                    title,
-                    description,
-                    time_block_id,
-                    scheduled_time,
-                    scheduled_end_time,
-                    estimated_duration_minutes,
-                    task_type,
-                    priority_level,
-                    time_blocks!fk_plan_items_time_block_id (
-                        id,
-                        block_title,
-                        time_range
-                    )
-                )
-            """)\
+            .select("id, plan_item_id, selection_timestamp, calendar_notes")\
             .eq("profile_id", profile_id)\
             .eq("selected_for_calendar", True)
         
@@ -478,6 +442,7 @@ async def select_plan_items_for_calendar(request: CalendarSelectionRequest):
                 "id": str(uuid.uuid4()),
                 "profile_id": request.profile_id,
                 "plan_item_id": plan_item_id,
+                "analysis_result_id": plan_item['analysis_result_id'],  # Add archetype association
                 "selected_for_calendar": True,
                 "selection_timestamp": datetime.now().isoformat(),
                 "calendar_notes": request.selection_notes or f"Added from routine plan: {plan_item['title']}"

@@ -4,7 +4,10 @@ Handles different settings for development vs production environments
 """
 
 import os
-from typing import Dict, Any, Optional
+import logging
+import re
+from typing import Dict, Any, Optional, List
+from ..exceptions.holisticos_exceptions import ConfigurationException
 
 class EnvironmentConfig:
     """

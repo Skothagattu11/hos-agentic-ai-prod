@@ -84,13 +84,14 @@ class PlanExtractionService:
         
         self.supabase = create_client(supabase_url, supabase_key)
         
-    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str) -> List[Dict[str, Any]]:
+    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str, override_plan_date: str = None) -> List[Dict[str, Any]]:
         """
         Extract trackable tasks and time blocks from a plan and store them in normalized structure
         
         Args:
             analysis_result_id: ID from holistic_analysis_results table
             profile_id: User's profile ID
+            override_plan_date: Optional date to override the plan_date (YYYY-MM-DD format). If not provided, uses analysis_date from holistic_analysis_results.
             
         Returns:
             List of extracted and stored plan items with time block relationships
@@ -154,7 +155,8 @@ class PlanExtractionService:
                 analysis_result_id, 
                 profile_id, 
                 extracted_plan.tasks,
-                time_block_id_map
+                time_block_id_map,
+                override_plan_date
             )
             
             logger.info(f"Successfully stored {len(stored_time_blocks)} time blocks and {len(stored_items)} plan items for profile {profile_id}")
@@ -522,12 +524,27 @@ class PlanExtractionService:
         else:
             return 'general'
     
-    async def _store_plan_items(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask]) -> List[Dict[str, Any]]:
+    async def _store_plan_items(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], override_plan_date: str = None) -> List[Dict[str, Any]]:
         """Store extracted tasks in plan_items table"""
         if not tasks:
             return []
         
         try:
+            # Use override_plan_date if provided, otherwise get from holistic_analysis_results
+            if override_plan_date:
+                plan_date = override_plan_date
+            else:
+                # Get the analysis_date from holistic_analysis_results
+                analysis_result = self.supabase.table("holistic_analysis_results")\
+                    .select("analysis_date")\
+                    .eq("id", analysis_result_id)\
+                    .execute()
+                
+                if not analysis_result.data:
+                    raise HolisticOSException(f"Analysis result not found: {analysis_result_id}")
+                
+                plan_date = analysis_result.data[0]["analysis_date"]
+            
             # Prepare data for insertion
             insert_data = []
             for task in tasks:
@@ -545,7 +562,8 @@ class PlanExtractionService:
                     'time_block_order': task.task_order_in_block,  # Use task order as block order for now
                     'task_order_in_block': task.task_order_in_block,
                     'is_trackable': True,
-                    'priority_level': task.priority_level
+                    'priority_level': task.priority_level,
+                    'plan_date': plan_date  # Add the plan date from analysis
                 }
                 insert_data.append(item_data)
             
@@ -580,53 +598,62 @@ class PlanExtractionService:
             return []
 
     async def get_current_plan_items_for_user(self, profile_id: str, date_str: str = None) -> Dict[str, Any]:
-        """Get current active plan items for a user"""
+        """Get plan items for a user filtered by plan_date"""
         try:
             from datetime import date
             target_date = date.fromisoformat(date_str) if date_str else date.today()
+            target_date_str = target_date.isoformat()
             
-            # Get latest analysis results for user (routine and nutrition)
-            analysis_results = self.supabase.table("holistic_analysis_results")\
-                .select("id, analysis_type, archetype, created_at, analysis_result")\
-                .eq("user_id", profile_id)\
-                .in_("analysis_type", ["routine_plan", "nutrition_plan"])\
-                .order("created_at", desc=True)\
-                .limit(2)\
+            # Get plan items for the specific plan_date, joining with analysis results
+            plan_items_result = self.supabase.table("plan_items")\
+                .select("""
+                    *, 
+                    holistic_analysis_results!inner(
+                        id, analysis_type, archetype, created_at, user_id
+                    )
+                """)\
+                .eq("plan_date", target_date_str)\
+                .eq("holistic_analysis_results.user_id", profile_id)\
+                .eq("is_trackable", True)\
+                .in_("holistic_analysis_results.analysis_type", ["routine_plan", "nutrition_plan"])\
+                .order("time_block_order")\
+                .order("task_order_in_block")\
                 .execute()
             
-            if not analysis_results.data:
+            if not plan_items_result.data:
                 return {"routine_plan": None, "nutrition_plan": None, "items": []}
             
-            # Get plan items for each analysis result
+            # Organize items by plan type and prepare response
             all_items = []
             plan_info = {"routine_plan": None, "nutrition_plan": None}
             
-            for analysis in analysis_results.data:
+            for item in plan_items_result.data:
+                analysis = item["holistic_analysis_results"]
                 analysis_id = analysis["id"]
                 plan_type = analysis["analysis_type"]
                 
-                # Store plan info
-                plan_info[plan_type] = {
-                    "analysis_id": analysis_id,
-                    "archetype": analysis.get("archetype"),
-                    "created_at": analysis["created_at"]
-                }
+                # Store plan info if not already set
+                if not plan_info[plan_type]:
+                    plan_info[plan_type] = {
+                        "analysis_id": analysis_id,
+                        "archetype": analysis.get("archetype"),
+                        "created_at": analysis["created_at"]
+                    }
                 
-                # Get plan items
-                items = await self.get_plan_items_for_analysis(analysis_id)
+                # Add plan context to item
+                item["plan_type"] = plan_type
+                item["analysis_info"] = plan_info[plan_type]
                 
-                # Add plan context to each item
-                for item in items:
-                    item["plan_type"] = plan_type
-                    item["analysis_info"] = plan_info[plan_type]
+                # Remove the nested analysis data from the item itself
+                del item["holistic_analysis_results"]
                 
-                all_items.extend(items)
+                all_items.append(item)
             
             return {
                 "routine_plan": plan_info["routine_plan"],
                 "nutrition_plan": plan_info["nutrition_plan"],
                 "items": all_items,
-                "date": target_date.isoformat()
+                "date": target_date_str
             }
             
         except Exception as e:
@@ -948,12 +975,27 @@ class PlanExtractionService:
             logger.error(f"Error storing time blocks: {str(e)}")
             raise HolisticOSException(f"Failed to store time blocks: {str(e)}")
     
-    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str]) -> List[Dict[str, Any]]:
+    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None) -> List[Dict[str, Any]]:
         """Store plan items with time block relationships"""
         if not tasks:
             return []
         
         try:
+            # Use override_plan_date if provided, otherwise get from holistic_analysis_results
+            if override_plan_date:
+                plan_date = override_plan_date
+            else:
+                # Get the analysis_date from holistic_analysis_results for plan_date
+                analysis_result = self.supabase.table("holistic_analysis_results")\
+                    .select("analysis_date")\
+                    .eq("id", analysis_result_id)\
+                    .execute()
+                
+                if not analysis_result.data:
+                    raise HolisticOSException(f"Analysis result {analysis_result_id} not found")
+                
+                plan_date = analysis_result.data[0]["analysis_date"]
+            
             # Prepare data for insertion
             insert_data = []
             for task in tasks:
@@ -1015,7 +1057,8 @@ class PlanExtractionService:
                     'time_block_order': task.task_order_in_block,  # Use task order as block order for now
                     'task_order_in_block': task.task_order_in_block,
                     'is_trackable': True,
-                    'priority_level': task.priority_level
+                    'priority_level': task.priority_level,
+                    'plan_date': plan_date  # Add the plan date from analysis
                 }
                 insert_data.append(item_data)
             

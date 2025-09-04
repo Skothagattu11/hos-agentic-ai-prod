@@ -64,36 +64,36 @@ class HolisticRateLimiter:
         # In-memory rate limiting for development (when Redis not available)
         self._in_memory_limits = {}  # {user_id:endpoint_type: {"count": int, "reset_time": float}}
         
-        # Rate limit configurations per tier
+        # Production-ready rate limit configurations per tier
         self.tier_limits = {
             RateLimitTier.FREE: {
-                "behavior_analysis": "5/hour",    # 5 behavior analyses per hour
-                "routine_generation": "10/hour",  # 10 routine plans per hour
-                "nutrition_generation": "10/hour", # 10 nutrition plans per hour
-                "insights_generation": "20/hour", # 20 insights requests per hour
-                "general_api": "50/hour"          # 50 general API calls per hour
+                "behavior_analysis": "3/hour",    # Reduced for production cost control
+                "routine_generation": "8/hour",   # Reasonable limit for free tier
+                "nutrition_generation": "8/hour", # Reasonable limit for free tier
+                "insights_generation": "15/hour", # Basic insights access
+                "general_api": "30/hour"          # Conservative API access
             },
             RateLimitTier.PREMIUM: {
-                "behavior_analysis": "20/hour",
-                "routine_generation": "40/hour",
-                "nutrition_generation": "40/hour",
-                "insights_generation": "100/hour",
-                "general_api": "200/hour"
+                "behavior_analysis": "15/hour",   # Good for premium users
+                "routine_generation": "30/hour",  # Professional usage
+                "nutrition_generation": "30/hour", # Professional usage
+                "insights_generation": "75/hour", # Enhanced insights
+                "general_api": "150/hour"         # Good API access
             },
             RateLimitTier.ADMIN: {
-                "behavior_analysis": "1000/hour", # Practically unlimited for admin
-                "routine_generation": "1000/hour",
-                "nutrition_generation": "1000/hour",
-                "insights_generation": "1000/hour",
-                "general_api": "1000/hour"
+                "behavior_analysis": "500/hour",  # High but not unlimited
+                "routine_generation": "500/hour", # High but not unlimited
+                "nutrition_generation": "500/hour", # High but not unlimited
+                "insights_generation": "500/hour", # High but not unlimited
+                "general_api": "500/hour"         # High but not unlimited
             }
         }
         
-        # Cost limits per tier (in USD)
+        # Production cost limits per tier (in USD) - conservative for cost control
         self.cost_limits = {
-            RateLimitTier.FREE: {"daily": 1.0, "monthly": 10.0},      # $1/day, $10/month
-            RateLimitTier.PREMIUM: {"daily": 10.0, "monthly": 100.0}, # $10/day, $100/month
-            RateLimitTier.ADMIN: {"daily": 1000.0, "monthly": 10000.0} # No real limits
+            RateLimitTier.FREE: {"daily": 0.50, "monthly": 5.0},     # $0.50/day, $5/month
+            RateLimitTier.PREMIUM: {"daily": 5.0, "monthly": 50.0},  # $5/day, $50/month  
+            RateLimitTier.ADMIN: {"daily": 25.0, "monthly": 250.0}   # $25/day, $250/month - controlled admin limits
         }
         
         # Cost estimates per endpoint (in USD)

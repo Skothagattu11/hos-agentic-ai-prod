@@ -62,28 +62,74 @@ except ImportError as e:
     print(f"⚠️ [WARNING] Rate limiting system not available: {e}")
     RATE_LIMITING_AVAILABLE = False
 
+# Import error handling
+try:
+    from shared_libs.exceptions.holisticos_exceptions import (
+        HolisticOSException, ValidationException, AuthenticationException,
+        RetryableException, PermanentException
+    )
+    ERROR_HANDLING_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ [WARNING] Enhanced error handling not available: {e}")
+    ERROR_HANDLING_AVAILABLE = False
+
 app = FastAPI(
     title="HolisticOS Enhanced API Gateway", 
     version="2.0.0",
     description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation"
 )
 
-# Configure CORS for dashboard access
+# Production error handling middleware
+async def production_error_handler(request: Request, call_next):
+    """Production error handling middleware that prevents sensitive data exposure"""
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        # Log the full error for debugging (server-side only)
+        logger.error(f"Unhandled exception in {request.url.path}: {str(e)}", exc_info=True)
+        
+        # Return sanitized error response (no sensitive data)
+        if ERROR_HANDLING_AVAILABLE and isinstance(e, HolisticOSException):
+            # Use custom exception handling
+            error_response = e.to_dict()
+            # Remove any sensitive details for client
+            if "database" in str(e).lower() or "connection" in str(e).lower():
+                error_response["message"] = "Service temporarily unavailable"
+            status_code = 429 if isinstance(e, RateLimitExceeded) else 500
+        else:
+            # Generic error response for unknown exceptions
+            error_response = {
+                "error": "InternalServerError",
+                "message": "An unexpected error occurred. Please try again later.",
+                "error_code": "internal_error"
+            }
+            status_code = 500
+        
+        return Response(
+            content=json.dumps(error_response),
+            status_code=status_code,
+            headers={"Content-Type": "application/json"}
+        )
+
+# Configure CORS with secure settings
+from shared_libs.config.security_settings import get_cors_config
+from shared_libs.middleware.input_validator import validate_request_middleware, RequestSizeLimit
+
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",  # Bio-coach-hub dashboard
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",  # React dev server
-        "http://localhost:3001",  # Alternative React port
-        "https://bio-coach-hub.vercel.app",  # Production dashboard
-        "https://admin-hos.onrender.com",  # Production dashboard on Render
-        "*"  # Allow all origins for development (remove in production)
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    **cors_config
 )
+
+# Add production error handling middleware (first in chain)
+app.middleware("http")(production_error_handler)
+
+# Add input validation middleware (lightweight, non-breaking)  
+app.middleware("http")(validate_request_middleware)
+
+# Add request size limit middleware
+app.add_middleware(RequestSizeLimit, max_size=2 * 1024 * 1024)  # 2MB limit
 
 # Configure rate limiting
 if RATE_LIMITING_AVAILABLE:
@@ -482,11 +528,70 @@ async def debug_openapi_generation():
             "traceback": traceback.format_exc()
         }
 
+# Production health check with enhanced security
+async def simple_health_check():
+    """Simple health check when full monitoring is not available"""
+    try:
+        uptime = time.time() - app.state.start_time if hasattr(app.state, 'start_time') else 0
+        
+        # Basic production health check
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "uptime_seconds": round(uptime, 2),
+            "version": "2.0.0",
+            "environment": os.getenv("ENVIRONMENT", "production"),
+            "monitoring": "basic",
+            "services": {
+                "api_gateway": "operational",
+                "rate_limiting": "enabled" if RATE_LIMITING_AVAILABLE else "disabled",
+                "monitoring": "enabled" if MONITORING_AVAILABLE else "basic"
+            }
+        }
+        
+        # Quick connectivity tests (non-blocking)
+        try:
+            # Test database connectivity if available
+            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            memory_service = HolisticMemoryService()
+            # Quick ping test (with short timeout)
+            db_healthy = await asyncio.wait_for(memory_service._test_connection(), timeout=2.0)
+            health_status["services"]["database"] = "operational" if db_healthy else "degraded"
+        except asyncio.TimeoutError:
+            health_status["services"]["database"] = "timeout"
+        except Exception:
+            health_status["services"]["database"] = "degraded"
+        
+        return health_status
+        
+    except Exception as e:
+        # Never expose internal errors in health checks
+        return {
+            "status": "degraded",
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": {
+                "api_gateway": "operational",
+                "health_check": "limited"
+            }
+        }
+
 @app.get("/api/health")
 async def comprehensive_health_check():
     """Comprehensive health check endpoint with full system monitoring"""
     if MONITORING_AVAILABLE:
-        return await health_checker.run_comprehensive_health_check()
+        try:
+            health_result = await health_checker.run_comprehensive_health_check()
+            # Sanitize health check results for production
+            if "details" in health_result:
+                # Remove sensitive database connection details
+                for service in health_result.get("services", {}).values():
+                    if isinstance(service, dict) and "connection_string" in str(service):
+                        service["details"] = "[connection details hidden]"
+            return health_result
+        except Exception as e:
+            # Fallback to simple health check if comprehensive fails
+            logger.error(f"Comprehensive health check failed: {e}")
+            return await simple_health_check()
     else:
         # Fallback to simple health check if monitoring not available
         return await simple_health_check()
@@ -948,7 +1053,7 @@ async def get_latest_nutrition_plan(user_id: str):
     Fast endpoint - uses cached analysis results
     """
     try:
-        print(f"🥗 [NUTRITION_API] Getting latest nutrition for user {user_id[:8]}...")
+        # print(f"🥗 [NUTRITION_API] Getting latest nutrition for user {user_id[:8]}...")  # Commented to reduce noise
         
         # Get latest behavior analysis from memory
         from services.agents.memory.holistic_memory_service import HolisticMemoryService

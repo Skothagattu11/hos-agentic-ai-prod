@@ -1,0 +1,98 @@
+# Environment Variables - NEVER COMMIT THESE
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# Database
+*.db
+*.sqlite3
+db.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+myenv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+log/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Security
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.cache
+test_*.py
+*_test.py
+simple_api_test.py
+
+# Development artifacts
+*debug*
+*temp*
+calendar_database_schema_test_*.json
+logs_text.txt
+
+# Production
+.env.production
+production.env
