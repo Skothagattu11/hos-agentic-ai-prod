@@ -253,10 +253,14 @@ async def get_user_tasks(
             utc_now = datetime.now(timezone.utc)
             target_date = utc_now.date()
         
+        print(f"DEBUG: /tasks endpoint - profile_id: {profile_id}, date_param: {date_param}, target_date: {target_date}")
+        
         # Get current plan items for user
         plan_data = await plan_service.get_current_plan_items_for_user(
             profile_id, target_date.isoformat()
         )
+        
+        print(f"DEBUG: plan_data items count: {len(plan_data.get('items', []))}")
         
         # Get completion status for items that have plan_date matching target_date
         # JOIN with plan_items to get check-ins for items planned for the target date

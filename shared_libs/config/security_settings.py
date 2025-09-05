@@ -21,7 +21,8 @@ class SecuritySettings:
             "https://bio-coach-hub.vercel.app",
             "https://admin-hos.onrender.com",
             "https://holisticos.tech",
-            "https://www.holisticos.tech"
+            "https://www.holisticos.tech",
+            "http://localhost:8080"  # Allow local development access to production
         ]
         
         # Development origins - local development servers
@@ -29,7 +30,8 @@ class SecuritySettings:
             "http://localhost:3000",
             "http://localhost:3001", 
             "http://localhost:5173",
-            "http://localhost:8080"
+            "http://localhost:8080",
+            "http://localhost:8002"
         ]
         
         if environment == "production":
