@@ -606,6 +606,46 @@ async def undo_batch_checkin(
         raise HTTPException(status_code=500, detail=f"Failed to undo batch check-in: {str(e)}")
 
 # =====================================================
+# Simple Check-in Status Endpoints (MVP)
+# =====================================================
+
+@router.get("/checkins/status/{profile_id}")
+async def get_checkin_status(
+    profile_id: str,
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    Get simple check-in status for all tasks by profile_id
+    
+    Returns a list of all completed plan_item_ids for the user.
+    Frontend can use this for simple O(1) lookup to mark items as checked.
+    """
+    try:
+        # Simple query: get all completed tasks for this profile
+        result = supabase.table("task_checkins")\
+            .select("plan_item_id, completion_status")\
+            .eq("profile_id", profile_id)\
+            .eq("completion_status", "completed")\
+            .execute()
+        
+        # Extract just the plan_item_ids for simple frontend lookup
+        completed_plan_item_ids = [
+            item["plan_item_id"] for item in (result.data or [])
+        ]
+        
+        logger.info(f"Check-in status retrieved for profile {profile_id}: {len(completed_plan_item_ids)} completed items")
+        
+        return {
+            "profile_id": profile_id,
+            "completed_plan_item_ids": completed_plan_item_ids,
+            "total_completed": len(completed_plan_item_ids)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching check-in status for profile {profile_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch check-in status: {str(e)}")
+
+# =====================================================
 # Analytics Endpoints (Basic)
 # =====================================================
 

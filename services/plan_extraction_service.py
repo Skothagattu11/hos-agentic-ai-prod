@@ -685,16 +685,62 @@ class PlanExtractionService:
             health_data_match = re.search(health_data_pattern, content, re.DOTALL | re.IGNORECASE)
             health_data_integration = health_data_match.group(1).strip() if health_data_match else None
             
-            # Find all time blocks with enhanced parsing
-            time_block_pattern = r'(\d+)\.\s+\*\*([^*]+?)\*\*\s*\n(.*?)(?=\n\d+\.\s+\*\*|\n\*\*Health Data Integration|\Z)'
-            time_block_matches = re.finditer(time_block_pattern, content, re.DOTALL)
+            # Find all time blocks with enhanced parsing - try multiple patterns
+            time_block_patterns = [
+                # Format: **1. Block Title (Time): Description**
+                r'\*\*(\d+)\.\s+([^*]+?)\*\*\s*\n(.*?)(?=\n\*\*\d+\.|\n\*\*Health Data Integration|\Z)',
+                # Format: 1. **Block Title**
+                r'(\d+)\.\s+\*\*([^*]+?)\*\*\s*\n(.*?)(?=\n\d+\.\s+\*\*|\n\*\*Health Data Integration|\Z)',
+                # Format: **Block Title (Time):**
+                r'\*\*([^*]+?)\s*\(([^)]+)\)\s*:[^*]*?\*\*\s*\n(.*?)(?=\n\*\*[^*]+?\s*\([^)]+\)\s*:|\n\*\*Health Data Integration|\Z)',
+            ]
+            
+            time_block_matches = []
+            successful_pattern = None
+            
+            # Try each pattern until we find matches
+            for i, pattern in enumerate(time_block_patterns):
+                logger.debug(f"Trying time block pattern {i+1}: {pattern[:50]}...")
+                matches = list(re.finditer(pattern, content, re.DOTALL))
+                if matches:
+                    time_block_matches = matches
+                    successful_pattern = pattern
+                    logger.info(f"✅ Found {len(matches)} time blocks using pattern {i+1}")
+                    break
+                else:
+                    logger.debug(f"❌ Pattern {i+1} found 0 matches")
+            
+            if not time_block_matches:
+                logger.warning("❌ No time blocks found with structured patterns - trying emergency fallback")
+                # BULLETPROOF FALLBACK: Extract anything that looks like a time block
+                return self._emergency_extraction_fallback(content, analysis_result, user_id, date, archetype)
             
             for block_match in time_block_matches:
-                block_number = block_match.group(1)
-                block_title = block_match.group(2).strip()
-                block_content = block_match.group(3).strip()
+                # Handle different patterns - some patterns may have different group structures
+                num_groups = len(block_match.groups())
+                
+                if num_groups >= 3:
+                    # Standard pattern with 3 groups
+                    block_number = block_match.group(1)
+                    block_title = block_match.group(2).strip()
+                    block_content = block_match.group(3).strip()
+                elif num_groups == 2:
+                    # Pattern with 2 groups (no explicit number)
+                    block_title = block_match.group(1).strip()
+                    block_content = block_match.group(2).strip()
+                    # Extract block number from title if present
+                    number_match = re.match(r'(\d+)\.\s*(.+)', block_title)
+                    if number_match:
+                        block_number = number_match.group(1)
+                        block_title = number_match.group(2).strip()
+                    else:
+                        block_number = str(len(time_blocks) + 1)  # Auto-increment
+                else:
+                    logger.warning(f"Unexpected pattern structure with {num_groups} groups")
+                    continue
                 
                 logger.info(f"Processing time block {block_number}: {block_title}")
+                logger.debug(f"Block content length: {len(block_content)} characters")
                 
                 # Extract time range and purpose from block title
                 purpose = None
@@ -740,22 +786,84 @@ class PlanExtractionService:
                 )
                 time_blocks.append(time_block)
                 
-                # Extract tasks from this time block
-                tasks_section_pattern = r'-\s*\*\*Tasks:\*\*\s*(.*?)(?=-\s*\*\*(?:Why It Matters|Connection to Insights)|\Z)'
-                tasks_section_match = re.search(tasks_section_pattern, block_content, re.DOTALL | re.IGNORECASE)
+                # Extract tasks from this time block with enhanced pattern matching
+                tasks_section_patterns = [
+                    # Standard format: - **Tasks:**
+                    r'-\s*\*\*Tasks:\*\*\s*(.*?)(?=-\s*\*\*(?:Why It Matters|Connection to Insights)|\Z)',
+                    # Alternative: **Tasks:**
+                    r'\*\*Tasks:\*\*\s*(.*?)(?=\*\*(?:Why It Matters|Connection to Insights)|\Z)',
+                ]
                 
-                if tasks_section_match:
-                    tasks_content = tasks_section_match.group(1).strip()
-                    task_pattern = r'-\s+\*\*([^(]*?)\s*\(([^)]+)\)\s*:\*\*\s*([^\n]*?)(?=\n\s*-|\Z)'
-                    task_matches = re.finditer(task_pattern, tasks_content, re.DOTALL | re.IGNORECASE)
+                tasks_content = None
+                for tasks_pattern in tasks_section_patterns:
+                    tasks_section_match = re.search(tasks_pattern, block_content, re.DOTALL | re.IGNORECASE)
+                    if tasks_section_match:
+                        tasks_content = tasks_section_match.group(1).strip()
+                        break
+                
+                if tasks_content:
+                    # Enhanced task patterns to match various formats
+                    task_patterns = [
+                        # Format: - **Task Name (Time):** Description
+                        r'-\s+\*\*([^(]*?)\s*\(([^)]+)\)\s*:\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                        # Format: - **Time: Task Name:** Description  
+                        r'-\s+\*\*([^:]*?):\s*([^*]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                        # Format: - **Task Name:** Description
+                        r'-\s+\*\*([^*:]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                        # Format: - Task with time pattern
+                        r'-\s+([^*\n]*?(?:\d{1,2}:\d{2}[^*\n]*?)?)(?=\n\s*-|\Z)',
+                    ]
+                    
+                    task_matches = []
+                    for i, task_pattern in enumerate(task_patterns):
+                        matches = list(re.finditer(task_pattern, tasks_content, re.DOTALL | re.IGNORECASE))
+                        if matches:
+                            task_matches = matches
+                            logger.debug(f"✅ Found {len(matches)} tasks using task pattern {i+1}")
+                            break
+                        else:
+                            logger.debug(f"❌ Task pattern {i+1} found 0 matches")
                     
                     task_order = 1
                     for task_match in task_matches:
-                        task_name = task_match.group(1).strip()
-                        time_info = task_match.group(2).strip()
-                        task_description = task_match.group(3).strip()
+                        # Handle different task pattern formats
+                        num_groups = len(task_match.groups())
                         
-                        if not task_name or not time_info or len(task_name) < 3:
+                        if num_groups >= 3:
+                            # Pattern with 3 groups: task_name, time_info, description
+                            task_name = task_match.group(1).strip()
+                            time_info = task_match.group(2).strip() if task_match.group(2) else ""
+                            task_description = task_match.group(3).strip() if task_match.group(3) else ""
+                        elif num_groups == 2:
+                            # Pattern with 2 groups: task_name, description (or task_name, time_info)
+                            task_name = task_match.group(1).strip()
+                            # Check if second group looks like time info or description
+                            second_group = task_match.group(2).strip()
+                            if re.match(r'\d{1,2}:\d{2}', second_group):
+                                time_info = second_group
+                                task_description = ""
+                            else:
+                                time_info = ""
+                                task_description = second_group
+                        else:
+                            # Pattern with 1 group: combined task info
+                            full_text = task_match.group(1).strip()
+                            # Try to extract time info from the text
+                            time_match = re.search(r'\(([^)]*\d{1,2}:\d{2}[^)]*)\)', full_text)
+                            if time_match:
+                                time_info = time_match.group(1).strip()
+                                task_name = re.sub(r'\([^)]*\d{1,2}:\d{2}[^)]*\)', '', full_text).strip()
+                                task_description = ""
+                            else:
+                                task_name = full_text
+                                time_info = ""
+                                task_description = ""
+                        
+                        # Clean up task name
+                        task_name = re.sub(r'^[*\s:-]+|[*\s:-]+$', '', task_name).strip()
+                        
+                        if not task_name or len(task_name) < 3:
+                            logger.debug(f"Skipping task with insufficient name: '{task_name}'")
                             continue
                         
                         # Parse timing information
@@ -784,6 +892,10 @@ class PlanExtractionService:
                         task_order += 1
                         
                         logger.info(f"  ✓ Extracted task: {task_name} ({time_info})")
+                        logger.debug(f"    Task details - Name: '{task_name}', Time: '{time_info}', Description: '{task_description[:50]}...'")
+                else:
+                    logger.warning(f"❌ No tasks section found in block: {block_title}")
+                    logger.debug(f"Block content preview (500 chars): {block_content[:500]}...")
             
             # Create the complete extracted plan
             extracted_plan = ExtractedPlan(
@@ -819,6 +931,241 @@ class PlanExtractionService:
                 tasks=[],
                 extraction_metadata={"error": str(e)}
             )
+    
+    def _emergency_extraction_fallback(self, content: str, analysis_result: Dict[str, Any], user_id: str, date: str, archetype: str) -> ExtractedPlan:
+        """
+        BULLETPROOF FALLBACK: When structured patterns fail, extract ANYTHING useful
+        This method NEVER fails - it always returns something
+        """
+        time_blocks = []
+        all_tasks = []
+        
+        try:
+            logger.info("🚨 EMERGENCY EXTRACTION: Using aggressive fallback patterns")
+            
+            # STEP 1: Find ANYTHING that looks like a time block (very loose patterns)
+            emergency_patterns = [
+                # Any line with ** and numbers and time patterns
+                r'\*\*.*?(\d+).*?\*\*.*?(\d{1,2}:\d{2}.*?\d{1,2}:\d{2}|AM|PM).*?\n(.*?)(?=\n\*\*|\Z)',
+                # Any header with ** and containing time info
+                r'\*\*([^*]*(?:\d{1,2}:\d{2}[^*]*)?)\*\*\s*\n(.*?)(?=\n\*\*[^*]*(?:\d{1,2}:\d{2}|$)|\Z)',
+                # Just lines starting with **
+                r'\*\*([^*]+)\*\*\s*\n(.*?)(?=\n\*\*|\Z)',
+                # Even markdown headers
+                r'^#+\s*([^\n]*(?:\d{1,2}:\d{2}[^\n]*)?)\s*\n(.*?)(?=\n#+|\Z)',
+            ]
+            
+            block_found = False
+            for i, pattern in enumerate(emergency_patterns):
+                matches = list(re.finditer(pattern, content, re.MULTILINE | re.DOTALL))
+                if matches:
+                    logger.info(f"✅ Emergency pattern {i+1} found {len(matches)} potential blocks")
+                    
+                    for j, match in enumerate(matches):
+                        groups = match.groups()
+                        if len(groups) >= 2:
+                            block_title = groups[0].strip()
+                            block_content = groups[1].strip()
+                            
+                            # Skip if too short or likely noise
+                            if len(block_title) < 5 or len(block_content) < 10:
+                                continue
+                                
+                            # Create time block
+                            time_range = self._extract_time_range_string(block_title) or "Time not specified"
+                            time_block = TimeBlockContext(
+                                block_id=f"emergency_block_{j+1}",
+                                title=block_title,
+                                time_range=time_range,
+                                purpose=f"Emergency extraction from pattern {i+1}",
+                                block_order=j+1,
+                                archetype=archetype
+                            )
+                            time_blocks.append(time_block)
+                            
+                            # Extract tasks from this block content
+                            tasks = self._emergency_extract_tasks(block_content, time_block.block_id, j+1)
+                            all_tasks.extend(tasks)
+                            block_found = True
+                    
+                    if block_found:
+                        break
+            
+            # STEP 2: If still no blocks, create one big block from the entire content
+            if not time_blocks:
+                logger.info("🚨 CREATING SINGLE MEGA-BLOCK from entire content")
+                time_block = TimeBlockContext(
+                    block_id="mega_block_1",
+                    title="Complete Plan Content",
+                    time_range="Full day",
+                    purpose="Emergency extraction - single block",
+                    block_order=1,
+                    archetype=archetype
+                )
+                time_blocks.append(time_block)
+                
+                # Extract ANY actionable items from the entire content
+                all_tasks = self._emergency_extract_tasks(content, "mega_block_1", 1)
+            
+            # STEP 3: Ensure we have at least SOMETHING
+            if not all_tasks:
+                logger.info("🚨 NO TASKS FOUND - Creating placeholder tasks")
+                # Create placeholder tasks from any bullet points or lines with keywords
+                placeholder_tasks = self._create_placeholder_tasks(content, time_blocks[0].block_id if time_blocks else "fallback_block")
+                all_tasks.extend(placeholder_tasks)
+            
+            # STEP 4: If we STILL have nothing, create absolute minimum
+            if not time_blocks and not all_tasks:
+                logger.warning("🚨 ABSOLUTE FALLBACK - Creating minimal structure")
+                time_blocks = [TimeBlockContext(
+                    block_id="absolute_fallback",
+                    title="Plan Content (Structure not detected)",
+                    time_range="Various times",
+                    purpose="Fallback extraction",
+                    block_order=1,
+                    archetype=archetype
+                )]
+                all_tasks = [ExtractedTask(
+                    task_id="fallback_task_1",
+                    title="Review the generated plan",
+                    description="Plan structure could not be parsed automatically",
+                    scheduled_time=None,
+                    scheduled_end_time=None,
+                    estimated_duration_minutes=None,
+                    task_type="general",
+                    priority_level="medium",
+                    task_order_in_block=1,
+                    time_block_id="absolute_fallback"
+                )]
+            
+            logger.info(f"🎯 EMERGENCY EXTRACTION COMPLETE: {len(time_blocks)} blocks, {len(all_tasks)} tasks")
+            
+            return ExtractedPlan(
+                plan_id=analysis_result.get('id', 'emergency'),
+                user_id=user_id,
+                date=date,
+                archetype=archetype,
+                time_blocks=time_blocks,
+                tasks=all_tasks,
+                extraction_metadata={
+                    "extraction_method": "emergency_fallback",
+                    "total_time_blocks": len(time_blocks),
+                    "total_tasks": len(all_tasks),
+                    "content_length": len(content)
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"🚨 EMERGENCY EXTRACTION FAILED: {e}")
+            # ABSOLUTE LAST RESORT
+            return ExtractedPlan(
+                plan_id=analysis_result.get('id', 'error'),
+                user_id=user_id,
+                date=date,
+                archetype=archetype,
+                time_blocks=[TimeBlockContext(
+                    block_id="error_block",
+                    title="Extraction Error",
+                    time_range="Unknown",
+                    purpose="Error fallback",
+                    block_order=1,
+                    archetype=archetype
+                )],
+                tasks=[ExtractedTask(
+                    task_id="error_task",
+                    title="Plan extraction encountered an error",
+                    description=f"Error: {str(e)[:100]}",
+                    scheduled_time=None,
+                    scheduled_end_time=None,
+                    estimated_duration_minutes=None,
+                    task_type="general",
+                    priority_level="medium",
+                    task_order_in_block=1,
+                    time_block_id="error_block"
+                )],
+                extraction_metadata={"error": str(e), "method": "absolute_last_resort"}
+            )
+    
+    def _emergency_extract_tasks(self, content: str, block_id: str, block_num: int) -> List[ExtractedTask]:
+        """Extract tasks using very aggressive patterns - never fails"""
+        tasks = []
+        
+        # Super aggressive task patterns
+        task_patterns = [
+            # Any line with ** and containing time info
+            r'[-*]\s*\*\*([^*]*?(?:\d{1,2}:\d{2}[^*]*?)?)\*\*[:\s]*([^\n]*)',
+            # Any bullet point
+            r'[-*•]\s*([^\n]{10,})',
+            # Any line containing time patterns
+            r'([^\n]*\d{1,2}:\d{2}[^\n]*)',
+            # Just capture anything after **
+            r'\*\*([^*]{5,})\*\*',
+        ]
+        
+        for pattern in task_patterns:
+            matches = re.findall(pattern, content, re.MULTILINE)
+            if matches:
+                for i, match in enumerate(matches[:10]):  # Limit to 10 tasks per pattern
+                    if isinstance(match, tuple):
+                        task_text = ' '.join([m for m in match if m]).strip()
+                    else:
+                        task_text = match.strip()
+                    
+                    if len(task_text) > 5:  # Must have some content
+                        task = ExtractedTask(
+                            task_id=f"emergency_task_{block_num}_{i+1}",
+                            title=task_text[:100],  # Limit title length
+                            description=task_text if len(task_text) > 100 else "",
+                            scheduled_time=None,
+                            scheduled_end_time=None,
+                            estimated_duration_minutes=None,
+                            task_type="general",
+                            priority_level="medium",
+                            task_order_in_block=i+1,
+                            time_block_id=block_id
+                        )
+                        tasks.append(task)
+                break  # Stop at first successful pattern
+        
+        return tasks
+    
+    def _create_placeholder_tasks(self, content: str, block_id: str) -> List[ExtractedTask]:
+        """Create placeholder tasks when nothing else works"""
+        # Split content by common separators and create tasks
+        sections = re.split(r'\n\n+|\n---+\n|\n===+\n', content)
+        tasks = []
+        
+        for i, section in enumerate(sections[:5]):  # Max 5 sections
+            section = section.strip()
+            if len(section) > 20:  # Must have reasonable content
+                # Take first sentence or 100 chars
+                title = section.split('.')[0][:100] if '.' in section else section[:100]
+                task = ExtractedTask(
+                    task_id=f"placeholder_task_{i+1}",
+                    title=title.strip(),
+                    description=section[:200] if len(section) > 100 else "",
+                    scheduled_time=None,
+                    scheduled_end_time=None,
+                    estimated_duration_minutes=None,
+                    task_type="general",
+                    priority_level="medium",
+                    task_order_in_block=i+1,
+                    time_block_id=block_id
+                )
+                tasks.append(task)
+        
+        return tasks if tasks else [ExtractedTask(
+            task_id="final_fallback_task",
+            title="Review your personalized plan",
+            description="Plan extraction used fallback method",
+            scheduled_time=None,
+            scheduled_end_time=None,
+            estimated_duration_minutes=None,
+            task_type="general",
+            priority_level="medium",
+            task_order_in_block=1,
+            time_block_id=block_id
+        )]
     
     def _determine_task_type(self, task_name: str, description: str) -> str:
         """Determine task type based on content"""
