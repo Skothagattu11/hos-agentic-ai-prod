@@ -16,7 +16,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configuration
 REAL_PROFILE_ID = "35pDPUIfAoRl2Y700bFkxPKYjjf2"
-BASE_URL = "https://hos-agentic-ai-prod.onrender.com"
+# BASE_URL = "https://hos-agentic-ai-prod.onrender.com"  # Production
+BASE_URL = "http://localhost:8002"  # Development server
 TEST_ARCHETYPE = "Foundation Builder"
 
 def print_section(title, emoji="🎯"):
@@ -39,12 +40,13 @@ async def check_server():
     """Quick server check"""
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{BASE_URL}/") as response:
+            async with session.get(f"{BASE_URL}/api/health") as response:
                 if response.status == 200:
-                    print("✅ Server is running")
+                    print("✅ Server is running on localhost:8002")
                     return True
     except:
-        print("❌ Server not accessible")
+        print("❌ Server not accessible at localhost:8002")
+        print("💡 Make sure to start the server with: python start_openai.py")
         return False
 
 async def show_generated_logs():

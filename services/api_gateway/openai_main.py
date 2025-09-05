@@ -1812,10 +1812,32 @@ async def prepare_routine_agent_data(user_context, behavior_analysis: dict) -> d
     except Exception as e:
         return {"error": f"Error preparing routine data: {str(e)}"}
 
-async def format_health_data_for_ai(user_context) -> str:
-    """Format health tracking data for AI analysis - Phase 3.2 (Legacy function)"""
+async def fetch_engagement_context(profile_id: str, days: int = 7) -> dict:
+    """Fetch engagement context for AI analysis - privacy-safe"""
     try:
-        # Get latest scores for summary
+        import aiohttp
+        from urllib.parse import urljoin
+        
+        # Get API base URL
+        api_base = os.getenv('API_BASE_URL', 'http://localhost:8001')
+        endpoint = f"/api/v1/engagement/engagement-context/{profile_id}"
+        url = urljoin(api_base, endpoint)
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params={'days': days}) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    # Return empty context on error
+                    return {}
+    except Exception as e:
+        # Silently fail and return empty context
+        return {}
+
+async def format_health_data_for_ai(user_context) -> str:
+    """Format health tracking data for AI analysis - Privacy-safe, no IDs exposed"""
+    try:
+        # Get latest scores for summary (NO IDs)
         recent_scores = {}
         for score in user_context.scores[:10]:  # Latest 10 scores
             score_type = score.type
@@ -1827,15 +1849,17 @@ async def format_health_data_for_ai(user_context) -> str:
                 'state': score.data.get('state', 'unknown') if hasattr(score, 'data') and score.data else 'unknown'
             })
         
-        # Get key biomarkers
+        # Get key biomarkers (NO IDs)
         key_biomarkers = {}
         for bio in user_context.biomarkers[:20]:  # Latest 20 biomarkers
             bio_type = bio.type
             if bio_type not in key_biomarkers:
                 key_biomarkers[bio_type] = []
+            # Only include essential data, no IDs
+            bio_data_clean = {k: v for k, v in bio.data.items() if not k.endswith('_id') and k != 'id'} if bio.data else {}
             key_biomarkers[bio_type].append({
                 'category': bio.category,
-                'data': bio.data,
+                'data': bio_data_clean,
                 'date': bio.start_date_time.strftime('%Y-%m-%d') if hasattr(bio, 'start_date_time') else 'unknown'
             })
         
@@ -1870,6 +1894,7 @@ async def format_health_data_for_ai(user_context) -> str:
             if 'sleep_scores' in behavior_data:
                 sleep_count = len(behavior_data['sleep_scores'])
                 data_summary.append(f"  • Sleep cycles: {sleep_count} recorded periods")
+        
         
         return '\n'.join(data_summary) if data_summary else "Health tracking data available for analysis."
         
@@ -2085,6 +2110,9 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         
         # Step 4: Prepare behavior agent data with memory context
         user_context_summary = await format_health_data_for_ai(user_context)
+        
+        
+        
         behavior_data = await prepare_behavior_agent_data(user_context, user_context_summary)
         
         # Step 5: Run behavior analysis with memory-enhanced prompt
@@ -2411,7 +2439,7 @@ HEALTH DATA PROFILE:
 HEALTH TRACKING DATA SUMMARY:
 {await format_health_data_for_ai(user_context)}
 
-ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify patterns, trends, and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.
+ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sleep patterns, activity metrics, and biomarker readings, enhanced with user memory context. Analyze these health indicators to identify behavioral trends and insights that align with the {archetype} framework. Focus on actionable observations from the provided health metrics while considering the user's memory profile and proven strategies.
 """
         return user_context_summary
         
@@ -2419,6 +2447,61 @@ ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sle
         print(f"⚠️ [SHARED_ANALYSIS] Context summary creation failed: {e}")
         # Minimal fallback
         return f"Health analysis for {archetype} user {user_id}"
+
+async def log_data_collection_summary(user_id: str, user_context, engagement_context, memory_context) -> None:
+    """Log comprehensive summary of all data being collected for AI analysis"""
+    try:
+        import json
+        from datetime import datetime
+        
+        # Create a comprehensive data collection summary
+        summary = {
+            "timestamp": datetime.now().isoformat(),
+            "user_id": user_id[:8] + "...",  # Partially masked for privacy
+            "data_collection": {
+                "health_scores": {
+                    "count": len(user_context.scores),
+                    "types": list(set(s.type for s in user_context.scores)),
+                    "date_range": f"{user_context.date_range.start_date} to {user_context.date_range.end_date}"
+                },
+                "biomarkers": {
+                    "count": len(user_context.biomarkers),
+                    "categories": list(set(b.category for b in user_context.biomarkers[:10]))
+                },
+                "engagement": {
+                    "has_data": bool(engagement_context),
+                    "completion_rate": engagement_context.get('engagement_summary', {}).get('completion_rate', 0) if engagement_context else 0,
+                    "total_tasks": engagement_context.get('engagement_summary', {}).get('total_planned', 0) if engagement_context else 0,
+                    "timing_adherence": engagement_context.get('timing_patterns', {}).get('timing_adherence', 'no_data') if engagement_context else 'no_data'
+                },
+                "memory": {
+                    "mode": memory_context.analysis_mode,
+                    "days_fetched": memory_context.days_to_fetch,
+                    "has_history": bool(memory_context.analysis_history),
+                    "focus_areas": memory_context.personalized_focus_areas[:3] if memory_context.personalized_focus_areas else []
+                }
+            }
+        }
+        
+        # Log to console
+        print(f"\n{'='*60}")
+        print(f"📊 DATA COLLECTION SUMMARY FOR AI ANALYSIS")
+        print(f"{'='*60}")
+        print(json.dumps(summary, indent=2))
+        print(f"{'='*60}\n")
+        
+        # Also save to a log file for detailed review
+        log_dir = "logs/data_collection"
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = f"{log_dir}/data_collection_{user_id[:8]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        with open(log_file, 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        print(f"💾 Data collection log saved to: {log_file}")
+        
+    except Exception as e:
+        print(f"⚠️ Error logging data collection: {e}")
 
 async def log_complete_analysis(agent_type: str, user_id: str, archetype: str, 
                                input_data: dict, output_data: dict, memory_context, 

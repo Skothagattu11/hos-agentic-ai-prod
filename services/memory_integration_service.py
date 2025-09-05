@@ -68,16 +68,58 @@ class MemoryIntegrationService:
                 analysis_mode, days_to_fetch = await self.memory_service.determine_analysis_mode(user_id, archetype)
                 print(f"⚠️ [MEMORY_INTEGRATION] Fallback to memory service decision: {analysis_mode} mode, {days_to_fetch} days (archetype={archetype})")
             
+            # Log memory collection process
+            print(f"\n{'='*60}")
+            print(f"🧠 [MEMORY_DATA_COLLECTION] User: {user_id[:8]}...")
+            print(f"{'='*60}")
+            print(f"📊 Analysis Configuration:")
+            print(f"   - Mode: {analysis_mode}")
+            print(f"   - Days to fetch: {days_to_fetch}")
+            print(f"   - Archetype: {archetype if archetype else 'Not specified'}")
+            
             # Get all memory layers
+            print(f"\n🔍 Fetching Memory Layers:")
+            
+            # Long-term memory
             longterm_memory = await self.memory_service.get_user_longterm_memory(user_id)
+            if longterm_memory:
+                print(f"✅ Long-term Memory:")
+                print(f"   - Behavioral patterns: {len(longterm_memory.get('behavioral_patterns', {})) if isinstance(longterm_memory, dict) else 'Present'}")
+                print(f"   - Health goals: {len(longterm_memory.get('health_goals', {})) if isinstance(longterm_memory, dict) else 'Present'}")
+                print(f"   - Preferences: {len(longterm_memory.get('preference_patterns', {})) if isinstance(longterm_memory, dict) else 'Present'}")
+            else:
+                print(f"⚠️ No long-term memory found")
+            
+            # Recent patterns
             recent_patterns = await self.memory_service.get_recent_patterns(user_id, days=7)
+            print(f"📈 Recent Patterns: {len(recent_patterns) if recent_patterns else 0} patterns found")
+            
+            # Meta memory
             meta_memory = await self.memory_service.get_meta_memory(user_id)
+            if meta_memory:
+                print(f"🎯 Meta Memory: Learning patterns available")
+            else:
+                print(f"⚠️ No meta memory found")
+            
+            # Analysis history
             analysis_history = await self.memory_service.get_analysis_history(user_id, limit=5)
+            print(f"📚 Analysis History: {len(analysis_history) if analysis_history else 0} previous analyses")
+            if analysis_history and len(analysis_history) > 0:
+                print(f"   - Last analysis: {analysis_history[0].analysis_type if hasattr(analysis_history[0], 'analysis_type') else 'Unknown'}")
             
             # Extract personalized guidance from memory
             personalized_focus_areas = self._extract_focus_areas(longterm_memory, recent_patterns)
             proven_strategies = self._extract_proven_strategies(longterm_memory, meta_memory)
             adaptation_preferences = self._extract_adaptation_preferences(meta_memory)
+            
+            # Log extracted memory insights
+            print(f"\n💡 Memory Insights Extracted:")
+            print(f"   - Focus areas: {len(personalized_focus_areas) if personalized_focus_areas else 0}")
+            if personalized_focus_areas:
+                print(f"     • {', '.join(personalized_focus_areas[:3])}")
+            print(f"   - Proven strategies: {len(proven_strategies) if proven_strategies else 0}")
+            print(f"   - Adaptation preferences: {'Yes' if adaptation_preferences else 'No'}")
+            print(f"{'='*60}\n")
             
             context = MemoryEnhancedContext(
                 user_id=user_id,

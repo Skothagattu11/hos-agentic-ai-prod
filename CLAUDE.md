@@ -55,10 +55,11 @@ The system consists of six specialized AI agents working in concert:
 pip install -r requirements.txt
 
 # Main startup (RECOMMENDED - uses OpenAI API directly)
+# Runs in ULTRA-QUIET mode on port 8002
 python start_openai.py
 
 # Alternative: Run with uvicorn directly
-uvicorn services.api_gateway.openai_main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn services.api_gateway.openai_main:app --host 0.0.0.0 --port 8002 --reload
 
 # Environment validation
 python testing/check_env.py
@@ -169,21 +170,50 @@ The system supports 6 distinct user archetypes:
 Required environment variables (in `.env` file):
 
 ```env
-# OpenAI Configuration (Required)
+# OpenAI Configuration (REQUIRED)
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/holisticos
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
+# Supabase Configuration (REQUIRED)
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
 
-# Redis Configuration (for production)
-REDIS_URL=redis://localhost:6379
+# Database Configuration
+# Uses Supabase PostgreSQL - same credentials as above
+DATABASE_URL=postgresql://postgres:password@db.supabase_project.supabase.co:5432/postgres
+
+# Environment Configuration (CRITICAL - Controls behavior)
+# Options: development, staging, production
+ENVIRONMENT=development
 
 # API Configuration
 API_HOST=0.0.0.0
-API_PORT=8001
-ENVIRONMENT=development
+API_PORT=8002
+
+# Logging Configuration
+LOG_LEVEL=ERROR
+
+# Rate Limiting Configuration
+RATE_LIMIT_FREE_TIER=5
+RATE_LIMIT_COST_DAILY=1.00
+
+# Timeout Configuration
+OPENAI_REQUEST_TIMEOUT=30
+DATABASE_QUERY_TIMEOUT=30
+BEHAVIOR_ANALYSIS_TIMEOUT=120
+
+# Email Alerting Configuration (Optional for production monitoring)
+EMAIL_API_KEY=your_resend_api_key
+EMAIL_PROVIDER=resend
+ALERT_EMAIL_FROM=alerts@yourdomain.com
+ALERT_EMAIL_RECIPIENTS=admin@yourdomain.com
+
+# Redis Configuration (Optional - for production scaling)
+REDIS_URL=redis://localhost:6379
+
+# Render Deployment Configuration (when deploying to Render)
+PORT=8000
+RENDER=true
 ```
 
 
@@ -245,12 +275,13 @@ GET  /api/insights/{user_id}               # User-specific insights
 
 ### Development Workflow
 
-1. **Environment Setup**: Ensure `.env` file exists with all required variables
+1. **Environment Setup**: Ensure `.env` file exists with all required variables (see Environment Variables section)
 2. **Dependency Check**: Run `pip install -r requirements.txt` 
-3. **System Validation**: Execute `python testing/check_env.py`
-4. **Start Development**: Use `python start_openai.py` for quiet mode
-5. **Test Changes**: Run relevant test scripts in `testing/` directory
-6. **Production Readiness**: Execute `python testing/validate_fixes.py`
+3. **System Validation**: Execute `python testing/check_env.py` to verify OpenAI API key and database connectivity
+4. **Start Development**: Use `python start_openai.py` for ultra-quiet mode (errors only) on port 8002
+5. **Test Changes**: Run relevant test scripts in `testing/` directory before committing changes
+6. **Production Readiness**: Execute `python testing/validate_fixes.py` to ensure all P0 fixes are working
+7. **Deployment**: Push to main branch - auto-deploys via render.yaml
 
 ---
 

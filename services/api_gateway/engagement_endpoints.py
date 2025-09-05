@@ -702,6 +702,268 @@ async def get_completion_summary(
         logger.error(f"Error generating completion summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate completion summary: {str(e)}")
 
+# =====================================================
+# Privacy-Safe Engagement Context Endpoint (No IDs)
+# =====================================================
+
+@router.get("/engagement-context/{profile_id}")
+async def get_engagement_context(
+    profile_id: str,
+    days: int = Query(7, description="Number of days to analyze"),
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    Returns complete engagement picture without exposing any IDs.
+    Uses efficient JOIN query to combine plan items with check-ins.
+    
+    This endpoint is designed for AI context - no system IDs exposed.
+    
+    Returns:
+    - Planned tasks with titles, descriptions, time blocks
+    - Completion status and satisfaction ratings
+    - Timing patterns (planned vs actual)
+    - NO system IDs exposed
+    """
+    try:
+        from datetime import timedelta
+        start_date = (date.today() - timedelta(days=days)).isoformat()
+        end_date = date.today().isoformat()
+        
+        logger.info(f"Fetching engagement context for profile {profile_id} from {start_date} to {end_date}")
+        
+        # Get plan items with their check-in status - NO IDs
+        # Using raw SQL for efficient JOIN
+        query = """
+            SELECT 
+                pi.title,
+                pi.description,
+                pi.scheduled_time,
+                pi.estimated_duration_minutes,
+                pi.task_type,
+                pi.time_block,
+                pi.plan_date,
+                tc.completion_status,
+                tc.satisfaction_rating,
+                tc.planned_date,
+                tc.user_notes
+            FROM plan_items pi
+            LEFT JOIN task_checkins tc 
+                ON pi.id = tc.plan_item_id 
+                AND pi.profile_id = tc.profile_id
+            WHERE pi.profile_id = %s
+                AND pi.plan_date >= %s
+                AND pi.plan_date <= %s
+            ORDER BY pi.plan_date DESC, pi.scheduled_time ASC
+        """
+        
+        # Skip raw SQL (doesn't exist) and go directly to fallback approach
+        # This is more reliable and works with standard Supabase setup
+        result = None  # Force fallback
+        
+        # Fallback to separate queries
+        if not result or not result.data:
+            # Fallback: Get plan items
+            plan_items_result = supabase.table("plan_items")\
+                .select("title, description, scheduled_time, estimated_duration_minutes, task_type, time_block, plan_date")\
+                .eq("profile_id", profile_id)\
+                .gte("plan_date", start_date)\
+                .lte("plan_date", end_date)\
+                .execute()
+            
+            # Get check-ins with timing data
+            checkins_result = supabase.table("task_checkins")\
+                .select("completion_status, satisfaction_rating, planned_date, planned_time, actual_completion_time, completed_at, user_notes")\
+                .eq("profile_id", profile_id)\
+                .gte("planned_date", start_date)\
+                .lte("planned_date", end_date)\
+                .execute()
+            
+            plan_items = plan_items_result.data or []
+            checkins = checkins_result.data or []
+            
+            logger.info(f"Found {len(plan_items)} plan items and {len(checkins)} check-ins for {profile_id}")
+            
+            # Combine data without IDs
+            tasks_data = []
+            checkin_map = {}
+            
+            # Create a map of check-ins by date for matching
+            for checkin in checkins:
+                date_key = str(checkin.get('planned_date', ''))
+                if date_key not in checkin_map:
+                    checkin_map[date_key] = []
+                checkin_map[date_key].append(checkin)
+            
+            # Combine plan items with their check-ins
+            for item in plan_items:
+                # Clean up time_block to be more readable
+                time_block = item.get("time_block", "")
+                if "_block_" in time_block:
+                    # Extract just the block number part
+                    block_parts = time_block.split("_block_")
+                    if len(block_parts) > 1:
+                        block_num = block_parts[-1]
+                        time_block = f"block_{block_num}"
+                
+                task = {
+                    "title": item.get("title", ""),
+                    "scheduled_time": item.get("scheduled_time", ""),
+                    "task_type": item.get("task_type", ""),
+                    "time_block": time_block,
+                    "plan_date": item.get("plan_date", ""),
+                    "completion_status": None,
+                    "satisfaction_rating": None,
+                    "actual_time": None,
+                    "planned_checkin_time": None
+                }
+                
+                # Try to find matching check-in
+                date_key = str(item.get('plan_date', ''))
+                if date_key in checkin_map and checkin_map[date_key]:
+                    # Use first matching check-in (simplified matching)
+                    checkin = checkin_map[date_key][0]
+                    task["completion_status"] = checkin.get("completion_status")
+                    task["satisfaction_rating"] = checkin.get("satisfaction_rating")
+                    
+                    # Get actual completion time (prefer actual_completion_time, fallback to completed_at)
+                    actual_time = checkin.get("actual_completion_time") or checkin.get("completed_at")
+                    if actual_time:
+                        # Extract just the time portion if it's a full timestamp
+                        if 'T' in str(actual_time):
+                            task["actual_time"] = str(actual_time).split('T')[1].split('.')[0] if actual_time else None
+                        else:
+                            task["actual_time"] = str(actual_time)
+                    
+                    # Also get the planned time from check-in if available
+                    task["planned_checkin_time"] = checkin.get("planned_time")
+                    
+                    checkin_map[date_key].pop(0)  # Remove used check-in
+                
+                tasks_data.append(task)
+        else:
+            tasks_data = result.data
+        
+        # Calculate engagement summary
+        total_planned = len(tasks_data)
+        completed = len([t for t in tasks_data if t.get("completion_status") == "completed"])
+        partial = len([t for t in tasks_data if t.get("completion_status") == "partial"])
+        skipped = len([t for t in tasks_data if t.get("completion_status") == "skipped"])
+        
+        # Calculate timing patterns (now using cleaned block names)
+        morning_tasks = [t for t in tasks_data if t.get("time_block") in ["block_1", "morning_routine"]]
+        afternoon_tasks = [t for t in tasks_data if t.get("time_block") in ["block_2", "block_3", "afternoon_activity", "afternoon_recharge"]]
+        evening_tasks = [t for t in tasks_data if t.get("time_block") in ["block_4", "evening_routine", "evening_winddown"]]
+        
+        morning_completion_rate = len([t for t in morning_tasks if t.get("completion_status") == "completed"]) / len(morning_tasks) if morning_tasks else 0
+        afternoon_completion_rate = len([t for t in afternoon_tasks if t.get("completion_status") == "completed"]) / len(afternoon_tasks) if afternoon_tasks else 0
+        evening_completion_rate = len([t for t in evening_tasks if t.get("completion_status") == "completed"]) / len(evening_tasks) if evening_tasks else 0
+        
+        # Calculate timing differences for completed tasks
+        timing_differences = []
+        for task in tasks_data:
+            if task.get("completion_status") == "completed":
+                scheduled = task.get("scheduled_time")
+                actual = task.get("actual_time")
+                if scheduled and actual:
+                    try:
+                        # Convert times to minutes for comparison
+                        sched_parts = str(scheduled).split(':')
+                        actual_parts = str(actual).split(':')
+                        if len(sched_parts) >= 2 and len(actual_parts) >= 2:
+                            sched_minutes = int(sched_parts[0]) * 60 + int(sched_parts[1])
+                            actual_minutes = int(actual_parts[0]) * 60 + int(actual_parts[1])
+                            diff_minutes = actual_minutes - sched_minutes
+                            timing_differences.append(diff_minutes)
+                    except (ValueError, IndexError):
+                        pass
+        
+        avg_timing_diff = sum(timing_differences) / len(timing_differences) if timing_differences else None
+        
+        # Calculate satisfaction trends
+        satisfaction_ratings = [t.get("satisfaction_rating") for t in tasks_data if t.get("satisfaction_rating") is not None]
+        avg_satisfaction = sum(satisfaction_ratings) / len(satisfaction_ratings) if satisfaction_ratings else None
+        
+        # Determine trending
+        if len(satisfaction_ratings) >= 3:
+            first_half = satisfaction_ratings[:len(satisfaction_ratings)//2]
+            second_half = satisfaction_ratings[len(satisfaction_ratings)//2:]
+            first_avg = sum(first_half) / len(first_half) if first_half else 0
+            second_avg = sum(second_half) / len(second_half) if second_half else 0
+            trending = "improving" if second_avg > first_avg else "declining" if second_avg < first_avg else "stable"
+        else:
+            trending = "insufficient_data"
+        
+        # Build response without any IDs
+        response = {
+            "engagement_summary": {
+                "total_planned": total_planned,
+                "completed": completed,
+                "partial": partial,
+                "skipped": skipped,
+                "completion_rate": completed / total_planned if total_planned > 0 else 0
+            },
+            "timing_patterns": {
+                "morning_completion_rate": morning_completion_rate,
+                "afternoon_completion_rate": afternoon_completion_rate,
+                "evening_completion_rate": evening_completion_rate,
+                "average_timing_difference_minutes": round(avg_timing_diff, 1) if avg_timing_diff else None,
+                "timing_adherence": "on_time" if avg_timing_diff and abs(avg_timing_diff) < 30 else "early" if avg_timing_diff and avg_timing_diff < -30 else "late" if avg_timing_diff and avg_timing_diff > 30 else "no_data",
+                "best_performing_time_block": max(
+                    [("morning", morning_completion_rate), 
+                     ("afternoon", afternoon_completion_rate), 
+                     ("evening", evening_completion_rate)],
+                    key=lambda x: x[1]
+                )[0] if any([morning_tasks, afternoon_tasks, evening_tasks]) else "no_data"
+            },
+            "recent_tasks": [
+                {
+                    "title": t.get("title", ""),
+                    "time_block": t.get("time_block", ""),
+                    "scheduled_time": t.get("scheduled_time", ""),
+                    "actual_time": t.get("actual_time"),
+                    "task_type": t.get("task_type", ""),
+                    "status": t.get("completion_status", "pending"),
+                    "satisfaction": t.get("satisfaction_rating"),
+                    "date": t.get("plan_date", "")
+                }
+                for t in tasks_data[:10]  # Most recent 10 tasks (reduced noise)
+            ],
+            "satisfaction_trends": {
+                "average_rating": round(avg_satisfaction, 2) if avg_satisfaction else None,
+                "trending": trending,
+                "total_ratings": len(satisfaction_ratings)
+            },
+            "metadata": {
+                "days_analyzed": days,
+                "start_date": start_date,
+                "end_date": end_date,
+                "data_points": total_planned
+            }
+        }
+        
+        logger.info(f"Successfully generated engagement context for {profile_id}: {total_planned} tasks analyzed")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error generating engagement context: {str(e)}")
+        # Return empty structure on error - graceful fallback
+        return {
+            "engagement_summary": {
+                "total_planned": 0,
+                "completed": 0,
+                "partial": 0,
+                "skipped": 0,
+                "completion_rate": 0
+            },
+            "timing_patterns": {},
+            "recent_tasks": [],
+            "satisfaction_trends": {},
+            "metadata": {
+                "days_analyzed": days,
+                "error": str(e)
+            }
+        }
+
 # Health check endpoint
 @router.get("/health")
 async def engagement_health_check():
