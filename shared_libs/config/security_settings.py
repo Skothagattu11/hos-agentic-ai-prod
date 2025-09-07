@@ -59,7 +59,8 @@ class SecuritySettings:
             "Authorization", 
             "Accept",
             "Origin",
-            "X-Requested-With"
+            "X-Requested-With",
+            "X-API-Key"  # Add support for client API key authentication
         ]
     
     @staticmethod

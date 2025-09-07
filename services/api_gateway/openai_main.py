@@ -938,6 +938,14 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
     Generate a routine plan using shared behavior analysis (eliminates duplicate analysis calls)
     Uses the same pattern as nutrition generation for consistency
     """
+    # Validate client API key for external applications (Flutter app)
+    api_key = http_request.headers.get("X-API-Key")
+    if api_key != "hosa_flutter_app_2024":
+        print(f"🔒 [AUTH_FAILED] Invalid or missing API key for user {user_id[:8]}... Provided: {api_key}")
+        raise HTTPException(status_code=401, detail="User not authenticated")
+    
+    print(f"🔑 [AUTH_SUCCESS] Valid client API key provided for user {user_id[:8]}...")
+    
     from services.request_deduplication_service import request_deduplicator
     
     # Check for duplicate requests
