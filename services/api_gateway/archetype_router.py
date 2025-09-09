@@ -162,6 +162,7 @@ class UserArchetypesResponse(BaseModel):
     archetypes: List[ArchetypeWithStats]
     has_multiple_plans: bool = Field(False, description="Whether user has multiple archetype plans")
     most_recent: Optional[str] = Field(None, description="Most recent analysis ID")
+    archetype_tracking: List[Dict[str, Any]] = Field(default_factory=list, description="Raw archetype tracking data")
 
 # Create router
 router = APIRouter(prefix="/user", tags=["archetypes"])
@@ -175,124 +176,113 @@ async def get_user_available_archetypes(
     """
     Get all available archetypes/plans for a user
     
-    This endpoint discovers all analysis results for a user and their associated
-    plan items and time blocks. Essential for multi-plan selection UI.
+    This endpoint uses the archetype_analysis_tracking table to get user archetype usage data
+    and provides unified archetype status for the frontend.
     """
     try:
         # Get Supabase client for all queries
         supabase: Client = get_supabase_client()
         
-        # Step 1: Try to get analysis results from PostgreSQL, fallback to Supabase
-        analysis_results = []
+        # Step 1: Query archetype_analysis_tracking table directly
+        try:
+            tracking_result = supabase.table('archetype_analysis_tracking')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .order('last_analysis_at', desc=True)\
+                .limit(limit)\
+                .execute()
+            
+            tracking_data = tracking_result.data or []
+            print(f"✅ Got {len(tracking_data)} archetype tracking records from Supabase")
+            
+        except Exception as e:
+            print(f"Error querying archetype_analysis_tracking table: {e}")
+            tracking_data = []
         
-        # Try PostgreSQL first
-        pg_adapter = get_postgresql_client()
-        if pg_adapter:
-            try:
-                await pg_adapter.initialize()
-                
-                # Query to get distinct analysis results with archetype info
-                query = """
-                    SELECT DISTINCT 
-                        id as analysis_id,
-                        archetype,
-                        analysis_type,
-                        created_at,
-                        updated_at
-                    FROM holistic_analysis_results 
-                    WHERE user_id = %s 
-                    ORDER BY created_at DESC
-                    LIMIT %s
-                """
-                
-                analysis_results = await pg_adapter.fetch_all(query, (user_id, limit))
-                print(f"✅ Got {len(analysis_results)} analysis results from PostgreSQL")
-                
-            except Exception as e:
-                print(f"PostgreSQL query error: {e}")
-                analysis_results = []
-            finally:
-                if pg_adapter:
-                    await pg_adapter.close()
-        
-        # Fallback to Supabase-based methods
-        if not analysis_results:
-            print("🔄 Using Supabase fallback for analysis results")
-            analysis_results = query_holistic_analysis_results_fallback(supabase, user_id, limit)
-        
-        if not analysis_results:
+        # If no tracking data, return empty response
+        if not tracking_data:
             return UserArchetypesResponse(
                 user_id=user_id,
                 total_archetypes=0,
                 archetypes=[],
-                has_multiple_plans=False
+                has_multiple_plans=False,
+                archetype_tracking=[]
             )
         
-        # Step 2: For each analysis, get statistics from Supabase
+        # Step 2: Process tracking data to create archetype stats
         archetypes_with_stats = []
         
-        for analysis_row in analysis_results:
-            analysis_id = str(analysis_row['analysis_id'])
-            archetype_name = analysis_row['archetype'] or "Unknown Archetype"
+        for tracking_row in tracking_data:
+            # Extract data from archetype_analysis_tracking table
+            archetype_name = tracking_row.get('archetype', 'Unknown Archetype')
+            analysis_count = tracking_row.get('analysis_count', 0)
+            last_analysis_at = tracking_row.get('last_analysis_at')
+            created_at = tracking_row.get('created_at')
+            updated_at = tracking_row.get('updated_at')
             
-            # Initialize archetype data with safe date handling
-            created_at = analysis_row['created_at']
-            updated_at = analysis_row.get('updated_at')
+            # Use the tracking ID as analysis_id since we don't have actual analysis records
+            analysis_id = str(tracking_row.get('id', ''))
             
-            # Handle both datetime objects and string dates
-            if hasattr(created_at, 'isoformat'):
-                created_at_str = created_at.isoformat()
-            else:
-                created_at_str = str(created_at) if created_at else None
-                
-            if hasattr(updated_at, 'isoformat'):
-                updated_at_str = updated_at.isoformat()
-            else:
-                updated_at_str = str(updated_at) if updated_at else None
+            # Handle date formatting
+            created_at_str = created_at if isinstance(created_at, str) else str(created_at) if created_at else None
+            updated_at_str = updated_at if isinstance(updated_at, str) else str(updated_at) if updated_at else None
+            last_used_str = last_analysis_at if isinstance(last_analysis_at, str) else str(last_analysis_at) if last_analysis_at else None
             
             archetype_data = {
                 "analysis_id": analysis_id,
                 "archetype_name": archetype_name,
-                "analysis_type": analysis_row['analysis_type'],
+                "analysis_type": "archetype_tracking",  # Indicate this is from tracking table
                 "created_at": created_at_str,
                 "updated_at": updated_at_str,
-                "total_plan_items": 0,
-                "total_time_blocks": 0,
+                "total_plan_items": 0,  # Will be calculated if include_stats is True
+                "total_time_blocks": 0,  # Will be calculated if include_stats is True
                 "has_calendar_selections": False,
-                "last_used": None
+                "last_used": last_used_str
             }
             
-            if include_stats:
+            # If stats are requested, try to find related plan items and time blocks
+            if include_stats and analysis_count > 0:
                 try:
-                    # Count plan items for this analysis
-                    plan_items_result = supabase.table("plan_items")\
-                        .select("id", count="exact")\
-                        .eq("analysis_result_id", analysis_id)\
+                    # Try to find recent analysis results for this user and archetype to get actual analysis_ids
+                    recent_analysis_result = supabase.table("holistic_analysis_results")\
+                        .select("id")\
+                        .eq("user_id", user_id)\
+                        .eq("archetype", archetype_name)\
+                        .order("created_at", desc=True)\
+                        .limit(1)\
                         .execute()
                     
-                    archetype_data["total_plan_items"] = plan_items_result.count or 0
-                    
-                    # Count time blocks for this analysis
-                    time_blocks_result = supabase.table("time_blocks")\
-                        .select("id", count="exact")\
-                        .eq("analysis_result_id", analysis_id)\
-                        .execute()
-                    
-                    archetype_data["total_time_blocks"] = time_blocks_result.count or 0
-                    
-                    # Check for calendar selections
-                    selections_result = supabase.table("calendar_selections")\
-                        .select("id", count="exact")\
-                        .eq("profile_id", user_id)\
-                        .in_("plan_item_id", 
-                            [item['id'] for item in plan_items_result.data] if plan_items_result.data else []
-                        )\
-                        .execute()
-                    
-                    archetype_data["has_calendar_selections"] = (selections_result.count or 0) > 0
+                    if recent_analysis_result.data:
+                        actual_analysis_id = recent_analysis_result.data[0]["id"]
+                        
+                        # Count plan items for the actual analysis
+                        plan_items_result = supabase.table("plan_items")\
+                            .select("id", count="exact")\
+                            .eq("analysis_result_id", actual_analysis_id)\
+                            .execute()
+                        
+                        archetype_data["total_plan_items"] = plan_items_result.count or 0
+                        
+                        # Count time blocks for the actual analysis
+                        time_blocks_result = supabase.table("time_blocks")\
+                            .select("id", count="exact")\
+                            .eq("analysis_result_id", actual_analysis_id)\
+                            .execute()
+                        
+                        archetype_data["total_time_blocks"] = time_blocks_result.count or 0
+                        
+                        # Check for calendar selections
+                        if plan_items_result.data:
+                            selections_result = supabase.table("calendar_selections")\
+                                .select("id", count="exact")\
+                                .eq("profile_id", user_id)\
+                                .in_("plan_item_id", [item['id'] for item in plan_items_result.data])\
+                                .execute()
+                            
+                            archetype_data["has_calendar_selections"] = (selections_result.count or 0) > 0
                     
                 except Exception as stats_error:
-                    print(f"Error getting stats for analysis {analysis_id}: {stats_error}")
+                    print(f"Error getting stats for archetype {archetype_name}: {stats_error}")
                     # Continue with zero stats
                     pass
             
@@ -306,7 +296,8 @@ async def get_user_available_archetypes(
             total_archetypes=len(archetypes_with_stats),
             archetypes=archetypes_with_stats,
             has_multiple_plans=len(archetypes_with_stats) > 1,
-            most_recent=most_recent
+            most_recent=most_recent,
+            archetype_tracking=tracking_data  # Include raw tracking data as requested
         )
         
     except Exception as e:

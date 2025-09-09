@@ -117,6 +117,8 @@ from shared_libs.config.security_settings import get_cors_config
 from shared_libs.middleware.input_validator import validate_request_middleware, RequestSizeLimit
 
 cors_config = get_cors_config()
+# Manual override to ensure X-API-Key header is allowed (temporary fix)
+cors_config['allow_headers'] = cors_config.get('allow_headers', []) + ['X-API-Key']
 app.add_middleware(
     CORSMiddleware,
     **cors_config
