@@ -1015,6 +1015,39 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 behavior_analysis=behavior_analysis
             )
             
+            # STORE PLAN ITEMS: Extract and store plan items for active plan display
+            try:
+                from services.plan_extraction_service import PlanExtractionService
+                
+                # Find the most recent behavior analysis ID to associate plan items
+                from services.agents.memory.holistic_memory_service import HolisticMemoryService
+                memory_service = HolisticMemoryService()
+                analysis_history = await memory_service.get_analysis_history(user_id, analysis_type="behavior_analysis", limit=1)
+                
+                if analysis_history and routine_plan:
+                    analysis_result_id = str(analysis_history[0].id)
+                    print(f"📝 [PLAN_STORAGE] Storing plan items for analysis_result_id: {analysis_result_id}")
+                    
+                    # Extract plan items from the routine plan content
+                    extraction_service = PlanExtractionService()
+                    
+                    # Convert routine plan to extractable format
+                    if isinstance(routine_plan, dict) and 'content' in routine_plan:
+                        plan_content = routine_plan['content']
+                        
+                        # Store plan items in database for active plan display
+                        stored_items = await extraction_service.extract_and_store_plan_items(
+                            analysis_result_id=analysis_result_id,
+                            profile_id=user_id
+                        )
+                        print(f"✅ [PLAN_STORAGE] Stored {len(stored_items)} plan items for active plan display")
+                    
+                await memory_service.cleanup()
+                    
+            except Exception as storage_error:
+                print(f"⚠️ [PLAN_STORAGE] Failed to store plan items: {storage_error}")
+                # Don't fail the entire request if plan storage fails
+            
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
             # when storing behavior analysis results - no need for global timestamp update
             

@@ -483,7 +483,9 @@ async def get_current_plans(
     Get user's current active plans with trackable items
     """
     try:
-        target_date = date_param or date.today().isoformat()
+        # Fix: date.today() returns a date object, not a string
+        target_date = date_param if date_param else date.today().isoformat()
+        logger.info(f"Getting current plans for profile {profile_id}, date: {target_date}")
         plan_data = await plan_service.get_current_plan_items_for_user(profile_id, target_date)
         
         return CurrentPlanResponse(

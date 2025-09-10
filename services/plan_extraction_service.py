@@ -598,62 +598,101 @@ class PlanExtractionService:
             return []
 
     async def get_current_plan_items_for_user(self, profile_id: str, date_str: str = None) -> Dict[str, Any]:
-        """Get plan items for a user filtered by plan_date"""
+        """Get plan items for a user using separate queries approach - finds most recent COMPLETE analysis"""
         try:
             from datetime import date
             target_date = date.fromisoformat(date_str) if date_str else date.today()
             target_date_str = target_date.isoformat()
             
-            # Get plan items for the specific plan_date, joining with analysis results
+            logger.info(f"Fetching plan items for profile_id: {profile_id}, date: {target_date_str}")
+            
+            # Step 1: Get most recent analysis that has COMPLETE data (both time_blocks and plan_items)
+            # Using separate queries to find complete analysis
+            analyses_with_blocks = self.supabase.table("holistic_analysis_results")\
+                .select("id, archetype, analysis_date, created_at, user_id")\
+                .eq("user_id", profile_id)\
+                .in_("analysis_type", ["routine_plan", "nutrition_plan"])\
+                .order("created_at", desc=True)\
+                .execute()
+            
+            if not analyses_with_blocks.data:
+                logger.warning(f"No analyses found for user {profile_id}")
+                return {"routine_plan": None, "nutrition_plan": None, "items": []}
+            
+            # Find the most recent analysis that has both time_blocks AND plan_items
+            complete_analysis = None
+            for analysis in analyses_with_blocks.data:
+                # Check if this analysis has time_blocks
+                time_blocks_check = self.supabase.table("time_blocks")\
+                    .select("id")\
+                    .eq("analysis_result_id", analysis["id"])\
+                    .limit(1)\
+                    .execute()
+                
+                # Check if this analysis has plan_items
+                plan_items_check = self.supabase.table("plan_items")\
+                    .select("id")\
+                    .eq("analysis_result_id", analysis["id"])\
+                    .limit(1)\
+                    .execute()
+                
+                if time_blocks_check.data and plan_items_check.data:
+                    complete_analysis = analysis
+                    logger.info(f"Found complete analysis: {analysis['id']} ({analysis['archetype']}, {analysis['analysis_date']})")
+                    break
+            
+            if not complete_analysis:
+                logger.warning(f"No complete analyses found for user {profile_id}")
+                return {"routine_plan": None, "nutrition_plan": None, "items": []}
+            
+            # Step 2: Get plan items for this complete analysis
             plan_items_result = self.supabase.table("plan_items")\
-                .select("""
-                    *, 
-                    holistic_analysis_results!inner(
-                        id, analysis_type, archetype, created_at, user_id
-                    )
-                """)\
+                .select("*")\
+                .eq("analysis_result_id", complete_analysis["id"])\
                 .eq("plan_date", target_date_str)\
-                .eq("holistic_analysis_results.user_id", profile_id)\
                 .eq("is_trackable", True)\
-                .in_("holistic_analysis_results.analysis_type", ["routine_plan", "nutrition_plan"])\
                 .order("time_block_order")\
                 .order("task_order_in_block")\
                 .execute()
             
+            # If no items for target date, get any items for this analysis
             if not plan_items_result.data:
-                return {"routine_plan": None, "nutrition_plan": None, "items": []}
+                logger.info(f"No items found for date {target_date_str}, getting all items for analysis")
+                plan_items_result = self.supabase.table("plan_items")\
+                    .select("*")\
+                    .eq("analysis_result_id", complete_analysis["id"])\
+                    .eq("is_trackable", True)\
+                    .order("time_block_order")\
+                    .order("task_order_in_block")\
+                    .execute()
             
-            # Organize items by plan type and prepare response
+            # Step 3: Organize response
             all_items = []
-            plan_info = {"routine_plan": None, "nutrition_plan": None}
+            plan_info = {
+                "routine_plan": {
+                    "analysis_id": complete_analysis["id"],
+                    "archetype": complete_analysis.get("archetype"),
+                    "created_at": complete_analysis["created_at"],
+                    "analysis_date": complete_analysis["analysis_date"]
+                },
+                "nutrition_plan": None
+            }
             
             for item in plan_items_result.data:
-                analysis = item["holistic_analysis_results"]
-                analysis_id = analysis["id"]
-                plan_type = analysis["analysis_type"]
-                
-                # Store plan info if not already set
-                if not plan_info[plan_type]:
-                    plan_info[plan_type] = {
-                        "analysis_id": analysis_id,
-                        "archetype": analysis.get("archetype"),
-                        "created_at": analysis["created_at"]
-                    }
-                
                 # Add plan context to item
-                item["plan_type"] = plan_type
-                item["analysis_info"] = plan_info[plan_type]
-                
-                # Remove the nested analysis data from the item itself
-                del item["holistic_analysis_results"]
-                
+                item["plan_type"] = "routine_plan"
+                item["analysis_info"] = plan_info["routine_plan"]
                 all_items.append(item)
+            
+            logger.info(f"Returning {len(all_items)} plan items from analysis {complete_analysis['id']}")
             
             return {
                 "routine_plan": plan_info["routine_plan"],
                 "nutrition_plan": plan_info["nutrition_plan"],
                 "items": all_items,
-                "date": target_date_str
+                "date": target_date_str,
+                "analysis_used": complete_analysis["id"],
+                "archetype": complete_analysis.get("archetype")
             }
             
         except Exception as e:
