@@ -9,12 +9,22 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel
 
-from shared_libs.supabase_utils import get_supabase_client
-from supabase import Client
+from supabase import create_client, Client
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def get_supabase_client() -> Client:
+    """Get Supabase client using environment variables"""
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_SERVICE_KEY') or os.getenv('SUPABASE_KEY')
+    
+    if not supabase_url or not supabase_key:
+        raise Exception("Missing SUPABASE_URL or SUPABASE_KEY environment variables")
+    
+    return create_client(supabase_url, supabase_key)
 
 # Create router
 router = APIRouter(prefix="/api/v1/analysis", tags=["analysis"])
