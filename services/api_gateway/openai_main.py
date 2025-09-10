@@ -216,6 +216,20 @@ except Exception as e:
     print("Full traceback:")
     traceback.print_exc()
 
+# Integrate Analysis Results Endpoints
+try:
+    from .analysis_results_endpoints import router as analysis_router
+    app.include_router(analysis_router)
+    print("✅ [INTEGRATION] Analysis results endpoints added successfully")
+    print("  - GET /api/v1/analysis/user/{user_id}/results")
+    print("  - GET /api/v1/analysis/user/{user_id}/latest-with-data")
+    print("  - GET /api/v1/analysis/result/{analysis_id}/status")
+    print("  - POST /api/v1/analysis/user/{user_id}/extract-latest")
+except ImportError as e:
+    print(f"⚠️ [WARNING] Analysis results endpoints not available: {e}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate analysis results endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
