@@ -477,6 +477,7 @@ async def extract_plan_items(
 async def get_current_plans(
     profile_id: str,
     date_param: Optional[str] = Query(None, alias="date", description="Date in YYYY-MM-DD format"),
+    analysis_result_id: Optional[str] = Query(None, description="Specific analysis result ID to filter by"),
     plan_service: PlanExtractionService = Depends(get_plan_service)
 ):
     """
@@ -485,8 +486,8 @@ async def get_current_plans(
     try:
         # Fix: date.today() returns a date object, not a string
         target_date = date_param if date_param else date.today().isoformat()
-        logger.info(f"Getting current plans for profile {profile_id}, date: {target_date}")
-        plan_data = await plan_service.get_current_plan_items_for_user(profile_id, target_date)
+        logger.info(f"Getting current plans for profile {profile_id}, date: {target_date}, analysis_result_id: {analysis_result_id}")
+        plan_data = await plan_service.get_current_plan_items_for_user(profile_id, target_date, analysis_result_id)
         
         return CurrentPlanResponse(
             routine_plan=plan_data["routine_plan"],

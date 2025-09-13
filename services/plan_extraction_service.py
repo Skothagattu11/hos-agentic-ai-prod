@@ -597,53 +597,83 @@ class PlanExtractionService:
             logger.error(f"Error fetching plan items: {str(e)}")
             return []
 
-    async def get_current_plan_items_for_user(self, profile_id: str, date_str: str = None) -> Dict[str, Any]:
-        """Get plan items for a user using separate queries approach - finds most recent COMPLETE analysis"""
+    async def get_current_plan_items_for_user(self, profile_id: str, date_str: str = None, analysis_result_id: str = None) -> Dict[str, Any]:
+        """Get plan items for a user - if analysis_result_id provided, use specific analysis, otherwise find most recent COMPLETE analysis"""
         try:
             from datetime import date
             target_date = date.fromisoformat(date_str) if date_str else date.today()
             target_date_str = target_date.isoformat()
             
-            logger.info(f"Fetching plan items for profile_id: {profile_id}, date: {target_date_str}")
+            logger.info(f"Fetching plan items for profile_id: {profile_id}, date: {target_date_str}, analysis_result_id: {analysis_result_id}")
             
-            # Step 1: Get most recent analysis that has COMPLETE data (both time_blocks and plan_items)
-            # Using separate queries to find complete analysis
-            analyses_with_blocks = self.supabase.table("holistic_analysis_results")\
-                .select("id, archetype, analysis_date, created_at, user_id")\
-                .eq("user_id", profile_id)\
-                .in_("analysis_type", ["routine_plan", "nutrition_plan"])\
-                .order("created_at", desc=True)\
-                .execute()
-            
-            if not analyses_with_blocks.data:
-                logger.warning(f"No analyses found for user {profile_id}")
-                return {"routine_plan": None, "nutrition_plan": None, "items": []}
-            
-            # Find the most recent analysis that has both time_blocks AND plan_items
             complete_analysis = None
-            for analysis in analyses_with_blocks.data:
-                # Check if this analysis has time_blocks
-                time_blocks_check = self.supabase.table("time_blocks")\
-                    .select("id")\
-                    .eq("analysis_result_id", analysis["id"])\
-                    .limit(1)\
-                    .execute()
-                
-                # Check if this analysis has plan_items
-                plan_items_check = self.supabase.table("plan_items")\
-                    .select("id")\
-                    .eq("analysis_result_id", analysis["id"])\
-                    .limit(1)\
-                    .execute()
-                
-                if time_blocks_check.data and plan_items_check.data:
-                    complete_analysis = analysis
-                    logger.info(f"Found complete analysis: {analysis['id']} ({analysis['archetype']}, {analysis['analysis_date']})")
-                    break
             
+            # Step 1: If specific analysis_result_id provided, use that directly
+            if analysis_result_id:
+                logger.info(f"Using specific analysis_result_id: {analysis_result_id}")
+                specific_analysis = self.supabase.table("holistic_analysis_results")\
+                    .select("id, archetype, analysis_date, created_at, user_id")\
+                    .eq("id", analysis_result_id)\
+                    .eq("user_id", profile_id)\
+                    .single()\
+                    .execute()
+                
+                if specific_analysis.data:
+                    # Verify this analysis has plan_items (no need to check time_blocks for specific requests)
+                    plan_items_check = self.supabase.table("plan_items")\
+                        .select("id")\
+                        .eq("analysis_result_id", analysis_result_id)\
+                        .limit(1)\
+                        .execute()
+                    
+                    if plan_items_check.data:
+                        complete_analysis = specific_analysis.data
+                        logger.info(f"Using specific analysis: {complete_analysis['id']} ({complete_analysis['archetype']})")
+                    else:
+                        logger.warning(f"Specific analysis {analysis_result_id} has no plan_items")
+                        return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
+                else:
+                    logger.warning(f"Specific analysis {analysis_result_id} not found for user {profile_id}")
+                    return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
+            
+            # Step 2: If no specific analysis_result_id, find most recent COMPLETE analysis
             if not complete_analysis:
-                logger.warning(f"No complete analyses found for user {profile_id}")
-                return {"routine_plan": None, "nutrition_plan": None, "items": []}
+                logger.info("No specific analysis_result_id provided, finding most recent complete analysis")
+                analyses_with_blocks = self.supabase.table("holistic_analysis_results")\
+                    .select("id, archetype, analysis_date, created_at, user_id")\
+                    .eq("user_id", profile_id)\
+                    .in_("analysis_type", ["routine_plan", "nutrition_plan"])\
+                    .order("created_at", desc=True)\
+                    .execute()
+                
+                if not analyses_with_blocks.data:
+                    logger.warning(f"No analyses found for user {profile_id}")
+                    return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
+                
+                # Find the most recent analysis that has both time_blocks AND plan_items
+                for analysis in analyses_with_blocks.data:
+                    # Check if this analysis has time_blocks
+                    time_blocks_check = self.supabase.table("time_blocks")\
+                        .select("id")\
+                        .eq("analysis_result_id", analysis["id"])\
+                        .limit(1)\
+                        .execute()
+                    
+                    # Check if this analysis has plan_items
+                    plan_items_check = self.supabase.table("plan_items")\
+                        .select("id")\
+                        .eq("analysis_result_id", analysis["id"])\
+                        .limit(1)\
+                        .execute()
+                    
+                    if time_blocks_check.data and plan_items_check.data:
+                        complete_analysis = analysis
+                        logger.info(f"Found complete analysis: {analysis['id']} ({analysis['archetype']}, {analysis['analysis_date']})")
+                        break
+                
+                if not complete_analysis:
+                    logger.warning(f"No complete analyses found for user {profile_id}")
+                    return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
             
             # Step 2: Get plan items for this complete analysis
             plan_items_result = self.supabase.table("plan_items")\
@@ -671,6 +701,7 @@ class PlanExtractionService:
             plan_info = {
                 "routine_plan": {
                     "analysis_id": complete_analysis["id"],
+                    "analysis_result_id": complete_analysis["id"],  # Add explicit analysis_result_id field
                     "archetype": complete_analysis.get("archetype"),
                     "created_at": complete_analysis["created_at"],
                     "analysis_date": complete_analysis["analysis_date"]
