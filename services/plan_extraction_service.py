@@ -579,20 +579,20 @@ class PlanExtractionService:
             raise HolisticOSException(f"Failed to store plan items: {str(e)}")
     
     def get_plan_items_for_analysis(self, analysis_result_id: str, trackable_only: bool = True) -> List[Dict[str, Any]]:
-        """Get all plan items for a specific analysis result"""
+        """Get all plan items for a specific analysis result with time block names"""
         try:
             query = self.supabase.table("plan_items")\
-                .select("*")\
+                .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
                 .eq("analysis_result_id", analysis_result_id)\
                 .order("time_block_order")\
                 .order("task_order_in_block")
-            
+
             if trackable_only:
                 query = query.eq("is_trackable", True)
-            
+
             result = query.execute()
             return result.data if result.data else []
-            
+
         except Exception as e:
             logger.error(f"Error fetching plan items: {str(e)}")
             return []
@@ -675,21 +675,21 @@ class PlanExtractionService:
                     logger.warning(f"No complete analyses found for user {profile_id}")
                     return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
             
-            # Step 2: Get plan items for this complete analysis
+            # Step 2: Get plan items for this complete analysis with time block names
             plan_items_result = self.supabase.table("plan_items")\
-                .select("*")\
+                .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
                 .eq("analysis_result_id", complete_analysis["id"])\
                 .eq("plan_date", target_date_str)\
                 .eq("is_trackable", True)\
                 .order("time_block_order")\
                 .order("task_order_in_block")\
                 .execute()
-            
+
             # If no items for target date, get any items for this analysis
             if not plan_items_result.data:
                 logger.info(f"No items found for date {target_date_str}, getting all items for analysis")
                 plan_items_result = self.supabase.table("plan_items")\
-                    .select("*")\
+                    .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
                     .eq("analysis_result_id", complete_analysis["id"])\
                     .eq("is_trackable", True)\
                     .order("time_block_order")\
