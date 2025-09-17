@@ -728,7 +728,9 @@ class PlanExtractionService:
             
         except Exception as e:
             logger.error(f"Error fetching current plan items: {str(e)}")
-            return {"routine_plan": None, "nutrition_plan": None, "items": []}
+            # Use date_str if available, fallback to today
+            fallback_date = date_str if date_str else date.today().isoformat()
+            return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": fallback_date}
 
     def extract_plan_with_time_blocks(self, content: str, analysis_result: Dict[str, Any]) -> ExtractedPlan:
         """
