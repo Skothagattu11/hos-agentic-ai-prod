@@ -581,9 +581,7 @@ class PlanExtractionService:
     def get_plan_items_for_analysis(self, analysis_result_id: str, trackable_only: bool = True) -> List[Dict[str, Any]]:
         """Get all plan items for a specific analysis result with time block names"""
         try:
-            logger.info(f"DEBUG: get_plan_items_for_analysis called with analysis_result_id: {analysis_result_id}")
-
-            # Step 1: Get plan items
+            # Get plan items
             query = self.supabase.table("plan_items")\
                 .select("*")\
                 .eq("analysis_result_id", analysis_result_id)\
@@ -595,10 +593,9 @@ class PlanExtractionService:
 
             result = query.execute()
             plan_items = result.data if result.data else []
-            logger.info(f"DEBUG: Retrieved {len(plan_items)} plan items")
 
             if plan_items:
-                # Step 2: Get time blocks for this analysis_result_id
+                # Get time blocks for this analysis_result_id
                 time_blocks_result = self.supabase.table("time_blocks")\
                     .select("id, block_title, time_range, purpose, block_order")\
                     .eq("analysis_result_id", analysis_result_id)\
@@ -606,19 +603,15 @@ class PlanExtractionService:
                     .execute()
 
                 time_blocks = time_blocks_result.data if time_blocks_result.data else []
-                logger.info(f"DEBUG: Retrieved {len(time_blocks)} time blocks")
 
-                # Step 3: Create mapping from block number to time block data
+                # Create mapping from block number to time block data
                 time_block_mapping = {}
                 for tb in time_blocks:
-                    # Map by block_order (1, 2, 3, etc.)
                     time_block_mapping[tb.get("block_order")] = tb
-                    logger.info(f"DEBUG: Mapped block_order {tb.get('block_order')} to '{tb.get('block_title')}'")
 
-                # Step 4: Match plan items to time blocks
+                # Match plan items to time blocks
                 for item in plan_items:
                     time_block_str = item.get("time_block", "")
-                    logger.info(f"DEBUG: Processing item '{item.get('title')}' with time_block: '{time_block_str}'")
 
                     # Extract block number from time_block string (e.g., "xyz_block_4" -> 4)
                     if "block_" in time_block_str:
@@ -626,7 +619,6 @@ class PlanExtractionService:
                             block_num = int(time_block_str.split("block_")[-1])
                             if block_num in time_block_mapping:
                                 item["time_blocks"] = time_block_mapping[block_num]
-                                logger.info(f"DEBUG: Matched to time block: '{time_block_mapping[block_num].get('block_title')}'")
                             else:
                                 # Fallback: create readable name from block number
                                 item["time_blocks"] = {
@@ -634,13 +626,10 @@ class PlanExtractionService:
                                     "time_range": "",
                                     "purpose": ""
                                 }
-                                logger.info(f"DEBUG: Created fallback time block: 'Time Block {block_num}'")
                         except (ValueError, IndexError):
                             item["time_blocks"] = None
-                            logger.warning(f"DEBUG: Could not parse block number from '{time_block_str}'")
                     else:
                         item["time_blocks"] = None
-                        logger.warning(f"DEBUG: No 'block_' found in time_block string")
 
             return plan_items
 
