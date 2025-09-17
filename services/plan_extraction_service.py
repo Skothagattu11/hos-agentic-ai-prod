@@ -676,20 +676,25 @@ class PlanExtractionService:
                     return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
             
             # Step 2: Get plan items for this complete analysis with time block names
+            # TEMPORARY FIX: Remove date filter to get all items for this analysis
+            # Fix JOIN syntax using specific relationship name
             plan_items_result = self.supabase.table("plan_items")\
-                .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
+                .select("*, time_blocks!plan_items_time_block_id_fkey(block_title, time_range, purpose)")\
                 .eq("analysis_result_id", complete_analysis["id"])\
-                .eq("plan_date", target_date_str)\
                 .eq("is_trackable", True)\
                 .order("time_block_order")\
                 .order("task_order_in_block")\
                 .execute()
 
+            logger.info(f"DEBUG: Retrieved {len(plan_items_result.data or [])} items for analysis {complete_analysis['id']}")
+            if plan_items_result.data:
+                logger.info(f"DEBUG: First item plan_date: {plan_items_result.data[0].get('plan_date')}")
+
             # If no items for target date, get any items for this analysis
             if not plan_items_result.data:
                 logger.info(f"No items found for date {target_date_str}, getting all items for analysis")
                 plan_items_result = self.supabase.table("plan_items")\
-                    .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
+                    .select("*, time_blocks!plan_items_time_block_id_fkey(block_title, time_range, purpose)")\
                     .eq("analysis_result_id", complete_analysis["id"])\
                     .eq("is_trackable", True)\
                     .order("time_block_order")\
