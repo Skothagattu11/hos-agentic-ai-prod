@@ -584,6 +584,26 @@ async def get_current_plans(
 
             enhanced_items.append(enhanced_item)
 
+        # Sort items by time block order (block_1, block_2, block_3, block_4, etc.)
+        def extract_block_number(item):
+            time_block = item.get("time_block", "")
+            if "_block_" in time_block:
+                try:
+                    block_num = int(time_block.split("_block_")[1])
+                    return block_num
+                except (ValueError, IndexError):
+                    return 999  # Put malformed entries at the end
+            return 999
+
+        def sort_key(item):
+            # Primary sort: block number
+            block_num = extract_block_number(item)
+            # Secondary sort: task order within block (if available)
+            task_order = item.get("task_order_in_block", 0)
+            return (block_num, task_order)
+
+        enhanced_items.sort(key=sort_key)
+
         return CurrentPlanResponse(
             routine_plan=plan_data["routine_plan"],
             nutrition_plan=plan_data["nutrition_plan"],
