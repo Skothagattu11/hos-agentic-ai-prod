@@ -131,6 +131,7 @@ class PlanItemResponse(BaseModel):
     estimated_duration_minutes: Optional[int]
     task_type: str
     time_block: str
+    time_blocks: Optional[Dict[str, Any]] = None  # Enhanced field for block_title
     is_completed: Optional[bool] = None
     completion_status: Optional[str] = None
     satisfaction_rating: Optional[int] = None
@@ -440,7 +441,81 @@ async def get_journal_history(
         raise HTTPException(status_code=500, detail=f"Failed to fetch journal history: {str(e)}")
 
 # =====================================================
-# Plan Management Endpoints  
+# Time Block Helper Functions and Endpoints
+# =====================================================
+
+async def get_block_title_from_time_block(time_block_string: str, supabase: Client) -> str:
+    """
+    Extract block_title from time_block string like "0017e22c-b2ad-4720-bfcd-38b0ab4d3e89_block_4"
+
+    Logic:
+    1. Extract analysis_result_id (before "_block")
+    2. Extract block_number (after "_block")
+    3. Fetch time_blocks for analysis_result_id
+    4. Match by block_order with block_number
+    5. Return block_title
+    """
+    try:
+        # Extract analysis_result_id and block_number from time_block string
+        if "_block_" not in time_block_string:
+            return time_block_string  # Return original if format doesn't match
+
+        parts = time_block_string.split("_block_")
+        if len(parts) != 2:
+            return time_block_string
+
+        analysis_result_id = parts[0]
+        block_number_str = parts[1]
+
+        try:
+            block_number = int(block_number_str)
+        except ValueError:
+            return time_block_string
+
+        # Fetch time_blocks for this analysis_result_id
+        result = supabase.table("time_blocks")\
+            .select("id, block_title, block_order")\
+            .eq("analysis_result_id", analysis_result_id)\
+            .execute()
+
+        if not result.data:
+            return time_block_string
+
+        # Find time_block with matching block_order
+        for time_block in result.data:
+            if time_block.get("block_order") == block_number:
+                return time_block.get("block_title", time_block_string)
+
+        return time_block_string
+
+    except Exception as e:
+        logger.error(f"Error getting block title for {time_block_string}: {str(e)}")
+        return time_block_string
+
+@router.get("/time-block-title")
+async def get_time_block_title(
+    time_block: str = Query(..., description="Time block string like '0017e22c-b2ad-4720-bfcd-38b0ab4d3e89_block_4'"),
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    Get readable block title from time_block string
+
+    Takes: "0017e22c-b2ad-4720-bfcd-38b0ab4d3e89_block_4"
+    Returns: "Evening Wind-down (8:30-9:30 PM): Recovery and Preparation for Rest"
+    """
+    try:
+        block_title = await get_block_title_from_time_block(time_block, supabase)
+        return {
+            "time_block": time_block,
+            "block_title": block_title,
+            "success": True
+        }
+    except Exception as e:
+        logger.error(f"Error in get_time_block_title: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get block title: {str(e)}")
+
+# =====================================================
+# Plan Management Endpoints
 # =====================================================
 
 @router.post("/extract-plan-items")
@@ -478,24 +553,44 @@ async def get_current_plans(
     profile_id: str,
     date_param: Optional[str] = Query(None, alias="date", description="Date in YYYY-MM-DD format"),
     analysis_result_id: Optional[str] = Query(None, description="Specific analysis result ID to filter by"),
-    plan_service: PlanExtractionService = Depends(get_plan_service)
+    plan_service: PlanExtractionService = Depends(get_plan_service),
+    supabase: Client = Depends(get_supabase)
 ):
     """
     Get user's current active plans with trackable items
+    Enhanced with time block title replacement
     """
     try:
         # Fix: date.today() returns a date object, not a string
         target_date = date_param if date_param else date.today().isoformat()
         logger.info(f"Getting current plans for profile {profile_id}, date: {target_date}, analysis_result_id: {analysis_result_id}")
         plan_data = await plan_service.get_current_plan_items_for_user(profile_id, target_date, analysis_result_id)
-        
+
+        # Enhance items with readable time block titles
+        enhanced_items = []
+        for item in plan_data["items"]:
+            # Create a copy of the item to avoid modifying the original
+            enhanced_item = dict(item)
+
+            # Replace time_block with block_title using our helper function
+            if "time_block" in enhanced_item:
+                block_title = await get_block_title_from_time_block(enhanced_item["time_block"], supabase)
+                # Add time_blocks field with block_title for Flutter compatibility
+                enhanced_item["time_blocks"] = {
+                    "block_title": block_title
+                }
+                # Keep original time_block for backward compatibility
+                enhanced_item["time_block"] = enhanced_item["time_block"]
+
+            enhanced_items.append(enhanced_item)
+
         return CurrentPlanResponse(
             routine_plan=plan_data["routine_plan"],
             nutrition_plan=plan_data["nutrition_plan"],
-            items=[PlanItemResponse(**item) for item in plan_data["items"]],
+            items=[PlanItemResponse(**item) for item in enhanced_items],
             date=plan_data["date"]
         )
-        
+
     except Exception as e:
         logger.error(f"Error fetching current plans: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch current plans: {str(e)}")

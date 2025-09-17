@@ -599,37 +599,43 @@ class PlanExtractionService:
                 time_blocks_result = self.supabase.table("time_blocks")\
                     .select("id, block_title, time_range, purpose, block_order")\
                     .eq("analysis_result_id", analysis_result_id)\
-                    .order("block_order")\
                     .execute()
 
                 time_blocks = time_blocks_result.data if time_blocks_result.data else []
 
-                # Create mapping from block number to time block data
+                # Create mapping from time_block_id (UUID) to time block data
                 time_block_mapping = {}
                 for tb in time_blocks:
-                    time_block_mapping[tb.get("block_order")] = tb
+                    time_block_mapping[tb.get("id")] = tb
 
-                # Match plan items to time blocks
+                # Match plan items to time blocks using time_block_id (UUID)
                 for item in plan_items:
-                    time_block_str = item.get("time_block", "")
+                    time_block_id = item.get("time_block_id")
 
-                    # Extract block number from time_block string (e.g., "xyz_block_4" -> 4)
-                    if "block_" in time_block_str:
-                        try:
-                            block_num = int(time_block_str.split("block_")[-1])
-                            if block_num in time_block_mapping:
-                                item["time_blocks"] = time_block_mapping[block_num]
-                            else:
-                                # Fallback: create readable name from block number
-                                item["time_blocks"] = {
-                                    "block_title": f"Time Block {block_num}",
-                                    "time_range": "",
-                                    "purpose": ""
-                                }
-                        except (ValueError, IndexError):
-                            item["time_blocks"] = None
+                    if time_block_id and time_block_id in time_block_mapping:
+                        item["time_blocks"] = time_block_mapping[time_block_id]
                     else:
-                        item["time_blocks"] = None
+                        # Fallback: try to extract block number from time_block string
+                        time_block_str = item.get("time_block", "")
+                        if "block_" in time_block_str:
+                            try:
+                                block_num = int(time_block_str.split("block_")[-1])
+                                # Try to find by block_order as fallback
+                                for tb in time_blocks:
+                                    if tb.get("block_order") == block_num:
+                                        item["time_blocks"] = tb
+                                        break
+                                else:
+                                    # No match found, create fallback
+                                    item["time_blocks"] = {
+                                        "block_title": f"Time Block {block_num}",
+                                        "time_range": "",
+                                        "purpose": ""
+                                    }
+                            except (ValueError, IndexError):
+                                item["time_blocks"] = None
+                        else:
+                            item["time_blocks"] = None
 
             return plan_items
 
