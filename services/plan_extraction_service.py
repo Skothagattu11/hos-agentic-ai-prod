@@ -581,8 +581,11 @@ class PlanExtractionService:
     def get_plan_items_for_analysis(self, analysis_result_id: str, trackable_only: bool = True) -> List[Dict[str, Any]]:
         """Get all plan items for a specific analysis result with time block names"""
         try:
+            logger.info(f"DEBUG: get_plan_items_for_analysis called with analysis_result_id: {analysis_result_id}")
+
+            # Step 1: Get plan items
             query = self.supabase.table("plan_items")\
-                .select("*, time_blocks!time_block_id(block_title, time_range, purpose)")\
+                .select("*")\
                 .eq("analysis_result_id", analysis_result_id)\
                 .order("time_block_order")\
                 .order("task_order_in_block")
@@ -591,7 +594,55 @@ class PlanExtractionService:
                 query = query.eq("is_trackable", True)
 
             result = query.execute()
-            return result.data if result.data else []
+            plan_items = result.data if result.data else []
+            logger.info(f"DEBUG: Retrieved {len(plan_items)} plan items")
+
+            if plan_items:
+                # Step 2: Get time blocks for this analysis_result_id
+                time_blocks_result = self.supabase.table("time_blocks")\
+                    .select("id, block_title, time_range, purpose, block_order")\
+                    .eq("analysis_result_id", analysis_result_id)\
+                    .order("block_order")\
+                    .execute()
+
+                time_blocks = time_blocks_result.data if time_blocks_result.data else []
+                logger.info(f"DEBUG: Retrieved {len(time_blocks)} time blocks")
+
+                # Step 3: Create mapping from block number to time block data
+                time_block_mapping = {}
+                for tb in time_blocks:
+                    # Map by block_order (1, 2, 3, etc.)
+                    time_block_mapping[tb.get("block_order")] = tb
+                    logger.info(f"DEBUG: Mapped block_order {tb.get('block_order')} to '{tb.get('block_title')}'")
+
+                # Step 4: Match plan items to time blocks
+                for item in plan_items:
+                    time_block_str = item.get("time_block", "")
+                    logger.info(f"DEBUG: Processing item '{item.get('title')}' with time_block: '{time_block_str}'")
+
+                    # Extract block number from time_block string (e.g., "xyz_block_4" -> 4)
+                    if "block_" in time_block_str:
+                        try:
+                            block_num = int(time_block_str.split("block_")[-1])
+                            if block_num in time_block_mapping:
+                                item["time_blocks"] = time_block_mapping[block_num]
+                                logger.info(f"DEBUG: Matched to time block: '{time_block_mapping[block_num].get('block_title')}'")
+                            else:
+                                # Fallback: create readable name from block number
+                                item["time_blocks"] = {
+                                    "block_title": f"Time Block {block_num}",
+                                    "time_range": "",
+                                    "purpose": ""
+                                }
+                                logger.info(f"DEBUG: Created fallback time block: 'Time Block {block_num}'")
+                        except (ValueError, IndexError):
+                            item["time_blocks"] = None
+                            logger.warning(f"DEBUG: Could not parse block number from '{time_block_str}'")
+                    else:
+                        item["time_blocks"] = None
+                        logger.warning(f"DEBUG: No 'block_' found in time_block string")
+
+            return plan_items
 
         except Exception as e:
             logger.error(f"Error fetching plan items: {str(e)}")
@@ -675,16 +726,45 @@ class PlanExtractionService:
                     logger.warning(f"No complete analyses found for user {profile_id}")
                     return {"routine_plan": None, "nutrition_plan": None, "items": [], "date": target_date_str}
             
-            # Step 2: Get plan items for this complete analysis with time block names
+            # Step 2: Get plan items for this complete analysis
             # TEMPORARY FIX: Remove date filter to get all items for this analysis
-            # Fix JOIN syntax using specific relationship name
             plan_items_result = self.supabase.table("plan_items")\
-                .select("*, time_blocks!plan_items_time_block_id_fkey(block_title, time_range, purpose)")\
+                .select("*")\
                 .eq("analysis_result_id", complete_analysis["id"])\
                 .eq("is_trackable", True)\
                 .order("time_block_order")\
                 .order("task_order_in_block")\
                 .execute()
+
+            # Step 3: Get time blocks separately and manually join
+            time_blocks_result = self.supabase.table("time_blocks")\
+                .select("id, block_title, time_range, purpose")\
+                .execute()
+
+            # Create a lookup dictionary for time blocks
+            time_blocks_lookup = {tb["id"]: tb for tb in time_blocks_result.data or []}
+
+            # Manually join time blocks data to plan items
+            plan_items = plan_items_result.data or []
+            for item in plan_items:
+                time_block_id = item.get("time_block_id")
+                if time_block_id and time_block_id in time_blocks_lookup:
+                    item["time_blocks"] = time_blocks_lookup[time_block_id]
+                else:
+                    # TEMPORARY WORKAROUND: Extract block number from time_block string
+                    time_block_str = item.get("time_block", "")
+                    if "block_" in time_block_str:
+                        # Extract block number (e.g., "block_1" -> "1")
+                        block_num = time_block_str.split("block_")[-1]
+                        # Create a readable block title
+                        readable_title = f"Time Block {block_num}"
+                        item["time_blocks"] = {
+                            "block_title": readable_title,
+                            "time_range": "",
+                            "purpose": ""
+                        }
+                    else:
+                        item["time_blocks"] = None
 
             logger.info(f"DEBUG: Retrieved {len(plan_items_result.data or [])} items for analysis {complete_analysis['id']}")
             if plan_items_result.data:
@@ -694,12 +774,41 @@ class PlanExtractionService:
             if not plan_items_result.data:
                 logger.info(f"No items found for date {target_date_str}, getting all items for analysis")
                 plan_items_result = self.supabase.table("plan_items")\
-                    .select("*, time_blocks!plan_items_time_block_id_fkey(block_title, time_range, purpose)")\
+                    .select("*")\
                     .eq("analysis_result_id", complete_analysis["id"])\
                     .eq("is_trackable", True)\
                     .order("time_block_order")\
                     .order("task_order_in_block")\
                     .execute()
+
+                # Get time blocks separately and manually join
+                time_blocks_result = self.supabase.table("time_blocks")\
+                    .select("id, block_title, time_range, purpose")\
+                    .execute()
+
+                # Create a lookup dictionary for time blocks
+                time_blocks_lookup = {tb["id"]: tb for tb in time_blocks_result.data or []}
+
+                # Manually join time blocks data to plan items
+                for item in plan_items_result.data or []:
+                    time_block_id = item.get("time_block_id")
+                    if time_block_id and time_block_id in time_blocks_lookup:
+                        item["time_blocks"] = time_blocks_lookup[time_block_id]
+                    else:
+                        # TEMPORARY WORKAROUND: Extract block number from time_block string
+                        time_block_str = item.get("time_block", "")
+                        if "block_" in time_block_str:
+                            # Extract block number (e.g., "block_1" -> "1")
+                            block_num = time_block_str.split("block_")[-1]
+                            # Create a readable block title
+                            readable_title = f"Time Block {block_num}"
+                            item["time_blocks"] = {
+                                "block_title": readable_title,
+                                "time_range": "",
+                                "purpose": ""
+                            }
+                        else:
+                            item["time_blocks"] = None
             
             # Step 3: Organize response
             all_items = []
