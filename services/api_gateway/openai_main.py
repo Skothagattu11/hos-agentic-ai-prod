@@ -230,6 +230,25 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate analysis results endpoints: {e}")
 
+# 🔥 ENERGY ZONES SERVICE INTEGRATION
+try:
+    # Import the energy zones router from the api directory
+    sys.path.append(os.path.join(os.path.dirname(__file__), '../../api'))
+    from energy_zones_endpoints import router as energy_zones_router
+    app.include_router(energy_zones_router)
+    print("✅ [INTEGRATION] Energy Zones Service endpoints added successfully")
+    print("  - GET /api/v1/energy-zones/{user_id}")
+    print("  - GET /api/v1/energy-zones/{user_id}/current")
+    print("  - GET /api/v1/energy-zones/{user_id}/summary")
+    print("  - GET /api/v1/energy-zones/{user_id}/for-planning")
+    print("  - POST /api/v1/energy-zones/{user_id}/routine-with-zones")
+    print("  - GET /api/v1/energy-zones/{user_id}/debug")
+    print("  - GET /api/v1/energy-zones/health")
+except ImportError as e:
+    print(f"⚠️ [WARNING] Energy Zones Service endpoints not available: {e}")
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate Energy Zones Service endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -1493,12 +1512,12 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         
         # Check if fresh analysis is needed (50-item threshold)
         decision, metadata = await ondemand_service.should_run_analysis(user_id, request.force_refresh, request.archetype)
-        
+
         # Safe enum access for logging
         decision_str = decision.value if hasattr(decision, 'value') else str(decision)
         memory_quality = metadata.get('memory_quality')
         memory_quality_str = memory_quality.value if hasattr(memory_quality, 'value') else str(memory_quality) if memory_quality else 'unknown'
-        
+
         # print(f"📊 [BEHAVIOR_ANALYZE] Analysis decision: {decision_str}")  # Commented to reduce noise
         # print(f"   • New data points: {metadata['new_data_points']}")  # Commented for error-only mode
         # print(f"   • Threshold: {metadata['threshold_used']}")  # Commented for error-only mode
