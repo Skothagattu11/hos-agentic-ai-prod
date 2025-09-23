@@ -14,7 +14,7 @@ from pathlib import Path
 import openai
 
 from services.user_data_service import UserDataService
-from shared_libs.data_models.user_health_context import UserHealthContext
+from shared_libs.data_models.health_models import UserHealthContext
 from shared_libs.data_models.energy_zones_models import (
     EnergyZonesResult, EnergyZone, SleepSchedule, BiomarkerSnapshot,
     IntensityLevel, ModeType, ChronotypeCategory
