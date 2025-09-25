@@ -60,21 +60,34 @@ class HolisticMemoryService:
             return False
     
     async def _ensure_db_connection(self) -> SupabaseAsyncPGAdapter:
-        """Reuse existing connection pattern - but check if actually connected"""
+        """Ensure database connection with Supabase client fallback"""
         # Check if adapter exists AND is connected
         if not self.db_adapter or not self.db_adapter.is_connected:
             try:
-        # print(f"[🔄 MEMORY_SERVICE] Creating new adapter and connecting...")  # Commented to reduce noise
                 self.db_adapter = SupabaseAsyncPGAdapter()
                 await self.db_adapter.connect()
-        # print(f"[✅ MEMORY_SERVICE] Connected to Supabase successfully")  # Commented to reduce noise
-                logger.debug("[MEMORY_SERVICE] Connected to Supabase successfully")
+                logger.debug("[MEMORY_SERVICE] Connected successfully")
             except Exception as e:
-                print(f"[❌ MEMORY_SERVICE_ERROR] Connection failed: {e}")
                 logger.error(f"[MEMORY_SERVICE_ERROR] Connection failed: {e}")
                 # Set to None so next attempt creates fresh instance
                 self.db_adapter = None
                 raise
+
+        # MVP Fix: Ensure Supabase client is always available for fallback
+        if self.db_adapter and not hasattr(self.db_adapter, 'client'):
+            self.db_adapter.client = None
+        if self.db_adapter and not self.db_adapter.client:
+            try:
+                from supabase import create_client
+                import os
+                supabase_url = os.getenv("SUPABASE_URL")
+                supabase_key = os.getenv("SUPABASE_KEY")
+                if supabase_url and supabase_key:
+                    self.db_adapter.client = create_client(supabase_url, supabase_key)
+                    logger.debug("[MEMORY_SERVICE] Supabase client initialized for fallback")
+            except Exception as client_error:
+                logger.warning(f"[MEMORY_SERVICE] Could not initialize Supabase client: {client_error}")
+
         return self.db_adapter
     
     # ========== WORKING MEMORY (Session-based) ==========
@@ -456,31 +469,70 @@ class HolisticMemoryService:
     
     # ========== ANALYSIS RESULTS (Historical analysis storage) ==========
     
-    async def store_analysis_result(self, user_id: str, analysis_type: str, 
-                                  analysis_result: Dict[str, Any], archetype_used: str = None, 
+    async def store_analysis_result(self, user_id: str, analysis_type: str,
+                                  analysis_result: Dict[str, Any], archetype_used: str = None,
                                   analysis_trigger: str = "scheduled") -> str:
         """Store complete analysis in holistic_analysis_results table with trigger context"""
         try:
             db = await self._ensure_db_connection()
             input_summary = {"data_quality": "excellent", "source": "memory_service"}
-            
-            # Use UPSERT to handle duplicates gracefully with new trigger-based constraint
-            insert_query = """
-                INSERT INTO holistic_analysis_results (
-                    user_id, analysis_type, archetype, analysis_result, 
-                    input_summary, agent_id, analysis_date, analysis_trigger
-                ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7)
-                ON CONFLICT (user_id, analysis_type, analysis_date, archetype, analysis_trigger) 
-                DO UPDATE SET
-                    analysis_result = EXCLUDED.analysis_result,
-                    input_summary = EXCLUDED.input_summary,
-                    created_at = NOW()
-                RETURNING id
-            """
-            
+
+            # MVP approach: Simple insert with fallback to Supabase client on failure
             import json
-            result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used, 
-                                     json.dumps(analysis_result), json.dumps(input_summary), 'memory_service', analysis_trigger)
+            analysis_result_json = json.dumps(analysis_result)
+            input_summary_json = json.dumps(input_summary)
+
+            # Try PostgreSQL first (if connection pool available)
+            if hasattr(db, 'use_connection_pool') and db.use_connection_pool:
+                try:
+                    insert_query = """
+                        INSERT INTO holistic_analysis_results (
+                            user_id, analysis_type, archetype, analysis_result,
+                            input_summary, agent_id, analysis_date, analysis_trigger
+                        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7)
+                        ON CONFLICT (user_id, analysis_type, analysis_date, archetype, analysis_trigger)
+                        DO UPDATE SET
+                            analysis_result = EXCLUDED.analysis_result,
+                            input_summary = EXCLUDED.input_summary,
+                            created_at = NOW()
+                        RETURNING id
+                    """
+                    result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used,
+                                             analysis_result_json, input_summary_json, 'memory_service', analysis_trigger)
+                except Exception as pg_error:
+                    logger.warning(f"PostgreSQL insert failed: {pg_error}, falling back to Supabase REST API")
+                    result = None
+            else:
+                result = None
+
+            # Fallback to Supabase REST API (simpler approach)
+            if not result:
+                try:
+                    # Use direct Supabase client insert
+                    from datetime import date
+                    insert_data = {
+                        "user_id": user_id,
+                        "analysis_type": analysis_type,
+                        "archetype": archetype_used,
+                        "analysis_result": analysis_result,  # Supabase handles JSON automatically
+                        "input_summary": input_summary,
+                        "agent_id": "memory_service",
+                        "analysis_date": date.today().isoformat(),
+                        "analysis_trigger": analysis_trigger
+                    }
+
+                    # Simple insert - let Supabase handle duplicates
+                    supabase_result = db.client.table('holistic_analysis_results').insert(insert_data).execute()
+                    if supabase_result.data:
+                        result = {"id": supabase_result.data[0]["id"]}
+                        logger.debug(f"Successfully stored analysis via Supabase REST API: {result['id']}")
+                    else:
+                        logger.error("Supabase insert returned no data")
+                        result = None
+
+                except Exception as supabase_error:
+                    logger.error(f"Both PostgreSQL and Supabase REST API failed: {supabase_error}")
+                    result = None
             
             if result:
                 analysis_id = str(result['id'])

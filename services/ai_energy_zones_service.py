@@ -17,7 +17,7 @@ from services.user_data_service import UserDataService
 from shared_libs.data_models.health_models import UserHealthContext
 from shared_libs.data_models.energy_zones_models import (
     EnergyZonesResult, EnergyZone, SleepSchedule, BiomarkerSnapshot,
-    IntensityLevel, ModeType, ChronotypeCategory
+    IntensityLevel, ModeType, ChronotypeCategory, ZoneName
 )
 
 logger = logging.getLogger(__name__)
@@ -184,6 +184,9 @@ class AIEnergyZonesService:
 
             ai_response = json.loads(ai_response_text)
 
+            # Debug: Log the actual AI response
+            logger.info(f"[AI_DEBUG] Raw AI Response: {json.dumps(ai_response, indent=2)}")
+
             # Convert AI response to objects
             sleep_data = ai_response["sleep_schedule"]
             sleep_schedule = SleepSchedule(
@@ -200,18 +203,71 @@ class AIEnergyZonesService:
 
             # Convert energy zones
             energy_zones = []
-            for zone_data in ai_response["energy_zones"]:
+            zones_data = ai_response.get("energy_zones", [])
+            logger.info(f"[AI_DEBUG] Attempting to parse {len(zones_data)} energy zones")
+
+            for i, zone_data in enumerate(zones_data):
                 try:
+                    logger.info(f"[AI_DEBUG] Parsing zone {i}: {zone_data}")
+
+                    # Parse times
+                    start_time = time.fromisoformat(zone_data["start_time"])
+                    end_time = time.fromisoformat(zone_data["end_time"])
+
+                    # Calculate duration in hours
+                    start_minutes = start_time.hour * 60 + start_time.minute
+                    end_minutes = end_time.hour * 60 + end_time.minute
+                    if end_minutes < start_minutes:  # Handle day boundary
+                        end_minutes += 24 * 60
+                    duration_hours = (end_minutes - start_minutes) / 60.0
+
+                    # Calculate start offset from wake time (assume 7:00 AM wake time for now)
+                    wake_minutes = 7 * 60  # 7:00 AM
+                    start_offset_hours = (start_minutes - wake_minutes) / 60.0
+                    if start_offset_hours < 0:
+                        start_offset_hours += 24
+
+                    # Map zone name from AI response to enum
+                    zone_name_str = zone_data["name"].lower().replace(" ", "_")
+                    zone_name = ZoneName.PEAK  # Default fallback
+                    if "peak" in zone_name_str or "focus" in zone_name_str:
+                        zone_name = ZoneName.PEAK
+                    elif "foundation" in zone_name_str or "morning" in zone_name_str:
+                        zone_name = ZoneName.FOUNDATION
+                    elif "maintenance" in zone_name_str or "afternoon" in zone_name_str:
+                        zone_name = ZoneName.MAINTENANCE
+                    elif "recovery" in zone_name_str or "wind" in zone_name_str or "evening" in zone_name_str:
+                        zone_name = ZoneName.RECOVERY
+
+                    # Parse optimal activities as list
+                    activities_str = zone_data.get("optimal_activities", "")
+                    optimal_activities = [activities_str] if activities_str else []
+
+                    # Set energy level based on intensity
+                    intensity = self._map_intensity(zone_data["intensity_level"])
+                    energy_level = 50  # Default
+                    if intensity == IntensityLevel.LOW:
+                        energy_level = 30
+                    elif intensity == IntensityLevel.MODERATE:
+                        energy_level = 60
+                    elif intensity == IntensityLevel.HIGH:
+                        energy_level = 85
+
                     zone = EnergyZone(
-                        name=zone_data["name"],
-                        start_time=time.fromisoformat(zone_data["start_time"]),
-                        end_time=time.fromisoformat(zone_data["end_time"]),
-                        intensity_level=self._map_intensity(zone_data["intensity_level"]),
-                        optimal_activities=zone_data.get("optimal_activities", ""),
-                        energy_description=zone_data.get("energy_description", "")
+                        zone_name=zone_name,
+                        start_time=start_time,
+                        end_time=end_time,
+                        energy_level=energy_level,
+                        intensity_level=intensity,
+                        optimal_activities=optimal_activities,
+                        description=zone_data.get("energy_description", ""),
+                        start_offset_hours=start_offset_hours,
+                        duration_hours=duration_hours
                     )
                     energy_zones.append(zone)
-                except Exception:
+                    logger.info(f"[AI_DEBUG] Successfully parsed zone {i}: {zone_data['name']}")
+                except Exception as e:
+                    logger.error(f"[AI_DEBUG] Failed to parse zone {i}: {e}")
                     continue
 
             return {
@@ -247,10 +303,10 @@ class AIEnergyZonesService:
         """Map string to intensity enum"""
         mapping = {
             "low": IntensityLevel.LOW,
-            "medium": IntensityLevel.MEDIUM,
+            "medium": IntensityLevel.MODERATE,
             "high": IntensityLevel.HIGH
         }
-        return mapping.get(intensity_str, IntensityLevel.MEDIUM)
+        return mapping.get(intensity_str, IntensityLevel.MODERATE)
 
     def _create_biomarker_snapshot(self, health_context: UserHealthContext) -> BiomarkerSnapshot:
         """Create biomarker snapshot from processed health data"""
@@ -285,36 +341,48 @@ class AIEnergyZonesService:
         """Create default energy zones"""
         return [
             EnergyZone(
-                name="Morning Start",
+                zone_name=ZoneName.FOUNDATION,
                 start_time=time(7, 0),
                 end_time=time(9, 0),
-                intensity_level=IntensityLevel.MEDIUM,
-                optimal_activities="Light tasks, planning",
-                energy_description="Gentle energy building"
+                energy_level=40,
+                intensity_level=IntensityLevel.MODERATE,
+                optimal_activities=["Light tasks", "planning"],
+                description="Gentle energy building",
+                start_offset_hours=0.0,
+                duration_hours=2.0
             ),
             EnergyZone(
-                name="Mid-Morning Focus",
+                zone_name=ZoneName.PEAK,
                 start_time=time(9, 0),
                 end_time=time(12, 0),
+                energy_level=85,
                 intensity_level=IntensityLevel.HIGH,
-                optimal_activities="Important work, complex tasks",
-                energy_description="Peak cognitive performance"
+                optimal_activities=["Important work", "complex tasks"],
+                description="Peak cognitive performance",
+                start_offset_hours=2.0,
+                duration_hours=3.0
             ),
             EnergyZone(
-                name="Afternoon Maintenance",
+                zone_name=ZoneName.MAINTENANCE,
                 start_time=time(13, 0),
                 end_time=time(17, 0),
-                intensity_level=IntensityLevel.MEDIUM,
-                optimal_activities="Routine tasks, meetings",
-                energy_description="Steady productive work"
+                energy_level=60,
+                intensity_level=IntensityLevel.MODERATE,
+                optimal_activities=["Routine tasks", "meetings"],
+                description="Steady productive work",
+                start_offset_hours=6.0,
+                duration_hours=4.0
             ),
             EnergyZone(
-                name="Evening Wind-down",
+                zone_name=ZoneName.RECOVERY,
                 start_time=time(19, 0),
                 end_time=time(22, 0),
+                energy_level=25,
                 intensity_level=IntensityLevel.LOW,
-                optimal_activities="Relaxation, light activities",
-                energy_description="Preparation for rest"
+                optimal_activities=["Relaxation", "light activities"],
+                description="Preparation for rest",
+                start_offset_hours=12.0,
+                duration_hours=3.0
             )
         ]
 

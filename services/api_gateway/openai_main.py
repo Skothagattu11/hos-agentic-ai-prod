@@ -13,6 +13,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
+# Environment-aware logging
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+IS_DEVELOPMENT = ENVIRONMENT in ["development", "dev"]
+
 # Custom JSON encoder for datetime objects
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -979,7 +983,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
         print(f"🔒 [AUTH_FAILED] Invalid or missing API key for user {user_id[:8]}... Provided: {api_key}")
         raise HTTPException(status_code=401, detail="User not authenticated")
     
-    print(f"🔑 [AUTH_SUCCESS] Valid client API key provided for user {user_id[:8]}...")
+    if IS_DEVELOPMENT:
+        print(f"🔑 [AUTH_SUCCESS] Valid client API key provided for user {user_id[:8]}...")
     
     from services.request_deduplication_service import request_deduplicator
     
@@ -997,14 +1002,31 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
                 raise rate_limit_error
         # print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")  # Commented to reduce noise
-        
+
         # Get behavior analysis from the standalone endpoint
         force_refresh = request.preferences.get('force_refresh', False) if request.preferences else False
         archetype = request.archetype or "Foundation Builder"
-        
+
+        # MVP-Style Logging: Import and prepare input data (independent of database)
+        from services.mvp_style_logger import mvp_logger
+        analysis_number = mvp_logger.get_next_analysis_number()
+        input_data = {
+            "user_id": user_id,
+            "archetype": archetype,
+            "preferences": request.preferences,
+            "endpoint": "/api/user/{user_id}/routine/generate",
+            "request_timestamp": datetime.now().isoformat(),
+            "force_refresh": force_refresh,
+            "analysis_number": analysis_number,
+            "request_data": {
+                "archetype": request.archetype,
+                "preferences": request.preferences
+            }
+        }
+
         # Use shared behavior analysis (eliminates duplicate analysis calls)
         # print(f"📞 [ROUTINE_GENERATE] Getting shared behavior analysis...")  # Commented for error-only mode
-        behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh)
+        behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh, analysis_number)
         
         if not behavior_analysis:
             return RoutinePlanResponse(
@@ -1093,8 +1115,9 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "routine")
-            
-            return RoutinePlanResponse(
+
+            # Prepare response data
+            response_data = RoutinePlanResponse(
                 status="success",
                 user_id=user_id,
                 routine_plan=routine_plan,
@@ -1111,6 +1134,46 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 },
                 cached=(analysis_type == "cached")
             )
+
+            # MVP-Style Logging: Log complete routine generation cycle (independent of database)
+            try:
+                output_data = {
+                    "status": response_data.status,
+                    "routine_plan": routine_plan,
+                    "generation_metadata": response_data.generation_metadata,
+                    "analysis_type": analysis_type,
+                    "shared_behavior_analysis": True,
+                    "cached": response_data.cached,
+                    "response_timestamp": datetime.now().isoformat(),
+                    "api_cost_tracked": True
+                }
+
+                # Collect raw health data if behavior analysis was fresh (not cached)
+                raw_health_data = None
+                if not response_data.cached and behavior_analysis and behavior_analysis.get("status") == "success":
+                    # Raw health data should have been logged during the behavior analysis
+                    # For now, we'll log a reference that raw data was generated during behavior analysis
+                    raw_health_data = {
+                        "data_logged_during_behavior_analysis": True,
+                        "behavior_analysis_contained_fresh_data": True,
+                        "note": "Raw health data was logged during the shared behavior analysis step",
+                        "analysis_number": analysis_number,
+                        "user_id": user_id
+                    }
+
+                # Log the complete routine generation cycle using enhanced MVP approach
+                mvp_logger.log_complete_analysis(
+                    input_data=input_data,
+                    output_data=output_data,
+                    raw_health_data=raw_health_data,
+                    user_id=user_id,
+                    archetype=archetype
+                )
+            except Exception as log_error:
+                # Never let logging errors break the API response
+                print(f"⚠️ [MVP_LOGGER] Routine logging failed (non-critical): {log_error}")
+
+            return response_data
             
         except Exception as context_error:
             print(f"⚠️ [ROUTINE_GENERATE] User context error: {context_error}")
@@ -1498,17 +1561,33 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         except Exception as rate_limit_error:
             print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
             raise rate_limit_error
-    
+
     try:
         # print(f"🧠 [BEHAVIOR_ANALYZE] Starting behavior analysis for user {user_id[:8]}...")  # Commented for error-only mode
-        
+
         # Import required services
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
-        
+        from services.mvp_style_logger import mvp_logger
+
         # Initialize services
         ondemand_service = await get_ondemand_service()
         memory_service = HolisticMemoryService()
+
+        # MVP-Style Logging: Prepare input data (independent of database)
+        analysis_number = mvp_logger.get_next_analysis_number()
+        input_data = {
+            "user_id": user_id,
+            "archetype": request.archetype or "Foundation Builder",
+            "force_refresh": request.force_refresh,
+            "endpoint": "/api/user/{user_id}/behavior/analyze",
+            "request_timestamp": datetime.now().isoformat(),
+            "analysis_number": analysis_number,
+            "request_data": {
+                "archetype": request.archetype,
+                "force_refresh": request.force_refresh
+            }
+        }
         
         # Check if fresh analysis is needed (50-item threshold)
         decision, metadata = await ondemand_service.should_run_analysis(user_id, request.force_refresh, request.archetype)
@@ -1530,12 +1609,12 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         if decision == AnalysisDecision.FRESH_ANALYSIS or decision == AnalysisDecision.STALE_FORCE_REFRESH:
             # Run fresh behavior analysis using existing logic from /api/analyze
             print(f"🚀 [BEHAVIOR_ANALYZE] Running fresh behavior analysis...")
-            
+
             # Get archetype from request or use default
             archetype = request.archetype or "Foundation Builder"
-            
+
             # Use shared behavior analysis with force_refresh=True to ensure fresh analysis
-            behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh=True)
+            behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh=True, analysis_number=analysis_number)
             
             if behavior_analysis and behavior_analysis.get("status") == "success":
                 analysis_type = "fresh"
@@ -1543,7 +1622,6 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                 # Determine trigger type based on analysis decision
                 if decision == AnalysisDecision.FRESH_ANALYSIS:
                     # Add timestamp to make each threshold trigger unique for multiple daily analyses
-                    from datetime import datetime
                     timestamp = datetime.now().strftime("%H%M%S")
                     analysis_trigger = f"threshold_exceeded_{timestamp}"
                 else:
@@ -1596,8 +1674,9 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                 await rate_limiter.track_api_cost(user_id, "behavior_analysis")
             except Exception as cost_error:
                 print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
-        
-        return BehaviorAnalysisResponse(
+
+        # Prepare response data
+        response_data = BehaviorAnalysisResponse(
             status="success",
             user_id=user_id,
             analysis_type=analysis_type,
@@ -1613,6 +1692,32 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                 "archetype_used": request.archetype or "Foundation Builder"
             }
         )
+
+        # MVP-Style Logging: Log complete analysis cycle (independent of database)
+        try:
+            output_data = {
+                "status": response_data.status,
+                "analysis_type": analysis_type,
+                "behavior_analysis": behavior_analysis,
+                "decision_metadata": metadata,
+                "response_timestamp": datetime.now().isoformat(),
+                "analysis_decision": decision_str if 'decision_str' in locals() else str(decision),
+                "memory_quality": memory_quality_str if 'memory_quality_str' in locals() else "unknown",
+                "api_cost_tracked": analysis_type == "fresh"
+            }
+
+            # Log the complete analysis cycle using MVP approach
+            mvp_logger.log_complete_analysis(
+                input_data=input_data,
+                output_data=output_data,
+                user_id=user_id,
+                archetype=request.archetype or "Foundation Builder"
+            )
+        except Exception as log_error:
+            # Never let logging errors break the API response
+            print(f"⚠️ [MVP_LOGGER] Logging failed (non-critical): {log_error}")
+
+        return response_data
         
     except Exception as e:
         print(f"❌ [BEHAVIOR_ANALYZE_ERROR] Failed to analyze behavior for {user_id}: {e}")
@@ -2232,7 +2337,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         # No fallback to standalone - all analysis must go through OnDemandAnalysisService
         raise Exception(f"Memory-enhanced behavior analysis failed for user {user_id}: {e}")
 
-async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, force_refresh: bool = False) -> dict:
+async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, force_refresh: bool = False, analysis_number: int = None) -> dict:
     """
     MVP Shared Behavior Analysis - Extracted from /api/analyze (lines 1257-1386)
     Used by routine/nutrition endpoints to avoid duplicate analysis
@@ -2328,7 +2433,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         
         # Step 3: Run fresh analysis for all other decisions
         logger.debug(f"[SHARED_ANALYSIS] {user_id[:8]}... Running fresh analysis")
-        fresh_result = await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype, metadata)
+        fresh_result = await run_fresh_behavior_analysis_like_api_analyze(user_id, archetype, metadata, analysis_number)
         logger.info(f"[SHARED_ANALYSIS] {user_id[:8]}... Fresh analysis completed")
         
         # Complete coordination with fresh result
@@ -2375,7 +2480,7 @@ async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
         return None
 
 
-async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str, ondemand_metadata: dict = None) -> dict:
+async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str, ondemand_metadata: dict = None, analysis_number: int = None) -> dict:
     """
     Run fresh behavior analysis using EXACT same flow as /api/analyze
     Extracted from /api/analyze lines 1257-1386 - minimal changes, maximum reuse
@@ -2407,10 +2512,10 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             locked_timestamp = ondemand_metadata.get('fixed_timestamp') if ondemand_metadata else None
             if locked_timestamp:
                 print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp from OnDemandAnalysisService")
-                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, locked_timestamp)
+                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, locked_timestamp, analysis_number)
             else:
         # print(f"🔍 [NORMAL_FLOW] No locked timestamp - using standard flow")  # Commented to reduce noise
-                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id)
+                user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, None, analysis_number)
             
             # EXACT same prompt enhancement as /api/analyze (lines 1282-1289)
             base_behavior_prompt = get_system_prompt("behavior_analysis")

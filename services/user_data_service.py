@@ -267,23 +267,27 @@ class UserDataService:
             logger.error(f"[ARCHETYPES_ERROR] Failed for user {user_id}: {e}")
             return []
 
-    async def get_user_health_data(self, user_id: str, days: int = None) -> UserHealthContext:
+    async def get_user_health_data(self, user_id: str, days: int = None, analysis_number: int = None) -> UserHealthContext:
         """
         Main entry point - fetch complete user health data using API-first approach
         MVP: Simple orchestration, comprehensive logging for debugging
+        Enhanced: Logs raw health data for complete system flow analysis
         """
         overall_start = datetime.now()
         days = days or self.default_days
-        
+
         logger.debug(f"[USER_HEALTH_DATA] Starting fetch for user {user_id}, {days} days")
-        
+
+        # Import MVP logger for enhanced system flow logging
+        from services.mvp_style_logger import mvp_logger
+
         # Use memory-safe LRU cache with automatic TTL
         cache_key = f"{user_id}_{days}days"
         cached_data = self.health_data_cache.get(cache_key)
         if cached_data:
             logger.debug(f"[CACHE_HIT] Returning cached data for {user_id}")
             return cached_data
-        
+
         start_date, end_date = self._get_date_range(days)
         
         try:
@@ -314,10 +318,36 @@ class UserDataService:
                         self.health_data_cache.set(cache_key, result)
                         # Check memory usage and cleanup if needed
                         cache_manager.cleanup_if_needed()
-                        
+
                         overall_duration = (datetime.now() - overall_start).total_seconds()
                         logger.debug(f"[USER_HEALTH_DATA] API completed for {user_id} in {overall_duration:.2f}s")
-                        
+
+                        # Enhanced System Flow Logging: Log raw health data if analysis_number provided
+                        if analysis_number is not None:
+                            try:
+                                raw_health_data = {
+                                    "sahha_scores": api_scores,
+                                    "sahha_biomarkers": api_biomarkers,
+                                    "sahha_archetypes": api_archetypes,
+                                    "date_range": {
+                                        "start_date": start_date.isoformat(),
+                                        "end_date": end_date.isoformat(),
+                                        "days_requested": days
+                                    },
+                                    "data_source": "sahha_api_primary",
+                                    "fetch_duration_seconds": overall_duration,
+                                    "user_id": user_id,
+                                    "cache_hit": False,
+                                    "api_responses": {
+                                        "scores_count": len(api_scores),
+                                        "biomarkers_count": len(api_biomarkers),
+                                        "archetypes_count": len(api_archetypes)
+                                    }
+                                }
+                                mvp_logger.log_raw_health_data(analysis_number, raw_health_data)
+                            except Exception as log_error:
+                                logger.warning(f"[MVP_LOGGER] Failed to log raw health data: {log_error}")
+
                         return result
                     
                     logger.debug(f"[API_NO_DATA] No API data found, falling back to database")
@@ -396,7 +426,38 @@ class UserDataService:
             logger.debug(f"[DATA_QUALITY] Scores: {result.data_quality.scores_count}, "
                        f"Biomarkers: {result.data_quality.biomarkers_count}, "
                        f"Quality: {result.data_quality.quality_level}")
-            
+
+            # Enhanced System Flow Logging: Log raw health data from database fallback
+            if analysis_number is not None:
+                try:
+                    raw_health_data = {
+                        "supabase_scores": raw_scores,
+                        "supabase_biomarkers": raw_biomarkers,
+                        "supabase_archetypes": raw_archetypes,
+                        "date_range": {
+                            "start_date": start_date.isoformat(),
+                            "end_date": end_date.isoformat(),
+                            "days_requested": days
+                        },
+                        "data_source": "supabase_database_fallback",
+                        "fetch_duration_seconds": overall_duration,
+                        "user_id": user_id,
+                        "cache_hit": False,
+                        "api_responses": {
+                            "scores_count": len(raw_scores),
+                            "biomarkers_count": len(raw_biomarkers),
+                            "archetypes_count": len(raw_archetypes)
+                        },
+                        "data_quality": {
+                            "scores_count": result.data_quality.scores_count,
+                            "biomarkers_count": result.data_quality.biomarkers_count,
+                            "quality_level": result.data_quality.quality_level
+                        }
+                    }
+                    mvp_logger.log_raw_health_data(analysis_number, raw_health_data)
+                except Exception as log_error:
+                    logger.warning(f"[MVP_LOGGER] Failed to log raw health data from database: {log_error}")
+
             return result
             
         except Exception as e:
@@ -534,20 +595,20 @@ class UserDataService:
             logger.error(f"[INCREMENTAL_ERROR] Failed fetching data since {since_timestamp}: {e}")
             return [], [], [], since_timestamp
     
-    async def get_analysis_data(self, user_id: str, locked_timestamp: datetime = None) -> tuple[UserHealthContext, datetime]:
+    async def get_analysis_data(self, user_id: str, locked_timestamp: datetime = None, analysis_number: int = None) -> tuple[UserHealthContext, datetime]:
         """
         Get data for analysis based on last analysis time
         True incremental: fetches ALL data from last analysis to now
-        
+
         Args:
             user_id: User identifier
             locked_timestamp: Fixed timestamp from OnDemandAnalysisService to prevent race conditions
         """
         from .simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
-        
+
         overall_start = datetime.now()
         tracker = AnalysisTracker()
-        
+
         # CRITICAL FIX: Use locked timestamp if provided, otherwise get fresh timestamp
         if locked_timestamp:
             last_analysis = locked_timestamp
@@ -564,8 +625,8 @@ class UserDataService:
             
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
             # No need to update global profiles.last_analysis_at here
-            
-            result = await self.get_user_health_data(user_id, days=7)
+
+            result = await self.get_user_health_data(user_id, days=7, analysis_number=analysis_number)
             
             # For first analysis, calculate latest timestamp from the fetched data
             latest_data_timestamp = datetime.now(timezone.utc)
@@ -590,7 +651,7 @@ class UserDataService:
         # Calculate time span
         hours_since = (datetime.now(timezone.utc) - last_analysis).total_seconds() / 3600
         days_span = max(1, int(hours_since / 24) + 1)
-        
+
         logger.debug(f"[ANALYSIS_DATA] Incremental analysis for {user_id}")
         logger.debug(f"[ANALYSIS_DATA] Last analysis: {hours_since:.1f} hours ago at {last_analysis.isoformat()}")
         logger.debug(f"[ANALYSIS_DATA] Fetching incremental data from {last_analysis.isoformat()} to now")
@@ -604,7 +665,7 @@ class UserDataService:
             
             # Get ALL data since last analysis (using locked timestamp if provided)
             scores, biomarkers, archetypes, latest_data_timestamp = await self.fetch_data_since(user_id, last_analysis)
-            
+
             if not scores and not biomarkers:
                 # print(f"⚠️  ANALYSIS_DATA: No new data since last analysis - checking for stale timestamp")  # Commented for error-only mode
                 
@@ -731,6 +792,22 @@ class UserDataService:
         Backward compatibility - redirects to new simplified method
         """
         result, _ = await self.get_analysis_data(user_id)
+        return result
+
+    async def get_user_health_context(self, user_id: str) -> UserHealthContext:
+        """
+        Energy Zones Service integration method
+        Returns current user health context for energy zones calculation
+        """
+        logger.debug(f"[ENERGY_ZONES_INTEGRATION] Fetching health context for user {user_id}")
+
+        # Use existing method but with 2 days of data for energy zones analysis
+        result = await self.get_user_health_data(user_id, days=2)
+
+        logger.debug(f"[ENERGY_ZONES_INTEGRATION] Health context retrieved for {user_id}")
+        logger.debug(f"[ENERGY_ZONES_INTEGRATION] Data quality - Scores: {result.data_quality.scores_count}, "
+                   f"Biomarkers: {result.data_quality.biomarkers_count}")
+
         return result
 
     def _clean_cache(self):

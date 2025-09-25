@@ -20,6 +20,9 @@ REAL_PROFILE_ID = "35pDPUIfAoRl2Y700bFkxPKYjjf2"
 BASE_URL = "http://localhost:8002"  # Development server
 TEST_ARCHETYPE = "Foundation Builder"
 
+# API Authentication for production system
+AUTH_HEADERS = {"X-API-Key": "hosa_flutter_app_2024"}
+
 def print_section(title, emoji="🎯"):
     """Print formatted section header"""
     print(f"\n{emoji} {title}")
@@ -97,7 +100,8 @@ async def generate_routine(user_id: str, archetype: str, is_followup: bool = Fal
             "preferences": {
                 "workout_time": "morning",
                 "duration_minutes": 30,
-                "intensity": "moderate"
+                "intensity": "moderate",
+                "force_refresh": True  # Force fresh analysis to ensure raw data logging
             }
         }
         
@@ -111,6 +115,7 @@ async def generate_routine(user_id: str, archetype: str, is_followup: bool = Fal
             async with session.post(
                 f"{BASE_URL}/api/user/{user_id}/routine/generate",
                 json=routine_request,
+                headers=AUTH_HEADERS,
                 timeout=aiohttp.ClientTimeout(total=300)
             ) as response:
                 if response.status == 200:
@@ -170,6 +175,7 @@ async def generate_nutrition(user_id: str, archetype: str, is_followup: bool = F
             async with session.post(
                 f"{BASE_URL}/api/user/{user_id}/nutrition/generate",
                 json=nutrition_request,
+                headers=AUTH_HEADERS,
                 timeout=aiohttp.ClientTimeout(total=300)
             ) as response:
                 if response.status == 200:
@@ -222,6 +228,7 @@ async def generate_insights(user_id: str, archetype: str = "Foundation Builder",
             async with session.post(
                 f"{BASE_URL}/api/v1/insights/generate",
                 json=insights_request,
+                headers=AUTH_HEADERS,
                 timeout=aiohttp.ClientTimeout(total=60)
             ) as response:
                 if response.status == 200:
