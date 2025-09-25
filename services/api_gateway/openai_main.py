@@ -24,8 +24,9 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Response, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Response, Request, Header, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 import openai
 import time
@@ -77,8 +78,11 @@ except ImportError as e:
     print(f"⚠️ [WARNING] Enhanced error handling not available: {e}")
     ERROR_HANDLING_AVAILABLE = False
 
+# Define API Key security scheme for Swagger UI
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
 app = FastAPI(
-    title="HolisticOS Enhanced API Gateway", 
+    title="HolisticOS Enhanced API Gateway",
     version="2.0.0",
     description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation"
 )
@@ -615,7 +619,7 @@ async def simple_health_check():
         }
 
 @app.get("/api/health")
-async def comprehensive_health_check():
+async def comprehensive_health_check(api_key: str = Security(api_key_header)):
     """Comprehensive health check endpoint with full system monitoring"""
     if MONITORING_AVAILABLE:
         try:
@@ -972,7 +976,7 @@ async def get_routine_plan_by_date(user_id: str, date: str):
 
 @app.post("/api/user/{user_id}/routine/generate", response_model=RoutinePlanResponse)
 @track_endpoint_metrics("routine_generation") if MONITORING_AVAILABLE else lambda x: x
-async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationRequest, http_request: Request):
+async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationRequest, http_request: Request, api_key: str = Security(api_key_header)):
     """
     Generate a routine plan using shared behavior analysis (eliminates duplicate analysis calls)
     Uses the same pattern as nutrition generation for consistency
