@@ -52,7 +52,7 @@ try:
     MONITORING_AVAILABLE = True
         # # Production: Verbose print removed  # Commented to reduce noise
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Monitoring not available
     MONITORING_AVAILABLE = False
 
 # Import rate limiting system
@@ -64,7 +64,7 @@ try:
     RATE_LIMITING_AVAILABLE = True
         # # Production: Verbose print removed  # Commented to reduce noise
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Rate limiting not available
     RATE_LIMITING_AVAILABLE = False
 
 # Import error handling
@@ -75,7 +75,7 @@ try:
     )
     ERROR_HANDLING_AVAILABLE = True
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Error handling not available
     ERROR_HANDLING_AVAILABLE = False
 
 # Define API Key security scheme for Swagger UI
@@ -162,7 +162,7 @@ try:
         # # Production: Verbose print removed  # Commented to reduce noise
     # print("📡 [ENDPOINTS] Real user data endpoints now available:")  # Commented for error-only mode
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Health data endpoints not available
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate health data endpoints: {e}")
 
@@ -186,7 +186,7 @@ try:
     print("  - POST /api/v1/engagement/journal")
     print("  - POST /api/v1/engagement/extract-plan-items")
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Engagement endpoints not available
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate engagement endpoints: {e}")
 
@@ -218,7 +218,7 @@ try:
     print("  - GET /api/admin/user/{user_id}/overview")
     print("  - GET /api/admin/user/{user_id}/analysis-data")
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Admin API endpoints not available
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate admin API endpoints: {e}")
     print("Full traceback:")
@@ -234,7 +234,7 @@ try:
     print("  - GET /api/v1/analysis/result/{analysis_id}/status")
     print("  - POST /api/v1/analysis/user/{user_id}/extract-latest")
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Analysis results endpoints not available
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate analysis results endpoints: {e}")
 
@@ -253,7 +253,7 @@ try:
     print("  - GET /api/v1/energy-zones/{user_id}/debug")
     print("  - GET /api/v1/energy-zones/health")
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # Energy Zones Service endpoints not available
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate Energy Zones Service endpoints: {e}")
 
@@ -418,7 +418,7 @@ async def initialize_agents():
             await db_pool.initialize()
         # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            # Production: Verbose print removed
+            pass  # Database pool initialization failed
         
         # Initialize agents
         from services.orchestrator.main import HolisticOrchestrator
@@ -459,7 +459,7 @@ async def initialize_agents():
                 )
         # # Production: Verbose print removed  # Commented to reduce noise
             except Exception as e:
-                # Production: Verbose print removed
+                pass  # Monitoring system initialization failed
         
         # # Production: Verbose print removed  # Commented to reduce noise
         
@@ -496,7 +496,7 @@ async def shutdown_agents():
             await db_pool.close()
         # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            # Production: Verbose print removed
+            pass  # Database pool shutdown failed
         
         # # Production: Verbose print removed  # Commented to reduce noise
         
@@ -525,7 +525,7 @@ def get_score_actual_date(score) -> str:
                 # Handle datetime objects
                 return score.score_date_time.strftime("%Y-%m-%d")
     except (ValueError, AttributeError) as e:
-        # Production: Verbose print removed
+        pass  # Handle score_date_time parsing errors
     
     # Fallback to created_at if score_date_time is unavailable/invalid
     if hasattr(score, 'created_at') and score.created_at:
@@ -1016,7 +1016,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             try:
                 await rate_limiter.apply_rate_limit(http_request, "routine_generation")
             except Exception as rate_limit_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
                 raise rate_limit_error
         # print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")  # Commented to reduce noise
 
@@ -1120,7 +1120,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             # Production: Verbose print removed
 
         except Exception as log_error:
-            # Production: Verbose print removed
+            pass  # Error logging failed
 
         # Create combined analysis for routine generation
         combined_analysis = {
@@ -1183,7 +1183,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 # Production: Raw data logging removed
 
             except Exception as log_error:
-                # Production: Raw data logging removed
+                pass  # Raw data logging failed
 
             # Use the memory-enhanced routine generation function with combined parallel analysis
             routine_plan = await run_memory_enhanced_routine_generation(
@@ -1218,7 +1218,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 # Production: Verbose print removed
 
             except Exception as log_error:
-                # Production: Verbose print removed
+                pass  # Routine generation logging failed
 
             # STORE PLAN ITEMS: Extract and store plan items for active plan display
             try:
@@ -1250,7 +1250,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 await memory_service.cleanup()
                     
             except Exception as storage_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
                 # Don't fail the entire request if plan storage fails
             
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
@@ -1261,7 +1261,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 try:
                     await rate_limiter.track_api_cost(user_id, "routine_generation")
                 except Exception as cost_error:
-                    # Production: Verbose print removed
+                    pass  # # Production: Verbose print removed
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "routine")
@@ -1320,13 +1320,12 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                     archetype=archetype
                 )
             except Exception as log_error:
-                # Never let logging errors break the API response
-                # Production: Verbose print removed
+                pass  # Never let logging errors break the API response
 
             return response_data
             
         except Exception as context_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
             raise HTTPException(status_code=500, detail=f"Failed to get user data for routine generation: {str(context_error)}")
             
     except Exception as e:
@@ -1416,7 +1415,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             try:
                 await rate_limiter.apply_rate_limit(http_request, "nutrition_generation")
             except Exception as rate_limit_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
                 raise rate_limit_error
         # print(f"🔄 [NUTRITION_GENERATE] Processing nutrition request for user {user_id[:8]}...")  # Commented to reduce noise
         
@@ -1494,7 +1493,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 try:
                     await rate_limiter.track_api_cost(user_id, "nutrition_generation")
                 except Exception as cost_error:
-                    # Production: Verbose print removed
+                    pass  # # Production: Verbose print removed
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "nutrition")
@@ -1518,7 +1517,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             )
             
         except Exception as context_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
             raise HTTPException(status_code=500, detail=f"Failed to get user data for nutrition generation: {str(context_error)}")
 
             
@@ -1709,7 +1708,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         try:
             await rate_limiter.apply_rate_limit(http_request, "behavior_analysis")
         except Exception as rate_limit_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
             raise rate_limit_error
 
     try:
@@ -1823,7 +1822,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             try:
                 await rate_limiter.track_api_cost(user_id, "behavior_analysis")
             except Exception as cost_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
 
         # Prepare response data
         response_data = BehaviorAnalysisResponse(
@@ -1864,9 +1863,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                 archetype=request.archetype or "Foundation Builder"
             )
         except Exception as log_error:
-            # Never let logging errors break the API response
-            # Production: Verbose print removed
-
+            pass  # Never let logging errors break the API response
         return response_data
         
     except Exception as e:
@@ -1898,7 +1895,7 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
             try:
                 await rate_limiter.apply_rate_limit(http_request, "circadian_analysis")
             except Exception as rate_limit_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
                 raise rate_limit_error
 
         # Production: Verbose print removed  # Enabled for detailed logging
@@ -1961,7 +1958,7 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
             try:
                 await rate_limiter.track_api_cost(user_id, "circadian_analysis")
             except Exception as cost_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
 
         # Prepare response data
         response_data = CircadianAnalysisResponse(
@@ -1999,9 +1996,7 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
                 archetype=archetype
             )
         except Exception as log_error:
-            # Never let logging errors break the API response
-            # Production: Verbose print removed
-
+            pass  # Never let logging errors break the API response
         return response_data
 
     except HTTPException:
@@ -2075,7 +2070,7 @@ async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
                 insights = {"error": insights_result.error_message}
                 
         except Exception as insights_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
             insights = {"error": str(insights_error)}
         
         # Return enhanced results with insights
@@ -2670,7 +2665,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
             insights_stored = True
         # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
         
         # Step 8: Log complete analysis data (input/output logging)
         await log_complete_analysis(
@@ -2755,7 +2750,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                 
                 await memory_service.cleanup()
             except Exception as e:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
         
         # Step 1: Check if fresh analysis needed (50-item threshold logic WITH ARCHETYPE)
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
@@ -2896,7 +2891,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
                 await memory_service.cleanup()
 
             except Exception as threshold_error:
-                # Production: Verbose print removed
+                pass  # # Production: Verbose print removed
                 # Continue with fresh analysis on error
 
         # FRESH ANALYSIS: Threshold exceeded or force_refresh requested
@@ -3078,7 +3073,7 @@ ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sle
         return user_context_summary
         
     except Exception as e:
-        # Production: Verbose print removed
+        pass  # # Production: Verbose print removed
         # Minimal fallback
         return f"Health analysis for {archetype} user {user_id}"
 
@@ -3135,7 +3130,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         print(f"💾 Data collection log saved to: {log_file}")
         
     except Exception as e:
-        # Production: Verbose print removed
+        pass  # # Production: Verbose print removed
 
 async def log_complete_analysis(agent_type: str, user_id: str, archetype: str, 
                                input_data: dict, output_data: dict, memory_context, 
@@ -3179,7 +3174,7 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
         # print(f"📝 [MEMORY_ENHANCED] Complete analysis stored in memory system")  # Commented for error-only mode
         
     except Exception as e:
-        # Production: Verbose print removed
+        pass  # # Production: Verbose print removed
 
 async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -> dict:
     """
@@ -3237,7 +3232,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             )
             # Production: Verbose print removed
         except Exception as insights_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
 
         # Step 7: Update user memory profile with circadian insights (optional)
         try:
@@ -3246,7 +3241,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             )
             # Production: Verbose print removed
         except Exception as memory_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
 
         # Step 8: Store complete analysis in HolisticMemoryService
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
@@ -3290,12 +3285,12 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             )
             # Production: Verbose print removed
         except Exception as storage_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
 
         try:
             await holistic_memory.cleanup()
         except Exception as cleanup_error:
-            # Production: Verbose print removed
+            pass  # # Production: Verbose print removed
 
         return analysis_result
 
@@ -3359,7 +3354,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
 
         # NEW: Log combined analysis information
         if circadian_analysis:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         else:
             print(f"🏃 [MEMORY_ENHANCED] Using behavior analysis only (circadian analysis not available)")
 
@@ -3409,11 +3404,11 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
                     )
                     print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
                 except Exception as e:
-                    # Production: Verbose print removed
+                    pass  # # Production: Verbose print removed
 
             await holistic_memory.cleanup()
         except Exception as e:
-            # # Production: Verbose print removed  # Commented for error-only mode
+            pass  # # # Production: Verbose print removed  # Commented for error-only mode
             pass
 
         # Step 8: Log complete routine generation data (input/output logging)
@@ -3538,7 +3533,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             
             await holistic_memory.cleanup()
         except Exception as e:
-            # # Production: Verbose print removed  # Commented for error-only mode
+            pass  # # # Production: Verbose print removed  # Commented for error-only mode
             pass
         
         # Step 8: Log complete nutrition generation data (input/output logging)
@@ -3869,11 +3864,11 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
                     )
                     print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
                 except Exception as e:
-                    # Production: Verbose print removed
+                    pass  # # Production: Verbose print removed
 
             await holistic_memory.cleanup()
         except Exception as e:
-            # # Production: Verbose print removed  # Commented for error-only mode
+            pass  # # # Production: Verbose print removed  # Commented for error-only mode
             pass
 
         # Step 8: Log complete routine generation data (input/output logging)
@@ -3944,7 +3939,7 @@ try:
     print("📁 [LEGACY] Legacy /api/analyze endpoint loaded from legacy folder")
     
 except ImportError as e:
-    # Production: Verbose print removed
+    pass  # # Production: Verbose print removed
     
     @app.post("/api/analyze", response_model=AnalysisResponse)
     async def analyze_user_fallback(request: AnalysisRequest, http_request: Request):
