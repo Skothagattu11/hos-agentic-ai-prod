@@ -77,7 +77,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                print(f"✅ [MVP_LOGGER] Created input_{analysis_number}.txt")
+                # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -102,7 +102,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                print(f"✅ [MVP_LOGGER] Created output_{analysis_number}.txt")
+                # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -127,7 +127,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                print(f"✅ [MVP_LOGGER] Created insights_{analysis_number}.txt")
+                # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -164,7 +164,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                print(f"📊 [MVP_LOGGER] Raw health data logged: {os.path.basename(raw_data_file)}")
+                # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -204,7 +204,7 @@ class MVPStyleLogger:
             with open(ai_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            print(f"🤖 [MVP_LOGGER] AI interaction logged: {os.path.basename(ai_file)}")
+            # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -373,19 +373,19 @@ class MVPStyleLogger:
             total_files = base_files + optional_files
 
             if IS_DEVELOPMENT:
-                print(f"🎯 [MVP_LOGGER] Complete System Flow Analysis #{analysis_number} logged")
-                print(f"   📊 Total Files Created: {total_files}")
-                print(f"   📥 Input: logs/input_{analysis_number}.txt - {'✅' if results['input_success'] else '❌'}")
-                print(f"   📤 Output: logs/output_{analysis_number}.txt - {'✅' if results['output_success'] else '❌'}")
+                # Production: Verbose print removed
+                # Production: Verbose print removed
+                # Production: Verbose print removed
+                # Production: Verbose print removed
 
             if IS_DEVELOPMENT and insights_data:
-                print(f"   💡 Insights: logs/insights_{analysis_number}.txt - {'✅' if results['insights_success'] else '❌'}")
+                # Production: Verbose print removed
 
             if IS_DEVELOPMENT and raw_health_data:
-                print(f"   📊 Raw Health Data: logs/raw_data/raw_health_{analysis_number}.json - {'✅' if results['raw_health_data_success'] else '❌'}")
+                # Production: Verbose print removed
 
             if IS_DEVELOPMENT and ai_interactions:
-                print(f"   🤖 AI Interactions: {results['ai_interactions_success']}/{len(ai_interactions)} logged in logs/ai_interactions/")
+                # Production: Verbose print removed
 
             if IS_DEVELOPMENT and agent_handoffs:
                 print(f"   🔄 Agent Handoffs: {results['agent_handoffs_success']}/{len(agent_handoffs)} logged in logs/agent_handoffs/")

@@ -25,6 +25,13 @@ from shared_libs.exceptions.holisticos_exceptions import HolisticOSException
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# EXTRACTION METHOD TOGGLE - Simple configuration
+EXTRACTION_METHOD = os.getenv('PLAN_EXTRACTION_METHOD', 'regex')  # 'regex' or 'ai'
+
+# Production logging control - only errors and warnings in production
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+PRODUCTION_MODE = ENVIRONMENT == 'production'
+
 @dataclass
 class TimeBlockContext:
     """Represents a time block with rich contextual metadata"""
@@ -126,7 +133,7 @@ class PlanExtractionService:
                 return []
             
             # Extract using normalized approach with time blocks
-            extracted_plan = self._extract_plan_with_normalized_structure(plan_content, analysis_result, profile_id)
+            extracted_plan = await self._extract_plan_with_normalized_structure(plan_content, analysis_result, profile_id)
             logger.info(f"Extracted {len(extracted_plan.time_blocks)} time blocks with {len(extracted_plan.tasks)} tasks")
             
             # Store time blocks first
@@ -407,10 +414,7 @@ class PlanExtractionService:
             total_blocks = len(time_blocks) if time_blocks else 0
             total_tasks = len(extracted_tasks)
             
-            logger.info(f"📊 Extraction Summary:")
-            logger.info(f"   🏗️  Time blocks processed: {total_blocks}")
-            logger.info(f"   ✅ Actionable tasks extracted: {total_tasks}")
-            logger.info(f"   🎯 Focus: Only trackable, time-bound activities")
+            # Production: Clean logging removed
             
             return extracted_tasks
             
@@ -797,11 +801,13 @@ class PlanExtractionService:
             
             # Find all time blocks with enhanced parsing - try multiple patterns
             time_block_patterns = [
+                # NEW FORMAT: **Block Name (Time Range): Purpose** (dynamic circadian timing)
+                r'\*\*([^*]+?)\s*\(([^)]+)\)\s*:\s*([^*]+?)\*\*\s*\n(.*?)(?=\n\*\*[^*]+?\s*\([^)]+\)\s*:|\n\*\*Health Data Integration|\Z)',
                 # Format: **1. Block Title (Time): Description**
                 r'\*\*(\d+)\.\s+([^*]+?)\*\*\s*\n(.*?)(?=\n\*\*\d+\.|\n\*\*Health Data Integration|\Z)',
                 # Format: 1. **Block Title**
                 r'(\d+)\.\s+\*\*([^*]+?)\*\*\s*\n(.*?)(?=\n\d+\.\s+\*\*|\n\*\*Health Data Integration|\Z)',
-                # Format: **Block Title (Time):**
+                # Format: **Block Title (Time):** (legacy)
                 r'\*\*([^*]+?)\s*\(([^)]+)\)\s*:[^*]*?\*\*\s*\n(.*?)(?=\n\*\*[^*]+?\s*\([^)]+\)\s*:|\n\*\*Health Data Integration|\Z)',
             ]
             
@@ -815,7 +821,7 @@ class PlanExtractionService:
                 if matches:
                     time_block_matches = matches
                     successful_pattern = pattern
-                    logger.info(f"✅ Found {len(matches)} time blocks using pattern {i+1}")
+                    pass  # Production: Remove verbose pattern logging
                     break
                 else:
                     logger.debug(f"❌ Pattern {i+1} found 0 matches")
@@ -824,12 +830,27 @@ class PlanExtractionService:
                 logger.warning("❌ No time blocks found with structured patterns - trying emergency fallback")
                 # BULLETPROOF FALLBACK: Extract anything that looks like a time block
                 return self._emergency_extraction_fallback(content, analysis_result, user_id, date, archetype)
-            
+
+            # Initialize global task counter to prevent duplicate task IDs
+            global_task_order = 1
+
             for block_match in time_block_matches:
                 # Handle different patterns - some patterns may have different group structures
                 num_groups = len(block_match.groups())
-                
-                if num_groups >= 3:
+
+                if num_groups == 4:
+                    # NEW FORMAT: **Block Name (Time Range): Purpose** - 4 groups
+                    block_name = block_match.group(1).strip()
+                    time_range_extracted = block_match.group(2).strip()
+                    purpose_extracted = block_match.group(3).strip()
+                    block_content = block_match.group(4).strip()
+
+                    # Use block name as title and generate sequential order number
+                    block_title = f"{block_name} ({time_range_extracted}): {purpose_extracted}"
+                    block_number = str(len(time_blocks) + 1)  # Sequential numbering
+
+                    logger.info(f"NEW FORMAT - Processing time block {block_number}: {block_name}")
+                elif num_groups >= 3:
                     # Standard pattern with 3 groups
                     block_number = block_match.group(1)
                     block_title = block_match.group(2).strip()
@@ -851,18 +872,24 @@ class PlanExtractionService:
                 
                 logger.info(f"Processing time block {block_number}: {block_title}")
                 logger.debug(f"Block content length: {len(block_content)} characters")
-                
-                # Extract time range and purpose from block title
-                purpose = None
-                if ':' in block_title:
-                    title_parts = block_title.split(':', 1)
-                    time_range_part = title_parts[0].strip()
-                    purpose = title_parts[1].strip() if len(title_parts) > 1 else None
+
+                # Extract time range and purpose from block title (or use pre-extracted values for new format)
+                if num_groups == 4:
+                    # NEW FORMAT: Already extracted time_range and purpose
+                    time_range = time_range_extracted
+                    purpose = purpose_extracted
                 else:
-                    time_range_part = block_title
-                
-                # Extract time range from the full block title
-                time_range = self._extract_time_range_string(block_title)
+                    # LEGACY FORMAT: Extract from block title
+                    purpose = None
+                    if ':' in block_title:
+                        title_parts = block_title.split(':', 1)
+                        time_range_part = title_parts[0].strip()
+                        purpose = title_parts[1].strip() if len(title_parts) > 1 else None
+                    else:
+                        time_range_part = block_title
+
+                    # Extract time range from the full block title
+                    time_range = self._extract_time_range_string(block_title)
                 
                 # Parse block-level context
                 why_it_matters = None
@@ -898,10 +925,12 @@ class PlanExtractionService:
                 
                 # Extract tasks from this time block with enhanced pattern matching
                 tasks_section_patterns = [
-                    # Standard format: - **Tasks:**
+                    # NEW FORMAT: - **Tasks:** ... - **Reasoning:**
+                    r'-\s*\*\*Tasks:\*\*\s*(.*?)(?=-\s*\*\*(?:Reasoning|Why It Matters|Connection to Insights)|\Z)',
+                    # Alternative: **Tasks:** ... **Reasoning:**
+                    r'\*\*Tasks:\*\*\s*(.*?)(?=\*\*(?:Reasoning|Why It Matters|Connection to Insights)|\Z)',
+                    # Legacy format: - **Tasks:** ... - **Why It Matters:**
                     r'-\s*\*\*Tasks:\*\*\s*(.*?)(?=-\s*\*\*(?:Why It Matters|Connection to Insights)|\Z)',
-                    # Alternative: **Tasks:**
-                    r'\*\*Tasks:\*\*\s*(.*?)(?=\*\*(?:Why It Matters|Connection to Insights)|\Z)',
                 ]
                 
                 tasks_content = None
@@ -912,97 +941,120 @@ class PlanExtractionService:
                         break
                 
                 if tasks_content:
-                    # Enhanced task patterns to match various formats
-                    task_patterns = [
-                        # Format: - **Task Name (Time):** Description
-                        r'-\s+\*\*([^(]*?)\s*\(([^)]+)\)\s*:\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
-                        # Format: - **Time: Task Name:** Description  
-                        r'-\s+\*\*([^:]*?):\s*([^*]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
-                        # Format: - **Task Name:** Description
-                        r'-\s+\*\*([^*:]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
-                        # Format: - Task with time pattern
-                        r'-\s+([^*\n]*?(?:\d{1,2}:\d{2}[^*\n]*?)?)(?=\n\s*-|\Z)',
-                    ]
-                    
-                    task_matches = []
-                    for i, task_pattern in enumerate(task_patterns):
-                        matches = list(re.finditer(task_pattern, tasks_content, re.DOTALL | re.IGNORECASE))
-                        if matches:
-                            task_matches = matches
-                            logger.debug(f"✅ Found {len(matches)} tasks using task pattern {i+1}")
-                            break
-                        else:
-                            logger.debug(f"❌ Task pattern {i+1} found 0 matches")
-                    
-                    task_order = 1
-                    for task_match in task_matches:
-                        # Handle different task pattern formats
-                        num_groups = len(task_match.groups())
-                        
-                        if num_groups >= 3:
-                            # Pattern with 3 groups: task_name, time_info, description
-                            task_name = task_match.group(1).strip()
-                            time_info = task_match.group(2).strip() if task_match.group(2) else ""
-                            task_description = task_match.group(3).strip() if task_match.group(3) else ""
-                        elif num_groups == 2:
-                            # Pattern with 2 groups: task_name, description (or task_name, time_info)
-                            task_name = task_match.group(1).strip()
-                            # Check if second group looks like time info or description
-                            second_group = task_match.group(2).strip()
-                            if re.match(r'\d{1,2}:\d{2}', second_group):
-                                time_info = second_group
-                                task_description = ""
+                    # First check if tasks_content is just one paragraph (new format)
+                    if not re.search(r'\n\s*-', tasks_content):
+                        # NEW FORMAT: Single paragraph of tasks, split by sentences
+                        sentences = [s.strip() for s in re.split(r'[.!?]+', tasks_content) if s.strip()]
+
+                        for sentence in sentences:
+                            if len(sentence) > 10:  # Skip very short fragments
+                                task_id = f"{analysis_id}_task_{global_task_order}"
+                                task = ExtractedTask(
+                                    task_id=task_id,
+                                    title=sentence[:50] + "..." if len(sentence) > 50 else sentence,
+                                    description=sentence,
+                                    time_block_id=block_id,
+                                    scheduled_time=None,
+                                    scheduled_end_time=None,
+                                    estimated_duration_minutes=None,
+                                    task_type="general",
+                                    priority_level="medium",
+                                    task_order_in_block=global_task_order,
+                                    parent_routine_id=analysis_id
+                                )
+                                all_tasks.append(task)
+                                global_task_order += 1
+                    else:
+                        # LEGACY FORMAT: Individual task bullet points
+                        task_patterns = [
+                            # Format: - **Task Name (Time):** Description
+                            r'-\s+\*\*([^(]*?)\s*\(([^)]+)\)\s*:\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                            # Format: - **Time: Task Name:** Description
+                            r'-\s+\*\*([^:]*?):\s*([^*]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                            # Format: - **Task Name:** Description
+                            r'-\s+\*\*([^*:]+?)\*\*\s*([^\n]*?)(?=\n\s*-|\Z)',
+                            # Format: - Task with time pattern
+                            r'-\s+([^*\n]*?(?:\d{1,2}:\d{2}[^*\n]*?)?)(?=\n\s*-|\Z)',
+                        ]
+
+                        task_matches = []
+                        for i, task_pattern in enumerate(task_patterns):
+                            matches = list(re.finditer(task_pattern, tasks_content, re.DOTALL | re.IGNORECASE))
+                            if matches:
+                                task_matches = matches
+                                logger.debug(f"✅ Found {len(matches)} tasks using task pattern {i+1}")
+                                break
                             else:
-                                time_info = ""
-                                task_description = second_group
-                        else:
-                            # Pattern with 1 group: combined task info
-                            full_text = task_match.group(1).strip()
-                            # Try to extract time info from the text
-                            time_match = re.search(r'\(([^)]*\d{1,2}:\d{2}[^)]*)\)', full_text)
-                            if time_match:
-                                time_info = time_match.group(1).strip()
-                                task_name = re.sub(r'\([^)]*\d{1,2}:\d{2}[^)]*\)', '', full_text).strip()
-                                task_description = ""
+                                logger.debug(f"❌ Task pattern {i+1} found 0 matches")
+
+                        for task_match in task_matches:
+                            # Handle different task pattern formats
+                            num_groups = len(task_match.groups())
+
+                            if num_groups >= 3:
+                                # Pattern with 3 groups: task_name, time_info, description
+                                task_name = task_match.group(1).strip()
+                                time_info = task_match.group(2).strip() if task_match.group(2) else ""
+                                task_description = task_match.group(3).strip() if task_match.group(3) else ""
+                            elif num_groups == 2:
+                                # Pattern with 2 groups: task_name, description (or task_name, time_info)
+                                task_name = task_match.group(1).strip()
+                                # Check if second group looks like time info or description
+                                second_group = task_match.group(2).strip()
+                                if re.match(r'\d{1,2}:\d{2}', second_group):
+                                    time_info = second_group
+                                    task_description = ""
+                                else:
+                                    time_info = ""
+                                    task_description = second_group
                             else:
-                                task_name = full_text
-                                time_info = ""
-                                task_description = ""
-                        
-                        # Clean up task name
-                        task_name = re.sub(r'^[*\s:-]+|[*\s:-]+$', '', task_name).strip()
-                        
-                        if not task_name or len(task_name) < 3:
-                            logger.debug(f"Skipping task with insufficient name: '{task_name}'")
-                            continue
-                        
-                        # Parse timing information
-                        start_time, end_time, duration = self._extract_task_timing(time_info)
-                        
-                        # Determine task type and priority
-                        task_type = self._determine_task_type(task_name, task_description)
-                        priority_level = self._determine_priority(task_name, task_description, archetype)
-                        
-                        # Create task linked to time block
-                        task = ExtractedTask(
-                            task_id=f"{block_id}_task_{task_order}",
-                            title=task_name,
-                            description=task_description,
-                            scheduled_time=start_time,
-                            scheduled_end_time=end_time,
-                            estimated_duration_minutes=duration,
-                            task_type=task_type,
-                            priority_level=priority_level,
-                            task_order_in_block=task_order,
-                            time_block_id=block_id,
-                            parent_routine_id=analysis_id
-                        )
-                        
-                        all_tasks.append(task)
-                        task_order += 1
-                        
-                        logger.info(f"  ✓ Extracted task: {task_name} ({time_info})")
-                        logger.debug(f"    Task details - Name: '{task_name}', Time: '{time_info}', Description: '{task_description[:50]}...'")
+                                # Pattern with 1 group: combined task info
+                                full_text = task_match.group(1).strip()
+                                # Try to extract time info from the text
+                                time_match = re.search(r'\(([^)]*\d{1,2}:\d{2}[^)]*)\)', full_text)
+                                if time_match:
+                                    time_info = time_match.group(1).strip()
+                                    task_name = re.sub(r'\([^)]*\d{1,2}:\d{2}[^)]*\)', '', full_text).strip()
+                                    task_description = ""
+                                else:
+                                    task_name = full_text
+                                    time_info = ""
+                                    task_description = ""
+
+                            # Clean up task name
+                            task_name = re.sub(r'^[*\s:-]+|[*\s:-]+$', '', task_name).strip()
+
+                            if not task_name or len(task_name) < 3:
+                                logger.debug(f"Skipping task with insufficient name: '{task_name}'")
+                                continue
+
+                            # Parse timing information
+                            start_time, end_time, duration = self._extract_task_timing(time_info)
+
+                            # Determine task type and priority
+                            task_type = self._determine_task_type(task_name, task_description)
+                            priority_level = self._determine_priority(task_name, task_description, archetype)
+
+                            # Create task linked to time block
+                            task = ExtractedTask(
+                                task_id=f"{analysis_id}_task_{global_task_order}",
+                                title=task_name,
+                                description=task_description,
+                                scheduled_time=start_time,
+                                scheduled_end_time=end_time,
+                                estimated_duration_minutes=duration,
+                                task_type=task_type,
+                                priority_level=priority_level,
+                                task_order_in_block=global_task_order,
+                                time_block_id=block_id,
+                                parent_routine_id=analysis_id
+                            )
+
+                            all_tasks.append(task)
+                            global_task_order += 1
+
+                            logger.info(f"  ✓ Extracted task: {task_name} ({time_info})")
+                            logger.debug(f"    Task details - Name: '{task_name}', Time: '{time_info}', Description: '{task_description[:50]}...'")
                 else:
                     logger.warning(f"❌ No tasks section found in block: {block_title}")
                     logger.debug(f"Block content preview (500 chars): {block_content[:500]}...")
@@ -1069,7 +1121,7 @@ class PlanExtractionService:
             for i, pattern in enumerate(emergency_patterns):
                 matches = list(re.finditer(pattern, content, re.MULTILINE | re.DOTALL))
                 if matches:
-                    logger.info(f"✅ Emergency pattern {i+1} found {len(matches)} potential blocks")
+                    pass  # Production: Remove verbose emergency pattern logging
                     
                     for j, match in enumerate(matches):
                         groups = match.groups()
@@ -1148,7 +1200,7 @@ class PlanExtractionService:
                     time_block_id="absolute_fallback"
                 )]
             
-            logger.info(f"🎯 EMERGENCY EXTRACTION COMPLETE: {len(time_blocks)} blocks, {len(all_tasks)} tasks")
+            # Production: Verbose logging removed
             
             return ExtractedPlan(
                 plan_id=analysis_result.get('id', 'emergency'),
@@ -1332,14 +1384,19 @@ class PlanExtractionService:
         
         return None
     
-    def _extract_plan_with_normalized_structure(self, content: str, analysis_result: Dict[str, Any], profile_id: str) -> ExtractedPlan:
+    async def _extract_plan_with_normalized_structure(self, content: str, analysis_result: Dict[str, Any], profile_id: str) -> ExtractedPlan:
         """
         Extract plan with normalized time blocks and tasks structure
+        Supports both regex and AI extraction methods
         """
         try:
-            # Use the existing extract_plan_with_time_blocks method but enhance it
-            extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
-            
+            # TOGGLE: Choose extraction method based on configuration
+            if EXTRACTION_METHOD == 'ai':
+                from services.ai_plan_extraction_service import extract_plan_with_ai
+                extracted_plan = await extract_plan_with_ai(content, analysis_result)
+            else:
+                extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
+
             # Ensure profile_id is set correctly
             extracted_plan.user_id = profile_id
             

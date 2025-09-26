@@ -50,9 +50,9 @@ try:
     from shared_libs.monitoring.metrics import metrics, track_endpoint_metrics, get_prometheus_metrics, get_metrics_content_type
     from shared_libs.monitoring.alerting import alert_manager, monitor_health_continuously, AlertSeverity
     MONITORING_AVAILABLE = True
-        # print("✅ [MONITORING] Comprehensive monitoring system loaded")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
 except ImportError as e:
-    print(f"⚠️ [WARNING] Monitoring system not available: {e}")
+    # Production: Verbose print removed
     MONITORING_AVAILABLE = False
 
 # Import rate limiting system
@@ -62,9 +62,9 @@ try:
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
     RATE_LIMITING_AVAILABLE = True
-        # print("✅ [RATE_LIMITING] Rate limiting system loaded")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
 except ImportError as e:
-    print(f"⚠️ [WARNING] Rate limiting system not available: {e}")
+    # Production: Verbose print removed
     RATE_LIMITING_AVAILABLE = False
 
 # Import error handling
@@ -75,7 +75,7 @@ try:
     )
     ERROR_HANDLING_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ [WARNING] Enhanced error handling not available: {e}")
+    # Production: Verbose print removed
     ERROR_HANDLING_AVAILABLE = False
 
 # Define API Key security scheme for Swagger UI
@@ -153,26 +153,26 @@ if RATE_LIMITING_AVAILABLE:
     app.middleware("http")(add_rate_limit_context_middleware)
     app.middleware("http")(rate_limit_middleware)
     
-        # print("✅ [RATE_LIMITING] Middleware and exception handlers configured")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
 
 # Integrate Phase 2 Health Data Endpoints - CTO Integration
 try:
     from .health_data_endpoints import router as health_data_router
     app.include_router(health_data_router)
-        # print("✅ [INTEGRATION] Health data endpoints added successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
     # print("📡 [ENDPOINTS] Real user data endpoints now available:")  # Commented for error-only mode
 except ImportError as e:
-    print(f"⚠️  [WARNING] Health data endpoints not available: {e}")
+    # Production: Verbose print removed
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate health data endpoints: {e}")
 
 # Integrate Insights Endpoints
-        # print("🔍 [DEBUG] Attempting to import insights endpoints...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
 try:
     from .insights_endpoints import router as insights_router
-        # print("🔍 [DEBUG] Insights endpoints imported successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
     app.include_router(insights_router)
-        # print("✅ [INTEGRATION] Insights endpoints added successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate insights endpoints: {e}")
 
@@ -180,13 +180,13 @@ except Exception as e:
 try:
     from .engagement_endpoints import router as engagement_router
     app.include_router(engagement_router)
-    print("✅ [INTEGRATION] User engagement endpoints added successfully")
+    # Production: Verbose print removed
     print("  - POST /api/v1/engagement/task-checkin")
     print("  - GET /api/v1/engagement/tasks/{profile_id}")
     print("  - POST /api/v1/engagement/journal")
     print("  - POST /api/v1/engagement/extract-plan-items")
 except ImportError as e:
-    print(f"⚠️ [WARNING] User engagement endpoints not available: {e}")
+    # Production: Verbose print removed
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate engagement endpoints: {e}")
 
@@ -194,7 +194,7 @@ except Exception as e:
 try:
     from .calendar_endpoints import router as calendar_router
     app.include_router(calendar_router)
-    print("✅ [INTEGRATION] Calendar selection endpoints added successfully")
+    # Production: Verbose print removed
     print("  - GET /api/calendar/available-items/{profile_id}")
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate calendar selection endpoints: {e}")
@@ -203,7 +203,7 @@ except Exception as e:
 try:
     from .archetype_router import router as archetype_router
     app.include_router(archetype_router, prefix="/api")
-    print("✅ [INTEGRATION] Archetype management endpoints added successfully")
+    # Production: Verbose print removed
     print("  - GET /api/user/{user_id}/available-archetypes")
     print("  - GET /api/user/{user_id}/archetype/{analysis_id}/summary")
 except Exception as e:
@@ -213,12 +213,12 @@ except Exception as e:
 try:
     from .admin_apis import register_admin_routes
     register_admin_routes(app)
-    print("✅ [INTEGRATION] Admin API endpoints added successfully")
+    # Production: Verbose print removed
     print("  - GET /api/admin/users")
     print("  - GET /api/admin/user/{user_id}/overview")
     print("  - GET /api/admin/user/{user_id}/analysis-data")
 except ImportError as e:
-    print(f"⚠️  [WARNING] Admin API endpoints not available: ImportError - {e}")
+    # Production: Verbose print removed
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate admin API endpoints: {e}")
     print("Full traceback:")
@@ -228,13 +228,13 @@ except Exception as e:
 try:
     from .analysis_results_endpoints import router as analysis_router
     app.include_router(analysis_router)
-    print("✅ [INTEGRATION] Analysis results endpoints added successfully")
+    # Production: Verbose print removed
     print("  - GET /api/v1/analysis/user/{user_id}/results")
     print("  - GET /api/v1/analysis/user/{user_id}/latest-with-data")
     print("  - GET /api/v1/analysis/result/{analysis_id}/status")
     print("  - POST /api/v1/analysis/user/{user_id}/extract-latest")
 except ImportError as e:
-    print(f"⚠️ [WARNING] Analysis results endpoints not available: {e}")
+    # Production: Verbose print removed
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate analysis results endpoints: {e}")
 
@@ -244,7 +244,7 @@ try:
     sys.path.append(os.path.join(os.path.dirname(__file__), '../../api'))
     from energy_zones_endpoints import router as energy_zones_router
     app.include_router(energy_zones_router)
-    print("✅ [INTEGRATION] Energy Zones Service endpoints added successfully")
+    # Production: Verbose print removed
     print("  - GET /api/v1/energy-zones/{user_id}")
     print("  - GET /api/v1/energy-zones/{user_id}/current")
     print("  - GET /api/v1/energy-zones/{user_id}/summary")
@@ -253,7 +253,7 @@ try:
     print("  - GET /api/v1/energy-zones/{user_id}/debug")
     print("  - GET /api/v1/energy-zones/health")
 except ImportError as e:
-    print(f"⚠️ [WARNING] Energy Zones Service endpoints not available: {e}")
+    # Production: Verbose print removed
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate Energy Zones Service endpoints: {e}")
 
@@ -389,6 +389,19 @@ class BehaviorAnalysisResponse(BaseModel):
     analysis_type: str  # "fresh", "cached"
     behavior_analysis: Dict[str, Any]
     metadata: Dict[str, Any]
+
+# Circadian Analysis Models
+class CircadianAnalysisRequest(BaseModel):
+    force_refresh: Optional[bool] = False
+    archetype: Optional[str] = None
+
+class CircadianAnalysisResponse(BaseModel):
+    status: str
+    user_id: str
+    analysis_type: str  # "fresh", "cached"
+    circadian_analysis: Dict[str, Any]
+    metadata: Dict[str, Any]
+
 # =====================================================================# AGENT INITIALIZATION
 # =====================================================================
 @app.on_event("startup")
@@ -403,9 +416,9 @@ async def initialize_agents():
         try:
             from shared_libs.database.connection_pool import db_pool
             await db_pool.initialize()
-        # print("✅ Database connection pool initialized")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            print(f"⚠️ Database pool initialization failed (continuing with fallback): {e}")
+            # Production: Verbose print removed
         
         # Initialize agents
         from services.orchestrator.main import HolisticOrchestrator
@@ -420,7 +433,7 @@ async def initialize_agents():
         
         # REMOVED: Automatic background scheduler - now using on-demand analysis
         # Behavior analysis will be triggered only when routine/nutrition plans are requested
-        # print("✅ Using on-demand behavior analysis (automatic scheduler disabled)")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
         # Initialize monitoring system
         if MONITORING_AVAILABLE:
@@ -430,7 +443,7 @@ async def initialize_agents():
                 
                 # Start background health monitoring
                 asyncio.create_task(monitor_health_continuously())
-        # print("✅ Background health monitoring started")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
                 
                 # Send startup notification
                 await alert_manager.send_alert(
@@ -444,11 +457,11 @@ async def initialize_agents():
                     },
                     service="system"
                 )
-        # print("✅ Monitoring system initialized")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             except Exception as e:
-                print(f"⚠️ Monitoring initialization failed: {e}")
+                # Production: Verbose print removed
         
-        # print("✅ All agents initialized successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
     except Exception as e:
         print(f"❌ Error initializing agents: {e}")
@@ -481,11 +494,11 @@ async def shutdown_agents():
         try:
             from shared_libs.database.connection_pool import db_pool
             await db_pool.close()
-        # print("✅ Database connection pool closed")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            print(f"⚠️ Error closing database pool: {e}")
+            # Production: Verbose print removed
         
-        # print("✅ All agents shut down successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
     except Exception as e:
         print(f"❌ Error during shutdown: {e}")
@@ -512,7 +525,7 @@ def get_score_actual_date(score) -> str:
                 # Handle datetime objects
                 return score.score_date_time.strftime("%Y-%m-%d")
     except (ValueError, AttributeError) as e:
-        print(f"⚠️ Date parsing issue for score_date_time: {e}, falling back to created_at")
+        # Production: Verbose print removed
     
     # Fallback to created_at if score_date_time is unavailable/invalid
     if hasattr(score, 'created_at') and score.created_at:
@@ -780,7 +793,7 @@ async def get_latest_routine_plan(user_id: str):
     Fast endpoint - uses cached analysis results
     """
     try:
-        # print(f"📋 [ROUTINE_API] Getting latest routine for user {user_id[:8]}...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
         # Get latest behavior analysis from memory
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
@@ -1003,7 +1016,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             try:
                 await rate_limiter.apply_rate_limit(http_request, "routine_generation")
             except Exception as rate_limit_error:
-                print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
+                # Production: Verbose print removed
                 raise rate_limit_error
         # print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")  # Commented to reduce noise
 
@@ -1028,11 +1041,37 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             }
         }
 
-        # Use shared behavior analysis (eliminates duplicate analysis calls)
-        # print(f"📞 [ROUTINE_GENERATE] Getting shared behavior analysis...")  # Commented for error-only mode
-        behavior_analysis = await get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh, analysis_number)
-        
-        if not behavior_analysis:
+        # NEW: Run parallel behavior + circadian analysis for enhanced routine generation
+        print(f"🔄 [ROUTINE_GENERATE] Running parallel behavior + circadian analysis for dynamic planning...")
+
+        # Run both analyses in parallel using same raw data
+        import asyncio
+        behavior_task = get_or_create_shared_behavior_analysis(user_id, archetype, force_refresh, analysis_number)
+        circadian_task = get_or_create_shared_circadian_analysis(user_id, archetype, force_refresh, analysis_number)
+
+        try:
+            behavior_analysis, circadian_analysis = await asyncio.gather(
+                behavior_task, circadian_task, return_exceptions=True
+            )
+        except Exception as e:
+            print(f"❌ [ROUTINE_GENERATE] Parallel analysis failed: {e}")
+            return RoutinePlanResponse(
+                status="error",
+                user_id=user_id,
+                routine_plan={},
+                generation_metadata={
+                    "error": "Parallel analysis failed",
+                    "details": str(e)
+                },
+                cached=False
+            )
+
+        # Check if both analyses succeeded
+        behavior_success = behavior_analysis and not isinstance(behavior_analysis, Exception)
+        circadian_success = circadian_analysis and not isinstance(circadian_analysis, Exception)
+
+        if not behavior_success:
+            print(f"❌ [ROUTINE_GENERATE] Behavior analysis failed: {behavior_analysis}")
             return RoutinePlanResponse(
                 status="error",
                 user_id=user_id,
@@ -1043,10 +1082,63 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 },
                 cached=False
             )
+
+        # Log successful parallel execution with detailed data for agent handoff tracking
+        # Production: Verbose print removed
+        # Production: Verbose print removed
+        # Production: Verbose print removed
+
+        # DETAILED LOGGING: Log raw data and analysis outputs for agent handoff tracking
+        try:
+            import json
+            import os
+
+            # Create handoff logs directory
+            # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+            if not os.path.exists(handoff_dir):
+                os.makedirs(handoff_dir)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            # SIMPLE LOGGING: Just dump the actual agent outputs
+            if behavior_success:
+                with open(f"{handoff_dir}/01_behavior_analysis_output_{timestamp}.json", 'w') as f:
+                    json.dump({
+                        "timestamp": datetime.now().isoformat(),
+                        "user_id": user_id,
+                        "full_behavior_analysis_output": behavior_analysis
+                    }, f, indent=2, default=str)
+
+            if circadian_success:
+                with open(f"{handoff_dir}/02_circadian_analysis_output_{timestamp}.json", 'w') as f:
+                    json.dump({
+                        "timestamp": datetime.now().isoformat(),
+                        "user_id": user_id,
+                        "full_circadian_analysis_output": circadian_analysis
+                    }, f, indent=2, default=str)
+
+            # Production: Verbose print removed
+
+        except Exception as log_error:
+            # Production: Verbose print removed
+
+        # Create combined analysis for routine generation
+        combined_analysis = {
+            "behavior_analysis": behavior_analysis if behavior_success else {},
+            "circadian_analysis": circadian_analysis if circadian_success else {},
+            "combined_metadata": {
+                "behavior_success": behavior_success,
+                "circadian_success": circadian_success,
+                "parallel_execution": True,
+                "analysis_timestamp": datetime.now().isoformat(),
+                "archetype": archetype,
+                "force_refresh": force_refresh
+            }
+        }
+
+        analysis_type = "complete_analysis"  # New analysis type for combined approach
         
-        analysis_type = "shared"  # Indicates shared analysis was used
-        
-        # print(f"✅ [ROUTINE_GENERATE] Got shared behavior analysis ({analysis_type})")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         # print(f"   • Analysis source: Shared behavior analysis service")  # Commented for error-only mode
         # print(f"   • Eliminates duplicate OpenAI calls")  # Commented for error-only mode
         
@@ -1064,16 +1156,70 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp for routine data fetch")
                 user_context, _ = await user_service.get_analysis_data(user_id, locked_timestamp)
             else:
-        # print(f"🔍 [NORMAL_FLOW] No locked timestamp in behavior analysis - using standard flow")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
                 user_context, _ = await user_service.get_analysis_data(user_id)
-            
-            # Use the memory-enhanced routine generation function with all /api/analyze features
+
+            # RAW DATA LOGGING: Log the actual health data that goes into analysis
+            try:
+                import os
+                import json
+
+                # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+                if not os.path.exists(handoff_dir):
+                    os.makedirs(handoff_dir)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+                # SIMPLE LOGGING: Just dump the actual raw data - properly convert to dict
+                with open(f"{handoff_dir}/00_raw_health_data_{timestamp}.json", 'w') as f:
+                    # Convert user_context to dict if it's a Pydantic model
+                    raw_data_dict = user_context.dict() if hasattr(user_context, 'dict') else user_context
+                    json.dump({
+                        "timestamp": datetime.now().isoformat(),
+                        "user_id": user_id,
+                        "full_raw_health_data": raw_data_dict
+                    }, f, indent=2, default=str)
+
+                # Production: Raw data logging removed
+
+            except Exception as log_error:
+                # Production: Raw data logging removed
+
+            # Use the memory-enhanced routine generation function with combined parallel analysis
             routine_plan = await run_memory_enhanced_routine_generation(
                 user_id=user_id,
                 archetype=archetype,
-                behavior_analysis=behavior_analysis
+                behavior_analysis=behavior_analysis,
+                circadian_analysis=circadian_analysis if circadian_success else None,
+                combined_analysis=combined_analysis
             )
-            
+
+            # FINAL AGENT HANDOFF: Log the combined analysis → routine generation transformation
+            try:
+                import os
+                import json
+
+                # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+                if not os.path.exists(handoff_dir):
+                    os.makedirs(handoff_dir)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+                # SIMPLE LOGGING: Just dump the actual routine output
+                with open(f"{handoff_dir}/03_routine_generation_output_{timestamp}.json", 'w') as f:
+                    json.dump({
+                        "timestamp": datetime.now().isoformat(),
+                        "user_id": user_id,
+                        "behavior_analysis_used": behavior_analysis if behavior_success else None,
+                        "circadian_analysis_used": circadian_analysis if circadian_success else None,
+                        "full_routine_plan_output": routine_plan
+                    }, f, indent=2, default=str)
+
+                # Production: Verbose print removed
+
+            except Exception as log_error:
+                # Production: Verbose print removed
+
             # STORE PLAN ITEMS: Extract and store plan items for active plan display
             try:
                 from services.plan_extraction_service import PlanExtractionService
@@ -1099,12 +1245,12 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                             analysis_result_id=analysis_result_id,
                             profile_id=user_id
                         )
-                        print(f"✅ [PLAN_STORAGE] Stored {len(stored_items)} plan items for active plan display")
+                        # Production: Verbose print removed
                     
                 await memory_service.cleanup()
                     
             except Exception as storage_error:
-                print(f"⚠️ [PLAN_STORAGE] Failed to store plan items: {storage_error}")
+                # Production: Verbose print removed
                 # Don't fail the entire request if plan storage fails
             
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
@@ -1115,7 +1261,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 try:
                     await rate_limiter.track_api_cost(user_id, "routine_generation")
                 except Exception as cost_error:
-                    print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
+                    # Production: Verbose print removed
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "routine")
@@ -1175,12 +1321,12 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 )
             except Exception as log_error:
                 # Never let logging errors break the API response
-                print(f"⚠️ [MVP_LOGGER] Routine logging failed (non-critical): {log_error}")
+                # Production: Verbose print removed
 
             return response_data
             
         except Exception as context_error:
-            print(f"⚠️ [ROUTINE_GENERATE] User context error: {context_error}")
+            # Production: Verbose print removed
             raise HTTPException(status_code=500, detail=f"Failed to get user data for routine generation: {str(context_error)}")
             
     except Exception as e:
@@ -1270,7 +1416,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             try:
                 await rate_limiter.apply_rate_limit(http_request, "nutrition_generation")
             except Exception as rate_limit_error:
-                print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
+                # Production: Verbose print removed
                 raise rate_limit_error
         # print(f"🔄 [NUTRITION_GENERATE] Processing nutrition request for user {user_id[:8]}...")  # Commented to reduce noise
         
@@ -1302,7 +1448,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
         
         analysis_type = "shared"  # Indicates shared analysis was used
         
-        # print(f"✅ [NUTRITION_GENERATE] Got shared behavior analysis ({analysis_type})")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         # print(f"   • Analysis source: Shared behavior analysis service")  # Commented for error-only mode
         # print(f"   • Eliminates duplicate OpenAI calls")  # Commented for error-only mode
         
@@ -1320,7 +1466,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp for nutrition data fetch")
                 user_context, _ = await user_service.get_analysis_data(user_id, locked_timestamp)
             else:
-        # print(f"🔍 [NORMAL_FLOW] No locked timestamp in behavior analysis - using standard flow")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
                 user_context, _ = await user_service.get_analysis_data(user_id)
             
             # Generate nutrition using existing function
@@ -1348,7 +1494,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 try:
                     await rate_limiter.track_api_cost(user_id, "nutrition_generation")
                 except Exception as cost_error:
-                    print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
+                    # Production: Verbose print removed
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "nutrition")
@@ -1372,7 +1518,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             )
             
         except Exception as context_error:
-            print(f"⚠️ [NUTRITION_GENERATE] User context error: {context_error}")
+            # Production: Verbose print removed
             raise HTTPException(status_code=500, detail=f"Failed to get user data for nutrition generation: {str(context_error)}")
 
             
@@ -1386,7 +1532,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
 async def get_latest_insights(user_id: str):
     """Get latest AI insights for user - Phase 4.2 Sprint 3"""
     try:
-        # print(f"🔍 [INSIGHTS_API] Getting latest insights for user {user_id[:8]}...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
         # Get latest analysis with insights from memory
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
@@ -1563,7 +1709,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         try:
             await rate_limiter.apply_rate_limit(http_request, "behavior_analysis")
         except Exception as rate_limit_error:
-            print(f"⚠️ [RATE_LIMIT] Rate limit exceeded for user {user_id}: {rate_limit_error}")
+            # Production: Verbose print removed
             raise rate_limit_error
 
     try:
@@ -1601,7 +1747,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         memory_quality = metadata.get('memory_quality')
         memory_quality_str = memory_quality.value if hasattr(memory_quality, 'value') else str(memory_quality) if memory_quality else 'unknown'
 
-        # print(f"📊 [BEHAVIOR_ANALYZE] Analysis decision: {decision_str}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         # print(f"   • New data points: {metadata['new_data_points']}")  # Commented for error-only mode
         # print(f"   • Threshold: {metadata['threshold_used']}")  # Commented for error-only mode
         # print(f"   • Memory quality: {memory_quality_str}")  # Commented for error-only mode
@@ -1639,10 +1785,10 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
                     archetype_used=archetype,
                     analysis_trigger=analysis_trigger
                 )
-        # print(f"✅ [BEHAVIOR_ANALYZE] Fresh analysis completed and stored")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             else:
                 # Fallback to cached if fresh analysis fails
-                print(f"⚠️ [BEHAVIOR_ANALYZE] Fresh analysis failed, attempting cached...")
+                # Production: Verbose print removed
                 behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
                 analysis_type = "cached_fallback"
                 
@@ -1677,7 +1823,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             try:
                 await rate_limiter.track_api_cost(user_id, "behavior_analysis")
             except Exception as cost_error:
-                print(f"⚠️ [COST_TRACKING] Failed to track cost for {user_id}: {cost_error}")
+                # Production: Verbose print removed
 
         # Prepare response data
         response_data = BehaviorAnalysisResponse(
@@ -1719,13 +1865,150 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             )
         except Exception as log_error:
             # Never let logging errors break the API response
-            print(f"⚠️ [MVP_LOGGER] Logging failed (non-critical): {log_error}")
+            # Production: Verbose print removed
 
         return response_data
         
     except Exception as e:
         print(f"❌ [BEHAVIOR_ANALYZE_ERROR] Failed to analyze behavior for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze behavior: {str(e)}")
+
+@app.post("/api/user/{user_id}/circadian/analyze", response_model=CircadianAnalysisResponse)
+@track_endpoint_metrics("circadian_analysis") if MONITORING_AVAILABLE else lambda x: x
+async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisRequest, http_request: Request):
+    """
+    Standalone circadian rhythm analysis endpoint with 50-item threshold constraint
+    Only runs fresh analysis when 50+ new data points exist, otherwise returns cached analysis
+
+    Uses GPT-4o model for intelligent circadian pattern recognition from biomarker data
+    Integrates with existing threshold, memory, and orchestration systems
+    """
+    # API key validation (same pattern as other endpoints)
+    api_key = http_request.headers.get("X-API-Key")
+    if api_key != "hosa_flutter_app_2024":
+        print(f"🔒 [AUTH_FAILED] Invalid or missing API key for circadian analysis {user_id[:8]}... Provided: {api_key}")
+        raise HTTPException(status_code=401, detail="User not authenticated")
+
+    if IS_DEVELOPMENT:
+        print(f"🔑 [AUTH_SUCCESS] Valid client API key provided for circadian analysis {user_id[:8]}...")
+
+    try:
+        # Apply rate limiting if available
+        if RATE_LIMITING_AVAILABLE:
+            try:
+                await rate_limiter.apply_rate_limit(http_request, "circadian_analysis")
+            except Exception as rate_limit_error:
+                # Production: Verbose print removed
+                raise rate_limit_error
+
+        # Production: Verbose print removed  # Enabled for detailed logging
+
+        # MVP-Style Logging: Import and prepare input data
+        from services.mvp_style_logger import mvp_logger
+        analysis_number = mvp_logger.get_next_analysis_number()
+        input_data = {
+            "user_id": user_id,
+            "archetype": request.archetype or "Foundation Builder",
+            "force_refresh": request.force_refresh,
+            "endpoint": "/api/user/{user_id}/circadian/analyze",
+            "request_timestamp": datetime.now().isoformat(),
+            "analysis_number": analysis_number,
+            "request_data": {
+                "archetype": request.archetype,
+                "force_refresh": request.force_refresh
+            }
+        }
+
+        # Use shared circadian analysis orchestration
+        archetype = request.archetype or "Foundation Builder"
+        circadian_result = await get_or_create_shared_circadian_analysis(
+            user_id, archetype, request.force_refresh, analysis_number
+        )
+
+        # Determine analysis type and prepare response
+        if circadian_result.get("status") == "error":
+            return CircadianAnalysisResponse(
+                status="error",
+                user_id=user_id,
+                analysis_type="error",
+                circadian_analysis={},
+                metadata={
+                    "error": circadian_result.get("error", "Unknown error occurred"),
+                    "suggestion": "Try with force_refresh=true or check system logs",
+                    "analysis_timestamp": datetime.now().isoformat()
+                }
+            )
+
+        elif circadian_result.get("status") == "skipped":
+            return CircadianAnalysisResponse(
+                status="success",
+                user_id=user_id,
+                analysis_type="skipped",
+                circadian_analysis={},
+                metadata={
+                    "reason": "threshold_not_met",
+                    "message": "Insufficient new data points for fresh analysis",
+                    "suggestion": "Use force_refresh=true to override threshold",
+                    "analysis_timestamp": datetime.now().isoformat()
+                }
+            )
+
+        # Successful analysis - determine if fresh or cached
+        analysis_type = "fresh" if circadian_result.get("analysis_type") == "circadian_rhythm" else "cached"
+
+        # Track API cost for rate limiting
+        if RATE_LIMITING_AVAILABLE and analysis_type == "fresh":
+            try:
+                await rate_limiter.track_api_cost(user_id, "circadian_analysis")
+            except Exception as cost_error:
+                # Production: Verbose print removed
+
+        # Prepare response data
+        response_data = CircadianAnalysisResponse(
+            status="success",
+            user_id=user_id,
+            analysis_type=analysis_type,
+            circadian_analysis=circadian_result,
+            metadata={
+                "analysis_decision": f"shared_circadian_analysis_service",
+                "data_quality": "threshold_validated",
+                "personalization_level": "high",
+                "archetype_used": archetype,
+                "force_refresh": request.force_refresh,
+                "model_used": circadian_result.get("model_used", "gpt-4o"),
+                "analysis_timestamp": datetime.now().isoformat()
+            }
+        )
+
+        # MVP-Style Logging: Complete circadian analysis cycle
+        try:
+            output_data = {
+                "status": response_data.status,
+                "circadian_analysis": circadian_result,
+                "metadata": response_data.metadata,
+                "analysis_type": analysis_type,
+                "response_timestamp": datetime.now().isoformat(),
+                "api_cost_tracked": analysis_type == "fresh"
+            }
+
+            # Log the complete analysis cycle
+            mvp_logger.log_complete_analysis(
+                input_data=input_data,
+                output_data=output_data,
+                user_id=user_id,
+                archetype=archetype
+            )
+        except Exception as log_error:
+            # Never let logging errors break the API response
+            # Production: Verbose print removed
+
+        return response_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [CIRCADIAN_ANALYZE_ERROR] Failed to analyze circadian rhythm for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze circadian rhythm: {str(e)}")
 
 
 async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
@@ -1755,7 +2038,7 @@ async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
         nutrition_plan = analysis_data.get("nutrition_plan", {})
         routine_plan = analysis_data.get("routine_plan", {})
         
-        # print(f"✅ Main analysis complete, generating AI insights...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         
         # Step 4: Generate AI-Powered Insights using enhanced Insights Agent
         insights = {}
@@ -1786,13 +2069,13 @@ async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
             
             if insights_result.success:
                 insights = insights_result.result
-        # print(f"✅ Generated {len(insights.get('insights', []))} AI insights")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             else:
-                print(f"⚠️ Insights generation failed: {insights_result.error_message}")
+                # Production: Verbose print removed
                 insights = {"error": insights_result.error_message}
                 
         except Exception as insights_error:
-            print(f"⚠️ Insights generation error: {insights_error}")
+            # Production: Verbose print removed
             insights = {"error": str(insights_error)}
         
         # Return enhanced results with insights
@@ -2093,7 +2376,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
     try:
         print(f"🧠 [BEHAVIOR_WRAPPER] Starting DIRECT behavior analysis for {user_id[:8]}...")
-        print(f"⚠️ [BEHAVIOR_WRAPPER] WARNING: This bypasses OnDemandAnalysisService threshold logic!")
+        # Production: Verbose print removed
         
         # Get user data using existing services
         from services.user_data_service import UserDataService
@@ -2126,7 +2409,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
         behavior_result = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
         
         if behavior_result:
-        # print(f"✅ [BEHAVIOR_WRAPPER] Behavior analysis completed successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             
             # Note: Agent handoff logging removed - focus on core functionality
             # Safe data quality access
@@ -2244,6 +2527,81 @@ Focus on actionable insights from the provided health metrics.
             "behavioral_signature": {"signature": "Analysis Error", "confidence": 0.5}
         }
 
+async def run_circadian_analysis_gpt4o(system_prompt: str, user_context: str) -> dict:
+    """Run circadian rhythm analysis using GPT-4o model - Phase 2"""
+    try:
+        client = openai.AsyncOpenAI()
+
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"{system_prompt}\n\nYou are an expert circadian rhythm analyst. Focus on identifying sleep-wake patterns, energy fluctuations, and optimal timing for activities based on biomarker data."
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+{user_context}
+
+Analyze the circadian rhythm patterns from the biomarker data and provide comprehensive insights following the HolisticOS framework.
+
+Focus on:
+- Sleep-wake cycle patterns and consistency
+- Energy level fluctuations throughout the day
+- Optimal timing windows for different activities
+- Chronotype assessment and recommendations
+- Integration opportunities with existing routines
+
+Provide structured JSON output with chronotype_assessment, energy_zone_analysis, schedule_recommendations, and biomarker_insights sections.
+                """
+                }
+            ],
+            temperature=0.2,  # Lower temperature for more consistent circadian analysis
+            max_tokens=3000,
+            response_format={"type": "json_object"}
+        )
+
+        content = response.choices[0].message.content
+
+        # Parse JSON response
+        try:
+            analysis_data = json.loads(content)
+            analysis_data["model_used"] = "gpt-4o"
+            analysis_data["analysis_type"] = "circadian_rhythm"
+            analysis_data["analysis_timestamp"] = datetime.now().isoformat()
+            return analysis_data
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error in circadian analysis: {e}")
+            return {
+                "chronotype_assessment": {
+                    "primary_type": "intermediate",
+                    "confidence_score": 0.7,
+                    "assessment_basis": "Limited data available"
+                },
+                "energy_zone_analysis": {
+                    "peak_energy_window": "09:00-11:00",
+                    "low_energy_window": "14:00-16:00",
+                    "recovery_window": "22:00-06:00"
+                },
+                "schedule_recommendations": {
+                    "optimal_wake_time": "07:00",
+                    "optimal_sleep_time": "23:00",
+                    "workout_window": "08:00-10:00"
+                },
+                "analysis_content": content,
+                "model_used": "gpt-4o",
+                "analysis_type": "circadian_rhythm"
+            }
+
+    except Exception as e:
+        print(f"Error in GPT-4o circadian analysis: {e}")
+        return {
+            "error": str(e),
+            "model_used": "gpt-4o - fallback",
+            "chronotype_assessment": {"primary_type": "unknown", "confidence_score": 0.3}
+        }
+
 async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
     Memory-Enhanced Behavior Analysis - Includes all features from /api/analyze
@@ -2264,7 +2622,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         memory_service = MemoryIntegrationService()
         
         # Step 1: Prepare memory-enhanced context
-        # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for user {user_id[:8]}...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for analysis
@@ -2282,8 +2640,8 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         else:
             data_quality_value = str(data_quality) if data_quality else "unknown"
         
-        # print(f"📊 [MEMORY_ENHANCED] Data quality: {data_quality_value}")  # Commented to reduce noise
-        # print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data (mode: {memory_context.analysis_mode})")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("behavior_analysis")
@@ -2310,9 +2668,9 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
             # Use the same storage method as /api/analyze (line 1523)
             await memory_service.store_analysis_insights(user_id, "behavior_analysis", analysis_result, archetype)
             insights_stored = True
-        # print(f"✅ [MEMORY_ENHANCED] Analysis insights stored successfully")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            print(f"⚠️ [MEMORY_ENHANCED] Failed to store analysis insights: {e}")
+            # Production: Verbose print removed
         
         # Step 8: Log complete analysis data (input/output logging)
         await log_complete_analysis(
@@ -2333,7 +2691,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
             "insights_stored": insights_stored
         })
         
-        # print(f"✅ [MEMORY_ENHANCED] Memory-enhanced behavior analysis completed for {user_id[:8]}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         return analysis_result
         
     except Exception as e:
@@ -2358,7 +2716,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         )
         
         if not should_process and cached_result:
-            print(f"✅ [SHARED_ANALYSIS] Using coordinated cache for {user_id[:8]}... + {archetype}")
+            # Production: Verbose print removed
             return cached_result
         
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
@@ -2387,7 +2745,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                     
                     # If threshold not exceeded since last analysis, reuse it
                     if new_data_since_analysis < 50:  # Threshold not met
-                        print(f"✅ [SHARED_ANALYSIS] Threshold not exceeded since last analysis ({new_data_since_analysis} < 50) - reusing for {archetype}")
+                        # Production: Verbose print removed
                         await memory_service.cleanup()
                         # Complete coordination with the result
                         enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", latest_analysis.analysis_result)
@@ -2397,7 +2755,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                 
                 await memory_service.cleanup()
             except Exception as e:
-                print(f"⚠️ [SHARED_ANALYSIS] Threshold check failed, proceeding with normal flow: {e}")
+                # Production: Verbose print removed
         
         # Step 1: Check if fresh analysis needed (50-item threshold logic WITH ARCHETYPE)
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
@@ -2409,13 +2767,13 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         new_data = metadata.get('new_data_points', 0)
         threshold = metadata.get('threshold_used', 50)
         
-        # print(f"🎯 [THRESHOLD_DEBUG] OnDemandAnalysisService Decision for {user_id[:8]}...")  # Commented for error-only mode
-        # print(f"   📊 Decision: {decision_str}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented to reduce noise
         # print(f"   📈 New Data Points: {new_data}")  # Commented for error-only mode
-        # print(f"   🎯 Threshold: {threshold}")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         # print(f"   💾 Memory Quality: {metadata.get('memory_quality', 'unknown')}")  # Commented for error-only mode
         # print(f"   ⏰ Hours Since Last: {metadata.get('hours_since_analysis', 0):.1f}")  # Commented for error-only mode
-        # print(f"   💡 Reason: {metadata.get('reason', 'no reason provided')}")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         logger.debug(f"[SHARED_ANALYSIS] {user_id[:8]}... Decision: {decision_str}, Data: {new_data}/{threshold}")
         
@@ -2425,7 +2783,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
             # Use OnDemandAnalysisService's archetype-aware cache retrieval
             cached_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
             if cached_analysis:
-        # print(f"✅ [THRESHOLD_DEBUG] Found cached analysis - using cached behavior analysis")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
                 print(f"   📝 Cache contains: {len(str(cached_analysis))} characters")
                 logger.debug(f"[SHARED_ANALYSIS] {user_id[:8]}... Using cached analysis")
                 # Complete coordination with cached result
@@ -2483,6 +2841,97 @@ async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
         logger.debug(f"[SHARED_ANALYSIS] Cache retrieval failed: {e}")
         return None
 
+async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, force_refresh: bool = False, analysis_number: int = None) -> dict:
+    """
+    Shared Circadian Analysis - Following same pattern as behavior analysis
+    Used by circadian endpoints and potential routine/nutrition integration
+    Applies 50-item threshold logic from OnDemandAnalysisService
+
+    RACE CONDITION FIX: Uses global coordination to prevent duplicate analyses
+    """
+    from services.request_deduplication_service import enhanced_deduplicator
+
+    try:
+        # COORDINATION FIX: Check if analysis is in progress or cached
+        should_process, cached_result = await enhanced_deduplicator.coordinate_request(
+            user_id, archetype, "circadian_analysis"
+        )
+
+        if not should_process and cached_result:
+            # Production: Verbose print removed
+            return cached_result
+
+        # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
+        if not force_refresh:
+            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            from services.ondemand_analysis_service import get_ondemand_service
+
+            memory_service = HolisticMemoryService()
+            try:
+                # Get most recent circadian analysis for this archetype
+                recent_analyses = await memory_service.get_analysis_history(
+                    user_id,
+                    analysis_type="circadian_analysis",
+                    archetype=archetype,
+                    limit=1
+                )
+
+                if recent_analyses:
+                    latest_analysis = recent_analyses[0]
+
+                    # Check if threshold exceeded SINCE this analysis was created
+                    ondemand_service = await get_ondemand_service()
+                    new_data_since_analysis = await ondemand_service._count_new_data_points(
+                        user_id, latest_analysis.created_at
+                    )
+
+                    # If threshold not exceeded since last analysis, reuse it
+                    if new_data_since_analysis < 50:  # Threshold not met
+                        # Production: Verbose print removed
+
+                        # Result already cached in database - no additional caching needed
+
+                        return latest_analysis.analysis_result
+
+                await memory_service.cleanup()
+
+            except Exception as threshold_error:
+                # Production: Verbose print removed
+                # Continue with fresh analysis on error
+
+        # FRESH ANALYSIS: Threshold exceeded or force_refresh requested
+        # Production: Verbose print removed
+        # Production: Verbose print removed
+        # Production: Verbose print removed
+        print(f"   🧠 [MEMORY] Integrating 4-layer memory system for personalized analysis")
+
+        # Use OnDemandAnalysisService to get proper metadata
+        from services.ondemand_analysis_service import get_ondemand_service
+        ondemand_service = await get_ondemand_service()
+        should_run, ondemand_metadata = await ondemand_service.should_run_analysis(
+            user_id, force_refresh=force_refresh
+        )
+
+        if not should_run and not force_refresh:
+            # Production: Verbose print removed
+            return {"status": "skipped", "reason": "threshold_not_met", "circadian_analysis": {}}
+
+        # Run memory-enhanced circadian analysis
+        circadian_result = await run_memory_enhanced_circadian_analysis(user_id, archetype)
+
+        # Note: Analysis completion is tracked via database storage and coordination service
+        # await ondemand_service.mark_analysis_complete(user_id)  # Method not available
+
+        # Result stored in database - no additional caching needed
+
+        # Production: Verbose print removed
+        return circadian_result
+
+    except Exception as e:
+        print(f"❌ [SHARED_CIRCADIAN] Error in shared circadian analysis: {e}")
+        await enhanced_deduplicator.mark_request_failed(user_id, archetype, "circadian_analysis")
+        return {"status": "error", "error": str(e), "circadian_analysis": {}}
+
 
 async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: str, ondemand_metadata: dict = None, analysis_number: int = None) -> dict:
     """
@@ -2518,7 +2967,7 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
                 print(f"🔒 [RACE_CONDITION_FIX] Using locked timestamp from OnDemandAnalysisService")
                 user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, locked_timestamp, analysis_number)
             else:
-        # print(f"🔍 [NORMAL_FLOW] No locked timestamp - using standard flow")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
                 user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, None, analysis_number)
             
             # EXACT same prompt enhancement as /api/analyze (lines 1282-1289)
@@ -2540,7 +2989,7 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             
             # NOTE: timestamp update moved to data fetching phase for proper incremental boundaries
             
-        # print(f"✅ [SHARED_ANALYSIS] Fresh behavior analysis completed for {user_id[:8]}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             
             # CRITICAL FIX: Include OnDemand metadata in behavior analysis result
             # This allows downstream services to access the locked timestamp
@@ -2629,7 +3078,7 @@ ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sle
         return user_context_summary
         
     except Exception as e:
-        print(f"⚠️ [SHARED_ANALYSIS] Context summary creation failed: {e}")
+        # Production: Verbose print removed
         # Minimal fallback
         return f"Health analysis for {archetype} user {user_id}"
 
@@ -2670,7 +3119,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         
         # Log to console
         print(f"\n{'='*60}")
-        print(f"📊 DATA COLLECTION SUMMARY FOR AI ANALYSIS")
+        # Production: Verbose print removed
         print(f"{'='*60}")
         print(json.dumps(summary, indent=2))
         print(f"{'='*60}\n")
@@ -2686,7 +3135,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         print(f"💾 Data collection log saved to: {log_file}")
         
     except Exception as e:
-        print(f"⚠️ Error logging data collection: {e}")
+        # Production: Verbose print removed
 
 async def log_complete_analysis(agent_type: str, user_id: str, archetype: str, 
                                input_data: dict, output_data: dict, memory_context, 
@@ -2730,9 +3179,139 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
         # print(f"📝 [MEMORY_ENHANCED] Complete analysis stored in memory system")  # Commented for error-only mode
         
     except Exception as e:
-        print(f"⚠️ [MEMORY_ENHANCED] Failed to log complete analysis: {e}")
+        # Production: Verbose print removed
 
-async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict) -> dict:
+async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -> dict:
+    """
+    Memory-Enhanced Circadian Analysis - Following same pattern as behavior analysis
+    Features:
+    - Memory context preparation using MemoryIntegrationService
+    - Memory-enhanced circadian prompt generation
+    - Storing circadian analysis results in memory tables
+    - Updating user memory profile with circadian insights
+    - Complete logging of circadian analysis data
+    """
+    try:
+        # Production: Verbose print removed  # Enabled for detailed logging
+
+        # Import memory integration service
+        from services.memory_integration_service import MemoryIntegrationService
+
+        # Initialize memory integration service
+        memory_service = MemoryIntegrationService()
+
+        # Step 1: Prepare memory-enhanced context
+        # Production: Verbose print removed  # Enabled for detailed logging
+        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
+
+        # Step 2: Get user data for circadian analysis (need more days for pattern recognition)
+        from services.user_data_service import UserDataService
+        from shared_libs.utils.system_prompts import get_system_prompt
+
+        user_service = UserDataService()
+
+        # Get extended user data for circadian pattern analysis
+        user_context, data_quality = await user_service.get_analysis_data(user_id)
+
+        # # Production: Verbose print removed  # Commented for error-only mode
+
+        # Step 3: Get and enhance system prompt with memory
+        system_prompt = get_system_prompt("circadian_analysis")  # Will use default if not exists
+        enhanced_prompt = await memory_service.enhance_agent_prompt(
+            system_prompt, memory_context, "circadian_analysis"
+        )
+
+        # print(f"🧠 [CIRCADIAN_ENHANCED] Enhanced circadian prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
+
+        # Step 4: Format user context for AI analysis
+        user_context_summary = await format_health_data_for_ai(user_context)
+
+        # Step 5: Run AI-powered circadian analysis
+        # Production: Verbose print removed  # Enabled for detailed logging
+        analysis_result = await run_circadian_analysis_gpt4o(enhanced_prompt, user_context_summary)
+
+        # Step 6: Store analysis results in memory for future personalization (optional)
+        try:
+            await memory_service.store_analysis_insights(
+                user_id, "circadian_analysis", analysis_result, memory_context
+            )
+            # Production: Verbose print removed
+        except Exception as insights_error:
+            # Production: Verbose print removed
+
+        # Step 7: Update user memory profile with circadian insights (optional)
+        try:
+            await memory_service.update_user_memory_profile(
+                user_id, {}, analysis_result, {}
+            )
+            # Production: Verbose print removed
+        except Exception as memory_error:
+            # Production: Verbose print removed
+
+        # Step 8: Store complete analysis in HolisticMemoryService
+        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        holistic_memory = HolisticMemoryService()
+
+        # Convert data_quality to dict if it's a Pydantic model
+        data_quality_dict = data_quality.dict() if hasattr(data_quality, 'dict') else data_quality
+
+        complete_analysis = {
+            "analysis_result": analysis_result,
+            "user_context": {
+                "data_summary": {
+                    "scores_count": len(user_context.scores) if hasattr(user_context, 'scores') else 0,
+                    "biomarkers_count": len(user_context.biomarkers) if hasattr(user_context, 'biomarkers') else 0,
+                    "date_range": str(user_context.date_range) if hasattr(user_context, 'date_range') else "unknown"
+                }
+            } if user_context else None,
+            "memory_context": {
+                "analysis_mode": memory_context.analysis_mode,
+                "days_to_fetch": memory_context.days_to_fetch,
+                "personalized_focus_areas": memory_context.personalized_focus_areas,
+                "created_at": memory_context.created_at.isoformat() if hasattr(memory_context, 'created_at') and memory_context.created_at else None
+            } if memory_context else None,
+            "data_quality": data_quality_dict,
+            "enhanced_prompt_length": len(enhanced_prompt),
+            "analysis_type": "memory_enhanced_circadian",
+            "timestamp": datetime.now().isoformat()
+        }
+
+        # Try to store analysis result, but don't fail if storage has issues
+        try:
+            # Convert complete_analysis to JSON and back to handle any remaining serialization issues
+            import json
+            serializable_analysis = json.loads(json.dumps(complete_analysis, default=str))
+
+            await holistic_memory.store_analysis_result(
+                user_id=user_id,
+                analysis_type="circadian_analysis",
+                analysis_result=serializable_analysis,
+                archetype_used=archetype
+            )
+            # Production: Verbose print removed
+        except Exception as storage_error:
+            # Production: Verbose print removed
+
+        try:
+            await holistic_memory.cleanup()
+        except Exception as cleanup_error:
+            # Production: Verbose print removed
+
+        return analysis_result
+
+    except Exception as e:
+        print(f"❌ [CIRCADIAN_ENHANCED] Error in memory-enhanced circadian analysis: {e}")
+        # Return the analysis_result if we got that far, otherwise return None
+        try:
+            if 'analysis_result' in locals() and analysis_result:
+                # Production: Verbose print removed
+                return analysis_result
+        except:
+            pass
+        print(f"❌ [CIRCADIAN_ENHANCED] Circadian analysis failed completely")
+        return None
+
+async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict, circadian_analysis: dict = None, combined_analysis: dict = None) -> dict:
     """
     Memory-Enhanced Routine Generation - Includes all features from /api/analyze
     Features:
@@ -2752,7 +3331,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         memory_service = MemoryIntegrationService()
         
         # Step 1: Prepare memory-enhanced context
-        # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for routine generation
@@ -2764,7 +3343,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
         
-        # print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data for routine (mode: {memory_context.analysis_mode})")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("routine_plan")
@@ -2774,12 +3353,18 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         
         # print(f"🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
         
-        # Step 4: Prepare routine agent data with memory context
+        # Step 4: Prepare routine agent data with memory context (including circadian analysis if available)
         user_context_summary = await format_health_data_for_ai(user_context)
         routine_data = await prepare_routine_agent_data(user_context, behavior_analysis)
-        
-        # Step 5: Run routine planning with memory-enhanced prompt
-        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype)
+
+        # NEW: Log combined analysis information
+        if circadian_analysis:
+            # Production: Verbose print removed
+        else:
+            print(f"🏃 [MEMORY_ENHANCED] Using behavior analysis only (circadian analysis not available)")
+
+        # Step 5: Run routine planning with memory-enhanced prompt and combined analysis
+        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype, circadian_analysis)
         
         # Step 6: Store routine plan insights in memory
         # print(f"💾 [MEMORY_ENHANCED] Storing routine plan insights in memory...")  # Commented for error-only mode
@@ -2788,10 +3373,10 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         )
         
         if insights_stored:
-            # print(f"✅ [MEMORY_ENHANCED] Routine plan insights stored successfully")  # Commented to reduce noise
+            # # Production: Verbose print removed  # Commented to reduce noise
             pass
         else:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store routine plan insights")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
         
         # Step 7: Store complete routine plan in holistic_analysis_results table
@@ -2814,13 +3399,23 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             analysis_id = await holistic_memory.store_analysis_result(
                 user_id, "routine_plan", routine_result, archetype, analysis_trigger
             )
-        # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
-            
+        # # Production: Verbose print removed  # Commented to reduce noise
+
+            # NEW: Store combined analysis if available
+            if combined_analysis and circadian_analysis:
+                try:
+                    combined_analysis_id = await holistic_memory.store_analysis_result(
+                        user_id, "complete_analysis", combined_analysis, archetype, analysis_trigger
+                    )
+                    print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
+                except Exception as e:
+                    # Production: Verbose print removed
+
             await holistic_memory.cleanup()
         except Exception as e:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete routine plan: {e}")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
-        
+
         # Step 8: Log complete routine generation data (input/output logging)
         await log_complete_analysis(
             "routine_plan", user_id, archetype, 
@@ -2840,7 +3435,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             "insights_stored": insights_stored
         })
         
-        # print(f"✅ [MEMORY_ENHANCED] Memory-enhanced routine generation completed for {user_id[:8]}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         return routine_result
         
     except Exception as e:
@@ -2877,7 +3472,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         memory_service = MemoryIntegrationService()
         
         # Step 1: Prepare memory-enhanced context
-        # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for nutrition generation...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for nutrition generation
@@ -2889,7 +3484,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
         
-        # print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data for nutrition (mode: {memory_context.analysis_mode})")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("nutrition_plan")
@@ -2913,10 +3508,10 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         )
         
         if insights_stored:
-            # print(f"✅ [MEMORY_ENHANCED] Nutrition plan insights stored successfully")  # Commented to reduce noise
+            # # Production: Verbose print removed  # Commented to reduce noise
             pass
         else:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store nutrition plan insights")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
         
         # Step 7: Store complete nutrition plan in holistic_analysis_results table
@@ -2939,11 +3534,11 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             analysis_id = await holistic_memory.store_analysis_result(
                 user_id, "nutrition_plan", nutrition_result, archetype, analysis_trigger
             )
-        # print(f"✅ [MEMORY_ENHANCED] Complete nutrition plan stored with ID: {analysis_id}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
             
             await holistic_memory.cleanup()
         except Exception as e:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete nutrition plan: {e}")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
         
         # Step 8: Log complete nutrition generation data (input/output logging)
@@ -2965,7 +3560,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
             "insights_stored": insights_stored
         })
         
-        # print(f"✅ [MEMORY_ENHANCED] Memory-enhanced nutrition generation completed for {user_id[:8]}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         return nutrition_result
         
     except Exception as e:
@@ -3109,57 +3704,54 @@ Make this routine practical, evidence-based, and specifically tailored to the {a
             "date": datetime.now().strftime("%Y-%m-%d")
         }
 
-async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
+async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, circadian_analysis: dict = None) -> dict:
     """Run routine planning using gpt-4o for plan generation - Phase 3.2"""
     try:
         client = openai.AsyncOpenAI()
-        
+
+        # Extract readiness mode and map to descriptions
+        readiness_level = behavior_analysis.get('readiness_level', 'Medium')
+        mode_mapping = {
+            'Low': 'recovery mode (gentle, restorative activities with reduced intensity)',
+            'Medium': 'productive mode (moderate, building activities with steady progress)',
+            'High': 'performance mode (intense, optimization activities with peak output)'
+        }
+        mode_description = mode_mapping.get(readiness_level, 'balanced activities')
+
         response = await client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
-                    "role": "system", 
+                    "role": "system",
                     "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, and archetype frameworks."
                 },
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": f"""
 {user_context}
 
 BEHAVIORAL INSIGHTS:
 {json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
-Create a comprehensive {archetype} routine plan for TODAY using the HolisticOS approach.
+{f"CIRCADIAN RHYTHM DATA:{chr(10)}{json.dumps(circadian_analysis, indent=2, cls=DateTimeEncoder)}{chr(10)}" if circadian_analysis else ""}
 
-Structure the plan with these 4 time blocks:
+READINESS MODE: {readiness_level} - {mode_description}
 
-1. **Morning Wakeup** (6:00 AM - 8:00 AM)
-   - Hydration and activation tasks
-   - Mindfulness or preparation activities
-   - Energy optimization based on sleep data
+INSTRUCTIONS:
+Create a {archetype} routine plan for TODAY with 4 time blocks.
 
-2. **Focus Block** (9:00 AM - 12:00 PM) 
-   - Peak productivity tasks aligned with archetype
-   - Break timing based on activity patterns
-   - Cognitive optimization strategies
+Extract specific time ranges from the circadian data and format each block as:
+**Block Name (Specific Time Range): Purpose**
 
-3. **Afternoon Recharge** (1:00 PM - 4:00 PM)
-   - Recovery and refueling activities
-   - Physical activity aligned with fitness data
-   - Energy maintenance strategies
+Time block mapping:
+- Morning block: Use the exact optimal_wake_time range from circadian data
+- Peak block: Use the exact peak_energy_window range from circadian data
+- Afternoon block: Use maintenance_energy_window range, avoid low_energy_window
+- Evening block: End 1-2 hours before optimal_sleep_time
 
-4. **Evening Winddown** (8:00 PM - 10:00 PM)
-   - Sleep preparation based on sleep patterns
-   - Recovery activities
-   - Next-day preparation
+Format: "**Morning Wake-up (6:30-7:30 AM): Foundation Setting**" (example format)
 
-For each block include:
-- Specific time ranges and tasks
-- Scientific reasoning for each element
-- Integration with provided health data patterns
-- {archetype}-specific customizations
-
-Make this routine actionable, evidence-based, and specifically tailored to the health data insights.
+Include specific time ranges, tasks, and reasoning for each block.
 """
                 }
             ],
@@ -3185,7 +3777,7 @@ Make this routine actionable, evidence-based, and specifically tailored to the h
             "date": datetime.now().strftime("%Y-%m-%d")
         }
 
-async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict) -> dict:
+async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict, circadian_analysis: dict = None, combined_analysis: dict = None) -> dict:
     """
     Memory-Enhanced Routine Generation - Includes all features from /api/analyze
     Features:
@@ -3196,7 +3788,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
     - Complete logging of routine generation data
     """
     try:
-        # print(f"🏃‍♂️ [MEMORY_ENHANCED] Starting memory-enhanced routine generation for {user_id[:8]}...")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         # Import memory integration service
         from services.memory_integration_service import MemoryIntegrationService
@@ -3205,7 +3797,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         memory_service = MemoryIntegrationService()
         
         # Step 1: Prepare memory-enhanced context
-        # print(f"📋 [MEMORY_ENHANCED] Preparing memory context for routine generation...")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         
         # Step 2: Get user data for routine generation
@@ -3217,7 +3809,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
         
-        # print(f"🗓️ [MEMORY_ENHANCED] Using {memory_context.days_to_fetch} days of data for routine (mode: {memory_context.analysis_mode})")  # Commented for error-only mode
+        # # Production: Verbose print removed  # Commented for error-only mode
         
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("plan_generation")
@@ -3232,7 +3824,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         routine_data = await prepare_routine_agent_data(user_context, behavior_analysis)
         
         # Step 5: Run routine planning with memory-enhanced prompt
-        routine_result = await run_routine_planning_gpt4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype)
+        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype)
         
         # Step 6: Store routine plan insights in memory
         # print(f"💾 [MEMORY_ENHANCED] Storing routine plan insights in memory...")  # Commented for error-only mode
@@ -3241,10 +3833,10 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         )
         
         if insights_stored:
-            # print(f"✅ [MEMORY_ENHANCED] Routine plan insights stored successfully")  # Commented to reduce noise
+            # # Production: Verbose print removed  # Commented to reduce noise
             pass
         else:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store routine plan insights")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
         
         # Step 7: Store complete routine plan in holistic_analysis_results table
@@ -3267,13 +3859,23 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             analysis_id = await holistic_memory.store_analysis_result(
                 user_id, "routine_plan", routine_result, archetype, analysis_trigger
             )
-        # print(f"✅ [MEMORY_ENHANCED] Complete routine plan stored with ID: {analysis_id}")  # Commented to reduce noise
-            
+        # # Production: Verbose print removed  # Commented to reduce noise
+
+            # NEW: Store combined analysis if available
+            if combined_analysis and circadian_analysis:
+                try:
+                    combined_analysis_id = await holistic_memory.store_analysis_result(
+                        user_id, "complete_analysis", combined_analysis, archetype, analysis_trigger
+                    )
+                    print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
+                except Exception as e:
+                    # Production: Verbose print removed
+
             await holistic_memory.cleanup()
         except Exception as e:
-            # print(f"⚠️ [MEMORY_ENHANCED] Failed to store complete routine plan: {e}")  # Commented for error-only mode
+            # # Production: Verbose print removed  # Commented for error-only mode
             pass
-        
+
         # Step 8: Log complete routine generation data (input/output logging)
         await log_complete_analysis(
             "routine_plan", user_id, archetype, 
@@ -3293,7 +3895,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
             "insights_stored": insights_stored
         })
         
-        # print(f"✅ [MEMORY_ENHANCED] Memory-enhanced routine generation completed for {user_id[:8]}")  # Commented to reduce noise
+        # # Production: Verbose print removed  # Commented to reduce noise
         return routine_result
         
     except Exception as e:
@@ -3308,7 +3910,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         user_context_summary = await format_health_data_for_ai(user_context)
         system_prompt = get_system_prompt("plan_generation")
         
-        return await run_routine_planning_gpt4o(system_prompt, user_context_summary, behavior_analysis, archetype)
+        return await run_routine_planning_4o(system_prompt, user_context_summary, behavior_analysis, archetype)
 
 # =====================================================================
 # LEGACY ENDPOINT - PRESERVED FOR BACKWARD COMPATIBILITY
@@ -3342,7 +3944,7 @@ try:
     print("📁 [LEGACY] Legacy /api/analyze endpoint loaded from legacy folder")
     
 except ImportError as e:
-    print(f"⚠️  [LEGACY] Could not load legacy endpoint: {e}")
+    # Production: Verbose print removed
     
     @app.post("/api/analyze", response_model=AnalysisResponse)
     async def analyze_user_fallback(request: AnalysisRequest, http_request: Request):
