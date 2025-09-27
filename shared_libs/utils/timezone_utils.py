@@ -115,10 +115,22 @@ def utc_to_est_short(timestamp: Union[str, datetime, None]) -> Optional[str]:
 def get_current_est() -> str:
     """
     Get current time in EST/EDT timezone
-    
+
     Returns:
         Current timestamp string in EST/EDT format
     """
     eastern = ZoneInfo("America/New_York")
     now_est = datetime.now(eastern)
     return now_est.strftime("%Y-%m-%d %I:%M:%S %p %Z")
+
+
+def get_current_est_date() -> str:
+    """
+    Get current date in EST/EDT timezone for analysis_date
+
+    Returns:
+        Current date string in EST/EDT format (YYYY-MM-DD)
+    """
+    eastern = ZoneInfo("America/New_York")
+    now_est = datetime.now(eastern)
+    return now_est.strftime("%Y-%m-%d")

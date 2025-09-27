@@ -4,11 +4,12 @@ Interfaces with existing 4-layer hierarchical memory system in Supabase
 Leverages enterprise-grade memory infrastructure already deployed
 """
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 
 from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -485,11 +486,13 @@ class HolisticMemoryService:
             # Try PostgreSQL first (if connection pool available)
             if hasattr(db, 'use_connection_pool') and db.use_connection_pool:
                 try:
+                    # Use EST timezone for analysis_date instead of CURRENT_DATE (which uses server timezone)
+                    today_date = date.today().isoformat()
                     insert_query = """
                         INSERT INTO holistic_analysis_results (
                             user_id, analysis_type, archetype, analysis_result,
                             input_summary, agent_id, analysis_date, analysis_trigger
-                        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7)
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                         ON CONFLICT (user_id, analysis_type, analysis_date, archetype, analysis_trigger)
                         DO UPDATE SET
                             analysis_result = EXCLUDED.analysis_result,
@@ -498,7 +501,7 @@ class HolisticMemoryService:
                         RETURNING id
                     """
                     result = await db.fetchrow(insert_query, user_id, analysis_type, archetype_used,
-                                             analysis_result_json, input_summary_json, 'memory_service', analysis_trigger)
+                                             analysis_result_json, input_summary_json, 'memory_service', today_date, analysis_trigger)
                 except Exception as pg_error:
                     logger.warning(f"PostgreSQL insert failed: {pg_error}, falling back to Supabase REST API")
                     result = None
