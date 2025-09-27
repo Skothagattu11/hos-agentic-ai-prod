@@ -180,7 +180,7 @@ except Exception as e:
 try:
     from .engagement_endpoints import router as engagement_router
     app.include_router(engagement_router)
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - POST /api/v1/engagement/task-checkin")
     print("  - GET /api/v1/engagement/tasks/{profile_id}")
     print("  - POST /api/v1/engagement/journal")
@@ -194,7 +194,7 @@ except Exception as e:
 try:
     from .calendar_endpoints import router as calendar_router
     app.include_router(calendar_router)
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - GET /api/calendar/available-items/{profile_id}")
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate calendar selection endpoints: {e}")
@@ -203,7 +203,7 @@ except Exception as e:
 try:
     from .archetype_router import router as archetype_router
     app.include_router(archetype_router, prefix="/api")
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - GET /api/user/{user_id}/available-archetypes")
     print("  - GET /api/user/{user_id}/archetype/{analysis_id}/summary")
 except Exception as e:
@@ -213,7 +213,7 @@ except Exception as e:
 try:
     from .admin_apis import register_admin_routes
     register_admin_routes(app)
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - GET /api/admin/users")
     print("  - GET /api/admin/user/{user_id}/overview")
     print("  - GET /api/admin/user/{user_id}/analysis-data")
@@ -228,7 +228,7 @@ except Exception as e:
 try:
     from .analysis_results_endpoints import router as analysis_router
     app.include_router(analysis_router)
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - GET /api/v1/analysis/user/{user_id}/results")
     print("  - GET /api/v1/analysis/user/{user_id}/latest-with-data")
     print("  - GET /api/v1/analysis/result/{analysis_id}/status")
@@ -244,7 +244,7 @@ try:
     sys.path.append(os.path.join(os.path.dirname(__file__), '../../api'))
     from energy_zones_endpoints import router as energy_zones_router
     app.include_router(energy_zones_router)
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("  - GET /api/v1/energy-zones/{user_id}")
     print("  - GET /api/v1/energy-zones/{user_id}/current")
     print("  - GET /api/v1/energy-zones/{user_id}/summary")
@@ -1084,9 +1084,9 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             )
 
         # Log successful parallel execution with detailed data for agent handoff tracking
+        pass  # Production: Verbose print removed
         # Production: Verbose print removed
-        # Production: Verbose print removed
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
 
         # DETAILED LOGGING: Log raw data and analysis outputs for agent handoff tracking
         try:
@@ -1094,7 +1094,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             import os
 
             # Create handoff logs directory
-            # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+            handoff_dir = "logs/agent_handoffs"  # Production: Disabled
             if not os.path.exists(handoff_dir):
                 os.makedirs(handoff_dir)
 
@@ -1117,7 +1117,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                         "full_circadian_analysis_output": circadian_analysis
                     }, f, indent=2, default=str)
 
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
 
         except Exception as log_error:
             pass  # Error logging failed
@@ -1164,7 +1164,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 import os
                 import json
 
-                # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+                handoff_dir = "logs/agent_handoffs"  # Production: Disabled
                 if not os.path.exists(handoff_dir):
                     os.makedirs(handoff_dir)
 
@@ -1199,7 +1199,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 import os
                 import json
 
-                # handoff_dir = "logs/agent_handoffs"  # Production: Disabled
+                handoff_dir = "logs/agent_handoffs"  # Production: Disabled
                 if not os.path.exists(handoff_dir):
                     os.makedirs(handoff_dir)
 
@@ -1215,7 +1215,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                         "full_routine_plan_output": routine_plan
                     }, f, indent=2, default=str)
 
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
             except Exception as log_error:
                 pass  # Routine generation logging failed
@@ -1245,7 +1245,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                             analysis_result_id=analysis_result_id,
                             profile_id=user_id
                         )
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
                     
                 await memory_service.cleanup()
                     
@@ -1787,7 +1787,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         # # Production: Verbose print removed  # Commented to reduce noise
             else:
                 # Fallback to cached if fresh analysis fails
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
                 analysis_type = "cached_fallback"
                 
@@ -2066,7 +2066,7 @@ async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
                 insights = insights_result.result
         # # Production: Verbose print removed  # Commented to reduce noise
             else:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 insights = {"error": insights_result.error_message}
                 
         except Exception as insights_error:
@@ -2371,7 +2371,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
     try:
         print(f"🧠 [BEHAVIOR_WRAPPER] Starting DIRECT behavior analysis for {user_id[:8]}...")
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         
         # Get user data using existing services
         from services.user_data_service import UserDataService
@@ -2711,7 +2711,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         )
         
         if not should_process and cached_result:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             return cached_result
         
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
@@ -2740,7 +2740,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                     
                     # If threshold not exceeded since last analysis, reuse it
                     if new_data_since_analysis < 50:  # Threshold not met
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
                         await memory_service.cleanup()
                         # Complete coordination with the result
                         enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", latest_analysis.analysis_result)
@@ -2853,7 +2853,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
         )
 
         if not should_process and cached_result:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             return cached_result
 
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
@@ -2882,7 +2882,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
 
                     # If threshold not exceeded since last analysis, reuse it
                     if new_data_since_analysis < 50:  # Threshold not met
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
 
                         # Result already cached in database - no additional caching needed
 
@@ -2895,9 +2895,9 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
                 # Continue with fresh analysis on error
 
         # FRESH ANALYSIS: Threshold exceeded or force_refresh requested
+        pass  # Production: Verbose print removed
         # Production: Verbose print removed
-        # Production: Verbose print removed
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print(f"   🧠 [MEMORY] Integrating 4-layer memory system for personalized analysis")
 
         # Use OnDemandAnalysisService to get proper metadata
@@ -2908,7 +2908,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
         )
 
         if not should_run and not force_refresh:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             return {"status": "skipped", "reason": "threshold_not_met", "circadian_analysis": {}}
 
         # Run memory-enhanced circadian analysis
@@ -2919,7 +2919,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
 
         # Result stored in database - no additional caching needed
 
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         return circadian_result
 
     except Exception as e:
@@ -3114,7 +3114,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         
         # Log to console
         print(f"\n{'='*60}")
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print(f"{'='*60}")
         print(json.dumps(summary, indent=2))
         print(f"{'='*60}\n")
@@ -3230,7 +3230,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             await memory_service.store_analysis_insights(
                 user_id, "circadian_analysis", analysis_result, memory_context
             )
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         except Exception as insights_error:
             pass  # # Production: Verbose print removed
 
@@ -3239,7 +3239,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             await memory_service.update_user_memory_profile(
                 user_id, {}, analysis_result, {}
             )
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         except Exception as memory_error:
             pass  # # Production: Verbose print removed
 
@@ -3283,7 +3283,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
                 analysis_result=serializable_analysis,
                 archetype_used=archetype
             )
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         except Exception as storage_error:
             pass  # # Production: Verbose print removed
 
@@ -3299,7 +3299,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         # Return the analysis_result if we got that far, otherwise return None
         try:
             if 'analysis_result' in locals() and analysis_result:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 return analysis_result
         except:
             pass

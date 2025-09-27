@@ -66,30 +66,30 @@ class MemoryIntegrationService:
             else:
                 # Fallback to memory service for backwards compatibility
                 analysis_mode, days_to_fetch = await self.memory_service.determine_analysis_mode(user_id, archetype)
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             
             # Log memory collection process
             print(f"\n{'='*60}")
             print(f"🧠 [MEMORY_DATA_COLLECTION] User: {user_id[:8]}...")
             print(f"{'='*60}")
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             print(f"   - Mode: {analysis_mode}")
             print(f"   - Days to fetch: {days_to_fetch}")
             print(f"   - Archetype: {archetype if archetype else 'Not specified'}")
             
             # Get all memory layers
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             
             # Long-term memory
             longterm_memory = await self.memory_service.get_user_longterm_memory(user_id)
             if longterm_memory:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 print(f"   - Behavioral patterns: {len(longterm_memory.get('behavioral_patterns', {})) if isinstance(longterm_memory, dict) else 'Present'}")
                 print(f"   - Health goals: {len(longterm_memory.get('health_goals', {})) if isinstance(longterm_memory, dict) else 'Present'}")
                 print(f"   - Preferences: {len(longterm_memory.get('preference_patterns', {})) if isinstance(longterm_memory, dict) else 'Present'}")
             else:
-                # Production: Verbose print removed
-            
+                pass  # Production: Verbose print removed
+
             # Recent patterns
             recent_patterns = await self.memory_service.get_recent_patterns(user_id, days=7)
             print(f"📈 Recent Patterns: {len(recent_patterns) if recent_patterns else 0} patterns found")
@@ -97,9 +97,9 @@ class MemoryIntegrationService:
             # Meta memory
             meta_memory = await self.memory_service.get_meta_memory(user_id)
             if meta_memory:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             else:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             
             # Analysis history
             analysis_history = await self.memory_service.get_analysis_history(user_id, limit=5)
@@ -113,7 +113,7 @@ class MemoryIntegrationService:
             adaptation_preferences = self._extract_adaptation_preferences(meta_memory)
             
             # Log extracted memory insights
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             print(f"   - Focus areas: {len(personalized_focus_areas) if personalized_focus_areas else 0}")
             if personalized_focus_areas:
                 print(f"     • {', '.join(personalized_focus_areas[:3])}")

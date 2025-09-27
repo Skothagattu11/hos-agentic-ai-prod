@@ -45,11 +45,11 @@ async def check_server():
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{BASE_URL}/api/health") as response:
                 if response.status == 200:
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
                     return True
     except:
         print("❌ Server not accessible at localhost:8002")
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         return False
 
 async def show_generated_logs():
@@ -82,19 +82,19 @@ async def show_generated_logs():
                 print(f"   • {os.path.basename(file)} - {mtime.strftime('%H:%M:%S')}")
         
         if not output_files and not insights_files:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         else:
             print(f"\n📂 Log files location: {os.path.abspath(logs_dir)}")
             
     except Exception as e:
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
 
 async def generate_parallel_analyses(user_id: str, archetype: str, is_followup: bool = False):
     """Run behavior and circadian analysis in parallel on same raw data"""
     print_section(f"{'FOLLOW-UP ' if is_followup else ''}PARALLEL BEHAVIOR + CIRCADIAN ANALYSIS", "🔄")
 
     print("🚀 Running parallel analysis on same raw health data...")
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     # Production: Verbose print removed
 
     # Log agent handoff data
@@ -146,7 +146,7 @@ async def generate_parallel_analyses(user_id: str, archetype: str, is_followup: 
             behavior_result = None
             if not isinstance(behavior_response, Exception) and behavior_response.status == 200:
                 behavior_result = await behavior_response.json()
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 await log_agent_handoff("BEHAVIOR_ANALYSIS_COMPLETE", {
                     "status": "success",
                     "analysis_type": behavior_result.get('analysis_type', 'unknown'),
@@ -163,7 +163,7 @@ async def generate_parallel_analyses(user_id: str, archetype: str, is_followup: 
             circadian_result = None
             if not isinstance(circadian_response, Exception) and circadian_response.status == 200:
                 circadian_result = await circadian_response.json()
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 await log_agent_handoff("CIRCADIAN_ANALYSIS_COMPLETE", {
                     "status": "success",
                     "analysis_type": circadian_result.get('analysis_type', 'unknown'),
@@ -227,7 +227,7 @@ async def generate_routine_with_combined_analysis(user_id: str, archetype: str, 
             energy_zones = circadian_data.get('energy_zone_analysis', {})
             if energy_zones.get('peak_energy_window'):
                 routine_preferences["optimal_workout_window"] = energy_zones['peak_energy_window']
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
         # Use behavior data to adjust intensity if available
         behavior_data = combined_analysis.get('behavior_analysis', {})
@@ -253,7 +253,7 @@ async def generate_routine_with_combined_analysis(user_id: str, archetype: str, 
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
 
                     # Log the routine generation output
                     await log_agent_handoff("ROUTINE_GENERATION_OUTPUT", {
@@ -310,7 +310,7 @@ async def log_agent_handoff(stage: str, data: dict):
         print(f"   📝 Logged {stage} to {log_file}")
 
     except Exception as e:
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
 
 async def generate_routine(user_id: str, archetype: str, is_followup: bool = False):
     """Generate routine with integrated parallel behavior + circadian analysis"""
@@ -342,10 +342,10 @@ async def generate_routine(user_id: str, archetype: str, is_followup: bool = Fal
                 duration = time.time() - start_time
 
                 if response.status == 200:
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
 
                     # Enhanced logging for agent handoff tracking
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
                     print(f"   1. Raw Health Data → Behavior Analysis")
                     print(f"   2. Raw Health Data → Circadian Analysis (parallel)")
                     print(f"   3. Combined Analysis → Dynamic Routine Generation")
@@ -409,7 +409,7 @@ async def generate_nutrition(user_id: str, archetype: str, is_followup: bool = F
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
                     
                     # Show key info
                     metadata = result.get('generation_metadata', {})
@@ -420,7 +420,7 @@ async def generate_nutrition(user_id: str, archetype: str, is_followup: bool = F
                     if result.get('nutrition'):
                         nutrition = result['nutrition']
                         if 'meal_plan' in nutrition:
-                            # Production: Verbose print removed
+                            pass  # Production: Verbose print removed
                             # Show first day as example
                             if nutrition['meal_plan']:
                                 first_day = nutrition['meal_plan'][0]
@@ -465,7 +465,7 @@ async def generate_insights(user_id: str, archetype: str = "Foundation Builder",
                     if result.get('success'):
                         insights = result.get('insights', [])
                         
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
                         print(f"   • Source: {result.get('source', 'unknown')}")
                         
                         # Show insights with better formatting
@@ -476,7 +476,7 @@ async def generate_insights(user_id: str, archetype: str = "Foundation Builder",
                             priority = insight.get('priority', 5)
                             actionability = insight.get('actionability_score', 0.0)
                             
-                            # Production: Verbose print removed
+                            pass  # Production: Verbose print removed
                             print(f"      Type: {insight_type} | Priority: {priority} | Actionability: {actionability:.1f}")
                             print(f"      → {content[:120]}{'...' if len(content) > 120 else ''}")
                         
@@ -491,7 +491,7 @@ async def generate_insights(user_id: str, archetype: str = "Foundation Builder",
                         
                         return True
                     else:
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
                         return False
                 else:
                     error_text = await response.text()
@@ -519,11 +519,11 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
         else:
             print("   Processing sleep, HRV, and activity patterns...")
 
+        pass  # Production: Verbose print removed
         # Production: Verbose print removed
-        # Production: Verbose print removed
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print("   🧠 Step 3: Integrating memory context and previous patterns...")
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print("   💾 Step 5: Storing results in 4-layer memory system...")
 
         async with aiohttp.ClientSession() as session:
@@ -535,13 +535,13 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
 
                     # Show key info
                     metadata = result.get('metadata', {})
                     circadian_data = result.get('circadian_analysis', {})
 
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
                     print(f"   • Analysis Type: {result.get('analysis_type', 'unknown')}")
                     print(f"   • Model Used: {metadata.get('model_used', 'unknown')}")
                     print(f"   • Data Quality: {metadata.get('data_quality', 'unknown')}")
@@ -549,7 +549,7 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
 
                     # Show detailed circadian insights
                     if circadian_data:
-                        # Production: Verbose print removed
+                        pass  # Production: Verbose print removed
 
                         # Chronotype assessment
                         chronotype = circadian_data.get('chronotype_assessment', {})
@@ -592,7 +592,7 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
                                     print(f"      • {key.replace('_', ' ').title()}: {value}")
 
                     # Log internal AI processing details
-                    # Production: Verbose print removed
+                    pass  # Production: Verbose print removed
                     if metadata.get('analysis_decision'):
                         print(f"   • Decision Path: {metadata['analysis_decision']}")
                     if metadata.get('personalization_level'):
@@ -629,7 +629,7 @@ async def user_journey():
     
     # Check server
     if not await check_server():
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         return
     
     cycle_count = 0
@@ -645,15 +645,15 @@ async def user_journey():
         # Step 1: Routine Generation
         success = await generate_routine(REAL_PROFILE_ID, TEST_ARCHETYPE, is_followup)
         if not success:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             break
         
         # Generate insights after routine
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=True)
 
         # Note about integrated circadian analysis
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print("   • Parallel execution with behavior analysis")
         print("   • Combined data stored in database")
         print("   • Check logs folder for detailed agent handoff data")
@@ -661,20 +661,20 @@ async def user_journey():
         if get_user_choice("🔍 Generate additional insights from combined analysis?"):
             await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
         else:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
 
         # Ask if user wants nutrition
         if get_user_choice("📋 Generate nutrition plan using shared behavior analysis?"):
             # Step 2: Nutrition Generation (uses shared behavior)
             success = await generate_nutrition(REAL_PROFILE_ID, TEST_ARCHETYPE, is_followup)
             if not success:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             else:
                 # Generate insights after nutrition
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
                 await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
         else:
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
         
         # Ask if user wants to continue with follow-up
         print(f"\n{'='*50}")
@@ -684,7 +684,7 @@ async def user_journey():
             continue_prompt = "🔄 Simulate progress and generate follow-up plans?"
         
         if not get_user_choice(continue_prompt):
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             print(f"   Total cycles: {cycle_count}")
             
             # Show generated log files
@@ -694,7 +694,7 @@ async def user_journey():
         if not is_followup:
             print("\n⏳ Simulating time passing and new health data...")
             await asyncio.sleep(3)  # Simulate delay
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
 
 async def quick_test():
     """Quick automated test without prompts - uses integrated parallel analysis"""
@@ -704,31 +704,31 @@ async def quick_test():
     if not await check_server():
         return False
 
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("   (Includes parallel behavior + circadian analysis)")
     if not await generate_routine(REAL_PROFILE_ID, TEST_ARCHETYPE, False):
         return False
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=True)
 
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
 
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     if not await generate_nutrition(REAL_PROFILE_ID, TEST_ARCHETYPE, False):
         return False
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
 
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     print("   (Will re-run parallel behavior + circadian analysis with memory integration)")
     await asyncio.sleep(2)
     if not await generate_routine(REAL_PROFILE_ID, TEST_ARCHETYPE, True):
         return False
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=True)
 
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
     
-    # Production: Verbose print removed
+    pass  # Production: Verbose print removed
     
     # Show generated log files
     await show_generated_logs()
@@ -753,7 +753,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        # Production: Verbose print removed
+        pass  # Production: Verbose print removed
         print("This simulates a real user flow with the new agentic model:")
         print("  1. Generate Routine (runs parallel behavior + circadian analysis internally)")
         print("  2. Generate AI Insights (extracts insights from combined analysis)")

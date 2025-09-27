@@ -77,7 +77,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -102,7 +102,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -127,7 +127,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -164,7 +164,7 @@ class MVPStyleLogger:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
             if IS_DEVELOPMENT:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -204,7 +204,7 @@ class MVPStyleLogger:
             with open(ai_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            # Production: Verbose print removed
+            pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -373,19 +373,16 @@ class MVPStyleLogger:
             total_files = base_files + optional_files
 
             if IS_DEVELOPMENT:
-                # Production: Verbose print removed
-                # Production: Verbose print removed
-                # Production: Verbose print removed
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
             if IS_DEVELOPMENT and insights_data:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
             if IS_DEVELOPMENT and raw_health_data:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
             if IS_DEVELOPMENT and ai_interactions:
-                # Production: Verbose print removed
+                pass  # Production: Verbose print removed
 
             if IS_DEVELOPMENT and agent_handoffs:
                 print(f"   🔄 Agent Handoffs: {results['agent_handoffs_success']}/{len(agent_handoffs)} logged in logs/agent_handoffs/")
