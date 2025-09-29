@@ -76,8 +76,6 @@ class MVPStyleLogger:
             with open(input_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            if IS_DEVELOPMENT:
-                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -101,8 +99,6 @@ class MVPStyleLogger:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            if IS_DEVELOPMENT:
-                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -126,8 +122,6 @@ class MVPStyleLogger:
             with open(insights_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            if IS_DEVELOPMENT:
-                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -163,8 +157,6 @@ class MVPStyleLogger:
             with open(raw_data_file, 'w', encoding='utf-8') as f:
                 json.dump(log_data, f, indent=2, default=str, ensure_ascii=False)
 
-            if IS_DEVELOPMENT:
-                pass  # Production: Verbose print removed
             return True
 
         except Exception as e:
@@ -371,21 +363,6 @@ class MVPStyleLogger:
                 results["agent_handoffs_success"]
             ])
             total_files = base_files + optional_files
-
-            if IS_DEVELOPMENT:
-                pass  # Production: Verbose print removed
-
-            if IS_DEVELOPMENT and insights_data:
-                pass  # Production: Verbose print removed
-
-            if IS_DEVELOPMENT and raw_health_data:
-                pass  # Production: Verbose print removed
-
-            if IS_DEVELOPMENT and ai_interactions:
-                pass  # Production: Verbose print removed
-
-            if IS_DEVELOPMENT and agent_handoffs:
-                print(f"   🔄 Agent Handoffs: {results['agent_handoffs_success']}/{len(agent_handoffs)} logged in logs/agent_handoffs/")
 
             return results
 

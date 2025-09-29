@@ -88,7 +88,8 @@ class MemoryIntegrationService:
                 print(f"   - Health goals: {len(longterm_memory.get('health_goals', {})) if isinstance(longterm_memory, dict) else 'Present'}")
                 print(f"   - Preferences: {len(longterm_memory.get('preference_patterns', {})) if isinstance(longterm_memory, dict) else 'Present'}")
             else:
-                pass  # Production: Verbose print removed
+                # No long-term memory found
+                pass
 
             # Recent patterns
             recent_patterns = await self.memory_service.get_recent_patterns(user_id, days=7)
@@ -97,9 +98,11 @@ class MemoryIntegrationService:
             # Meta memory
             meta_memory = await self.memory_service.get_meta_memory(user_id)
             if meta_memory:
-                pass  # Production: Verbose print removed
+                # Meta memory found
+                pass
             else:
-                pass  # Production: Verbose print removed
+                # No meta memory found
+                pass
             
             # Analysis history
             analysis_history = await self.memory_service.get_analysis_history(user_id, limit=5)
