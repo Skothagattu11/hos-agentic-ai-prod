@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Simple User Journey Test
+Simple User Journey Test - Updated for AI Context Integration System
 Mimics real user flow: Routine → Nutrition → Follow-up → Repeat
+Now uses AI Context Integration Service instead of 4-layer memory system
 """
 import asyncio
 import sys
@@ -53,41 +54,61 @@ async def check_server():
         return False
 
 async def show_generated_logs():
-    """Show what log files were created during the test"""
-    print_section("GENERATED LOG FILES", "📁")
-    
+    """Show what log files were created during the test with new AI Context Integration system"""
+    print_section("GENERATED AI CONTEXT INTEGRATION LOGS", "📁")
+
     try:
         import glob
         import os
         from datetime import datetime
-        
+
         logs_dir = "../logs" if os.path.exists("../logs") else "logs"
-        
-        # Find recent log files
+
+        # Find AI context flow files
+        ai_context_files = glob.glob(f"{logs_dir}/ai_context_flow_*.json")
+        flow_files = glob.glob(f"{logs_dir}/complete_ai_context_flow_*.jsonl")
+
+        # Find legacy output files (if any)
         output_files = glob.glob(f"{logs_dir}/output_*.txt")
         insights_files = glob.glob(f"{logs_dir}/insights_*.txt")
-        
+
+        if ai_context_files:
+            ai_context_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+            print(f"🧠 AI Context Integration Flow Files ({len(ai_context_files)} total):")
+            for file in ai_context_files[:5]:
+                mtime = datetime.fromtimestamp(os.path.getmtime(file))
+                filename = os.path.basename(file)
+                stage = filename.split('_')[-1].replace('.json', '').upper()
+                print(f"   • {stage}: {filename} - {mtime.strftime('%H:%M:%S')}")
+
+        if flow_files:
+            flow_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+            print(f"\n📊 Complete Flow Logs ({len(flow_files)} total):")
+            for file in flow_files[:3]:
+                mtime = datetime.fromtimestamp(os.path.getmtime(file))
+                print(f"   • {os.path.basename(file)} - {mtime.strftime('%H:%M:%S')}")
+
         if output_files:
             output_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-            print(f"📄 Analysis Output Files ({len(output_files)} total):")
+            print(f"\n📄 Legacy Analysis Output Files ({len(output_files)} total):")
             for file in output_files[:3]:
                 mtime = datetime.fromtimestamp(os.path.getmtime(file))
                 print(f"   • {os.path.basename(file)} - {mtime.strftime('%H:%M:%S')}")
-        
+
         if insights_files:
             insights_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-            print(f"\n✨ Dedicated Insights Files ({len(insights_files)} total):")
+            print(f"\n✨ Insights Files ({len(insights_files)} total):")
             for file in insights_files[:3]:
                 mtime = datetime.fromtimestamp(os.path.getmtime(file))
                 print(f"   • {os.path.basename(file)} - {mtime.strftime('%H:%M:%S')}")
-        
-        if not output_files and not insights_files:
-            pass  # Production: Verbose print removed
-        else:
-            print(f"\n📂 Log files location: {os.path.abspath(logs_dir)}")
-            
+
+        print(f"\n📂 Log files location: {os.path.abspath(logs_dir)}")
+        print(f"🆕 New architecture: AI Context Integration Service")
+        print(f"📝 Look for 'ai_context_flow_*' files for detailed data flow")
+        print(f"📊 Look for 'complete_ai_context_flow_*.jsonl' for complete session logs")
+
     except Exception as e:
-        pass  # Production: Verbose print removed
+        print(f"   ⚠️ Error showing logs: {e}")
 
 async def generate_parallel_analyses(user_id: str, archetype: str, is_followup: bool = False):
     """Run behavior and circadian analysis in parallel on same raw data"""
@@ -103,7 +124,10 @@ async def generate_parallel_analyses(user_id: str, archetype: str, is_followup: 
         "archetype": archetype,
         "is_followup": is_followup,
         "timestamp": datetime.now().isoformat(),
-        "raw_data_sources": ["sahha_biomarkers", "user_preferences", "memory_context"]
+        "raw_data_sources": ["sahha_biomarkers", "user_preferences", "3_day_engagement_analysis"],
+        "ai_context_sources": ["calendar_selections", "task_checkins", "daily_journals"],
+        "agent_history_sources": ["last_2_behavior_analyses", "last_2_circadian_analyses"],
+        "system": "AI_CONTEXT_INTEGRATION_SERVICE"
     })
 
     try:
@@ -283,7 +307,7 @@ async def generate_routine_with_combined_analysis(user_id: str, archetype: str, 
         return False
 
 async def log_agent_handoff(stage: str, data: dict):
-    """Log agent handoff data to files for inspection"""
+    """Enhanced logging for AI Context Integration system data flow"""
     try:
         import os
         import json
@@ -295,22 +319,38 @@ async def log_agent_handoff(stage: str, data: dict):
             os.makedirs(logs_dir)
 
         # Create timestamped log file
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = f"{logs_dir}/agent_handoff_{timestamp}_{stage.lower()}.json"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # Include milliseconds
+        log_file = f"{logs_dir}/ai_context_flow_{timestamp}_{stage.lower()}.json"
 
+        # Enhanced log entry with AI context integration info
         log_entry = {
             "stage": stage,
             "timestamp": datetime.now().isoformat(),
-            "data": data
+            "system": "AI_CONTEXT_INTEGRATION_SERVICE",
+            "architecture": "AI_Context_Generation_with_Agent_History",
+            "data": data,
+            "context_info": {
+                "replaces": "4_layer_memory_system",
+                "uses": "3_day_engagement_analysis_plus_agent_history",
+                "agent_specific_context": True,
+                "memory_enhanced": False,
+                "ai_context_enhanced": True
+            }
         }
 
         with open(log_file, 'w') as f:
             json.dump(log_entry, f, indent=2, default=str)
 
-        print(f"   📝 Logged {stage} to {log_file}")
+        print(f"   📝 AI Context Flow logged: {stage} → {log_file}")
+
+        # Also create a comprehensive flow log
+        flow_log_file = f"{logs_dir}/complete_ai_context_flow_{timestamp[:8]}.jsonl"
+        with open(flow_log_file, 'a') as f:
+            json.dump(log_entry, f, default=str)
+            f.write('\n')
 
     except Exception as e:
-        pass  # Production: Verbose print removed
+        print(f"   ⚠️ Logging error: {e}")
 
 async def generate_routine(user_id: str, archetype: str, is_followup: bool = False):
     """Generate routine with integrated parallel behavior + circadian analysis"""
@@ -369,7 +409,7 @@ async def generate_routine(user_id: str, archetype: str, is_followup: bool = Fal
                         "duration_seconds": duration,
                         "archetype": archetype,
                         "is_followup": is_followup,
-                        "server_logs": "Check server output for detailed agent handoffs"
+                        "server_logs": "Check server output for detailed AI context integration handoffs"
                     })
 
                     return True
@@ -522,9 +562,9 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
         pass  # Production: Verbose print removed
         # Production: Verbose print removed
         pass  # Production: Verbose print removed
-        print("   🧠 Step 3: Integrating memory context and previous patterns...")
+        print("   🧠 Step 3: Integrating AI context and engagement patterns...")
         pass  # Production: Verbose print removed
-        print("   💾 Step 5: Storing results in 4-layer memory system...")
+        print("   💾 Step 5: Storing results in AI context integration system...")
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -607,7 +647,7 @@ async def generate_circadian_analysis(user_id: str, archetype: str, is_followup:
                         print(f"   • Prompt Strategy: Expert circadian rhythm analyst with biomarker integration")
 
                     if is_followup:
-                        print(f"   • Memory Integration: Previous patterns and new data combined for enhanced accuracy")
+                        print(f"   • AI Context Integration: Previous analyses and new engagement data combined for enhanced accuracy")
 
                     return result
                 else:
@@ -719,7 +759,7 @@ async def quick_test():
     await generate_insights(REAL_PROFILE_ID, TEST_ARCHETYPE, force_refresh=False)
 
     pass  # Production: Verbose print removed
-    print("   (Will re-run parallel behavior + circadian analysis with memory integration)")
+    print("   (Will re-run parallel analysis with AI context integration from previous session)")
     await asyncio.sleep(2)
     if not await generate_routine(REAL_PROFILE_ID, TEST_ARCHETYPE, True):
         return False
@@ -754,18 +794,20 @@ async def main():
 if __name__ == "__main__":
     try:
         pass  # Production: Verbose print removed
-        print("This simulates a real user flow with the new agentic model:")
-        print("  1. Generate Routine (runs parallel behavior + circadian analysis internally)")
-        print("  2. Generate AI Insights (extracts insights from combined analysis)")
-        print("  3. Generate Nutrition (uses shared behavior analysis)")
+        print("This simulates a real user flow with the AI Context Integration system:")
+        print("  1. Generate Routine (runs parallel behavior + circadian analysis with AI context)")
+        print("  2. Generate AI Insights (extracts insights from AI context + analysis results)")
+        print("  3. Generate Nutrition (uses shared behavior analysis and AI context)")
         print("  4. Generate AI Insights (additional insights from complete plan)")
-        print("  5. Follow-up Analysis (uses incremental data + memory)")
+        print("  5. Follow-up Analysis (uses 3-day engagement analysis + agent history)")
         print("  6. Generate AI Insights (progress & adaptation insights)")
         print("  7. Repeat as needed\n")
-        print("🔄 NEW FLOW: /api/user/{user_id}/routine/generate endpoint now runs:")
-        print("  • Parallel behavior + circadian analysis using same raw data")
-        print("  • Combined analysis storage in database")
-        print("  • Dynamic routine generation with integrated insights\n")
+        print("🧠 AI CONTEXT INTEGRATION FLOW: /api/user/{user_id}/routine/generate endpoint now:")
+        print("  • Generates 3-day engagement AI context (calendar/journal/checkins)")
+        print("  • Retrieves last 2 behavior + circadian analyses for agent-specific history")
+        print("  • Runs parallel behavior + circadian analysis with AI context enhancement")
+        print("  • Stores results and updates AI context for future analyses")
+        print("  • All data flow logged to logs/ folder for inspection\n")
         
         asyncio.run(main())
         

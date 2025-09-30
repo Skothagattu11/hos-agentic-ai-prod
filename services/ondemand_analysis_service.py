@@ -11,7 +11,7 @@ from enum import Enum
 
 from services.user_data_service import UserDataService
 from services.simple_analysis_tracker import SimpleAnalysisTracker
-from services.agents.memory.holistic_memory_service import HolisticMemoryService
+from services.ai_context_integration_service import AIContextIntegrationService
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class OnDemandAnalysisService:
         try:
             self.user_service = UserDataService()
             self.analysis_tracker = SimpleAnalysisTracker()
-            self.memory_service = HolisticMemoryService()
+            self.memory_service = AIContextIntegrationService()
             
             logger.debug("[ONDEMAND] Initialized on-demand analysis service")
             return True
@@ -238,76 +238,54 @@ class OnDemandAnalysisService:
             return 0
     
     async def _assess_memory_quality(self, user_id: str, archetype: str = None) -> MemoryQuality:
-        """Assess the quality of user's memory profile, optionally considering archetype-specific history"""
+        """Assess the quality of user's context data, simplified for AI Context approach"""
         try:
-            # Get user's memory profile
-            longterm_memory = await self.memory_service.get_user_longterm_memory(user_id)
-            analysis_history = await self.memory_service.get_analysis_history(user_id, limit=10)
-            meta_memory = await self.memory_service.get_meta_memory(user_id)
-            
-            # Score memory richness
+            # Use AI context service to get historical analysis data
+            behavior_history = await self.memory_service._get_agent_analysis_history(
+                user_id, "behavior_analysis", archetype, limit=10
+            )
+            circadian_history = await self.memory_service._get_agent_analysis_history(
+                user_id, "circadian_analysis", archetype, limit=10
+            )
+
+            # Score context richness based on available analyses
             score = 0
-            
-            # Check long-term memory
-            if longterm_memory:
-                if hasattr(longterm_memory, 'behavioral_patterns') and longterm_memory.behavioral_patterns:
+
+            # Check behavior analysis history depth
+            if behavior_history:
+                if len(behavior_history) >= 5:
+                    score += 4
+                elif len(behavior_history) >= 3:
                     score += 3
-                if hasattr(longterm_memory, 'preference_patterns') and longterm_memory.preference_patterns:
+                elif len(behavior_history) >= 1:
                     score += 2
-                if hasattr(longterm_memory, 'success_strategies') and longterm_memory.success_strategies:
+
+            # Check circadian analysis history depth
+            if circadian_history:
+                if len(circadian_history) >= 5:
+                    score += 4
+                elif len(circadian_history) >= 3:
                     score += 3
-            
-            # Check analysis history depth (global)
-            if analysis_history:
-                if len(analysis_history) >= 5:
-                    score += 3
-                elif len(analysis_history) >= 3:
+                elif len(circadian_history) >= 1:
                     score += 2
-                elif len(analysis_history) >= 1:
-                    score += 1
-            
-            # NEW: Check archetype-specific history if archetype provided
-            if archetype:
-                try:
-                    archetype_history = await self.memory_service.get_analysis_history(
-                        user_id, archetype=archetype, limit=5
-                    )
-                    if archetype_history:
-                        if len(archetype_history) >= 3:
-                            score += 2  # Bonus for archetype-specific experience
-                        elif len(archetype_history) >= 1:
-                            score += 1
-                except Exception as e:
-                    logger.debug(f"[MEMORY_QUALITY] Could not get archetype history: {e}")
-            
-            # Check meta-memory learning
-            if meta_memory:
-                # Check if meta-memory has meaningful data
-                adaptation_data = meta_memory.get('adaptation_patterns', {}).get('data')
-                learning_data = meta_memory.get('learning_velocity', {}).get('data')
-                
-                if adaptation_data and isinstance(adaptation_data, dict) and adaptation_data:
-                    score += 2
-                if learning_data and isinstance(learning_data, dict) and learning_data:
-                    score += 2
-            
-            # NEW: Check recent patterns for additional context
+
+            # Check if we have AI context available
             try:
-                recent_patterns = await self.memory_service.get_recent_patterns(user_id, days=7)
-                if recent_patterns:
-                    if len(recent_patterns) >= 5:
-                        score += 1  # Bonus for recent activity
+                # Try to get existing AI context (indicates user has engagement data)
+                ai_context = await self.memory_service.ai_context_service._get_recent_context(user_id, hours=24)
+                if ai_context and len(ai_context) > 100:  # Meaningful context length
+                    score += 3
             except Exception as e:
-                logger.debug(f"[MEMORY_QUALITY] Could not get recent patterns: {e}")
-            
-            # Enhanced scoring thresholds for better granularity
-            if score >= 12:
+                logger.debug(f"[MEMORY_QUALITY] Could not check AI context: {e}")
+
+            # Simplified scoring thresholds
+            if score >= 8:
                 return MemoryQuality.RICH
-            elif score >= 6:
+            elif score >= 4:
                 return MemoryQuality.DEVELOPING
             else:
                 return MemoryQuality.SPARSE
-                
+
         except Exception as e:
             logger.error(f"[ONDEMAND_ERROR] Failed to assess memory quality: {e}")
             return MemoryQuality.SPARSE
@@ -380,36 +358,29 @@ class OnDemandAnalysisService:
     async def get_cached_behavior_analysis(self, user_id: str, archetype: str = None) -> Optional[Dict[str, Any]]:
         """Get the most recent cached behavior analysis, optionally filtered by archetype"""
         try:
-            # Get from memory system with archetype filtering built into the query
-            if archetype:
-                # Use the enhanced get_analysis_history with archetype parameter
-                analysis_history = await self.memory_service.get_analysis_history(
-                    user_id=user_id, 
-                    analysis_type="behavior_analysis",
-                    archetype=archetype,  # Direct archetype filtering in query
-                    limit=1
-                )
-                if not analysis_history:
-                    logger.info(f"[ONDEMAND] No cached analysis found for archetype '{archetype}' for user {user_id[:8]}")
-                    return None
-            else:
-                analysis_history = await self.memory_service.get_analysis_history(
-                    user_id=user_id,
-                    analysis_type="behavior_analysis", 
-                    limit=1
-                )
-            
+            # Get from AI context service using the agent-specific history method
+            analysis_history = await self.memory_service._get_agent_analysis_history(
+                user_id, "behavior_analysis", archetype, limit=1
+            )
+
+            if not analysis_history:
+                logger.info(f"[ONDEMAND] No cached analysis found for archetype '{archetype}' for user {user_id[:8]}")
+                return None
+
             if analysis_history and len(analysis_history) > 0:
                 latest = analysis_history[0]
-                if hasattr(latest, 'analysis_result') and latest.analysis_result:
-                    analysis_result = latest.analysis_result
-                    
+                analysis_result = latest.get('analysis_result')
+
+                if analysis_result:
                     # Extract behavior analysis
                     if isinstance(analysis_result, dict) and 'behavior_analysis' in analysis_result:
                         return analysis_result['behavior_analysis']
-            
+                    # If it's already the behavior analysis directly
+                    elif isinstance(analysis_result, dict):
+                        return analysis_result
+
             return None
-            
+
         except Exception as e:
             logger.error(f"[ONDEMAND_ERROR] Failed to get cached analysis: {e}")
             return None
@@ -418,16 +389,15 @@ class OnDemandAnalysisService:
         """Get the archetype used in the most recent analysis"""
         try:
             # Query the most recent analysis to get its archetype
-            analysis_history = await self.memory_service.get_analysis_history(
-                user_id=user_id,
-                analysis_type="behavior_analysis", 
-                limit=1
+            analysis_history = await self.memory_service._get_agent_analysis_history(
+                user_id, "behavior_analysis", archetype=None, limit=1
             )
-            
-            if analysis_history:
-                return analysis_history[0].archetype_used
+
+            if analysis_history and len(analysis_history) > 0:
+                latest = analysis_history[0]
+                return latest.get('archetype') or latest.get('archetype_used')
             return None
-            
+
         except Exception as e:
             logger.error(f"[ONDEMAND_ERROR] Error getting last archetype for {user_id}: {e}")
             return None

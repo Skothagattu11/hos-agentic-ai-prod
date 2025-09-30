@@ -346,11 +346,11 @@ class HolisticInsightsAgent(BaseAgent):
     # Core Insights Generation Methods
     
     async def _retrieve_user_memory(self, user_id: str) -> dict:
-        """Retrieve REAL user memory data from HolisticMemoryService"""
+        """Retrieve user memory data"""
         try:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            from services.ai_context_integration_service import AIContextIntegrationService
             
-            memory_service = HolisticMemoryService()
+            memory_service = AIContextIntegrationService()
             
             try:
                 # Get all 4 memory layers from real memory system
@@ -714,8 +714,8 @@ class HolisticInsightsAgent(BaseAgent):
         """Enhanced trend detection using real historical data"""
         try:
             # Get analysis history for trend calculation
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
-            memory_service = HolisticMemoryService()
+            from services.ai_context_integration_service import AIContextIntegrationService
+            memory_service = AIContextIntegrationService()
             
             try:
                 analysis_history = await memory_service.get_analysis_history(user_id, limit=10)
@@ -882,19 +882,33 @@ class HolisticInsightsAgent(BaseAgent):
                 logger.warning("OpenAI API key not available - using fallback insights")
                 return self._generate_fallback_insights(user_id, pattern_analysis, trend_analysis, archetype)
             
-            # Use EnhancedMemoryPromptsService for insights prompts
-            from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService
-            enhanced_prompts_service = EnhancedMemoryPromptsService()
+            # Use memory service for insights prompts
             
             try:
                 # Get enhanced prompt with memory context
                 from shared_libs.utils.system_prompts import get_system_prompt
                 base_insights_prompt = get_system_prompt("insights_generation")
                 
-                enhanced_prompt = await enhanced_prompts_service.enhance_agent_prompt(
-                    base_prompt=base_insights_prompt,
+                # Create a basic context object for prompt enhancement
+                from services.ai_context_integration_service import ContextEnhancedContext
+                from datetime import datetime, timezone
+
+                basic_context = ContextEnhancedContext(
                     user_id=user_id,
-                    agent_type="insights_generation"
+                    analysis_mode="initial",
+                    days_to_fetch=7,
+                    ai_context_summary="Insights generation context",
+                    engagement_insights={},
+                    behavior_analysis_history=[],
+                    circadian_analysis_history=[],
+                    personalized_focus_areas=[],
+                    proven_strategies={},
+                    adaptation_preferences={},
+                    created_at=datetime.now(timezone.utc)
+                )
+
+                enhanced_prompt = await memory_service.enhance_agent_prompt(
+                    base_insights_prompt, basic_context, "insights_generation"
                 )
                 
                 # Rich context for AI insights with real memory data
@@ -949,7 +963,8 @@ Focus on insights that could only be generated with access to the user's complet
                 return insights
                 
             finally:
-                await enhanced_prompts_service.cleanup()
+                # Cleanup handled by memory_service
+                pass
             
         except Exception as e:
             logger.error(f"Error generating AI insights: {e}")

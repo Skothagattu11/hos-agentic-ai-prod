@@ -180,7 +180,7 @@ except Exception as e:
 try:
     from .engagement_endpoints import router as engagement_router
     app.include_router(engagement_router)
-    pass  # Production: Verbose print removed
+    pass
     print("  - POST /api/v1/engagement/task-checkin")
     print("  - GET /api/v1/engagement/tasks/{profile_id}")
     print("  - POST /api/v1/engagement/journal")
@@ -194,7 +194,7 @@ except Exception as e:
 try:
     from .calendar_endpoints import router as calendar_router
     app.include_router(calendar_router)
-    pass  # Production: Verbose print removed
+    pass
     print("  - GET /api/calendar/available-items/{profile_id}")
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate calendar selection endpoints: {e}")
@@ -203,7 +203,7 @@ except Exception as e:
 try:
     from .archetype_router import router as archetype_router
     app.include_router(archetype_router, prefix="/api")
-    pass  # Production: Verbose print removed
+    pass
     print("  - GET /api/user/{user_id}/available-archetypes")
     print("  - GET /api/user/{user_id}/archetype/{analysis_id}/summary")
 except Exception as e:
@@ -213,7 +213,7 @@ except Exception as e:
 try:
     from .admin_apis import register_admin_routes
     register_admin_routes(app)
-    pass  # Production: Verbose print removed
+    pass
     print("  - GET /api/admin/users")
     print("  - GET /api/admin/user/{user_id}/overview")
     print("  - GET /api/admin/user/{user_id}/analysis-data")
@@ -228,7 +228,7 @@ except Exception as e:
 try:
     from .analysis_results_endpoints import router as analysis_router
     app.include_router(analysis_router)
-    pass  # Production: Verbose print removed
+    pass
     print("  - GET /api/v1/analysis/user/{user_id}/results")
     print("  - GET /api/v1/analysis/user/{user_id}/latest-with-data")
     print("  - GET /api/v1/analysis/result/{analysis_id}/status")
@@ -244,7 +244,7 @@ try:
     sys.path.append(os.path.join(os.path.dirname(__file__), '../../api'))
     from energy_zones_endpoints import router as energy_zones_router
     app.include_router(energy_zones_router)
-    pass  # Production: Verbose print removed
+    pass
     print("  - GET /api/v1/energy-zones/{user_id}")
     print("  - GET /api/v1/energy-zones/{user_id}/current")
     print("  - GET /api/v1/energy-zones/{user_id}/summary")
@@ -1016,7 +1016,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             try:
                 await rate_limiter.apply_rate_limit(http_request, "routine_generation")
             except Exception as rate_limit_error:
-                pass  # # Production: Verbose print removed
+                pass
                 raise rate_limit_error
         # print(f"🔄 [ROUTINE_GENERATE] Processing routine request for user {user_id[:8]}...")  # Commented to reduce noise
 
@@ -1084,9 +1084,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             )
 
         # Log successful parallel execution with detailed data for agent handoff tracking
-        pass  # Production: Verbose print removed
-        # Production: Verbose print removed
-        pass  # Production: Verbose print removed
+        pass
+        pass
 
         # DETAILED LOGGING: Log raw data and analysis outputs for agent handoff tracking
         try:
@@ -1117,7 +1116,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                         "full_circadian_analysis_output": circadian_analysis
                     }, f, indent=2, default=str)
 
-            pass  # Production: Verbose print removed
+            pass
 
         except Exception as log_error:
             pass  # Error logging failed
@@ -1215,7 +1214,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                         "full_routine_plan_output": routine_plan
                     }, f, indent=2, default=str)
 
-                pass  # Production: Verbose print removed
+                pass
 
             except Exception as log_error:
                 pass  # Routine generation logging failed
@@ -1245,12 +1244,12 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                             analysis_result_id=analysis_result_id,
                             profile_id=user_id
                         )
-                        pass  # Production: Verbose print removed
+                        pass
                     
                 await memory_service.cleanup()
                     
             except Exception as storage_error:
-                pass  # # Production: Verbose print removed
+                pass
                 # Don't fail the entire request if plan storage fails
             
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by HolisticMemoryService
@@ -1261,7 +1260,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 try:
                     await rate_limiter.track_api_cost(user_id, "routine_generation")
                 except Exception as cost_error:
-                    pass  # # Production: Verbose print removed
+                    pass
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "routine")
@@ -1325,7 +1324,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             return response_data
             
         except Exception as context_error:
-            pass  # # Production: Verbose print removed
+            pass
             raise HTTPException(status_code=500, detail=f"Failed to get user data for routine generation: {str(context_error)}")
             
     except Exception as e:
@@ -1415,7 +1414,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             try:
                 await rate_limiter.apply_rate_limit(http_request, "nutrition_generation")
             except Exception as rate_limit_error:
-                pass  # # Production: Verbose print removed
+                pass
                 raise rate_limit_error
         # print(f"🔄 [NUTRITION_GENERATE] Processing nutrition request for user {user_id[:8]}...")  # Commented to reduce noise
         
@@ -1493,7 +1492,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
                 try:
                     await rate_limiter.track_api_cost(user_id, "nutrition_generation")
                 except Exception as cost_error:
-                    pass  # # Production: Verbose print removed
+                    pass
             
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "nutrition")
@@ -1517,7 +1516,7 @@ async def generate_fresh_nutrition_plan(user_id: str, request: PlanGenerationReq
             )
             
         except Exception as context_error:
-            pass  # # Production: Verbose print removed
+            pass
             raise HTTPException(status_code=500, detail=f"Failed to get user data for nutrition generation: {str(context_error)}")
 
             
@@ -1708,7 +1707,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         try:
             await rate_limiter.apply_rate_limit(http_request, "behavior_analysis")
         except Exception as rate_limit_error:
-            pass  # # Production: Verbose print removed
+            pass
             raise rate_limit_error
 
     try:
@@ -1787,7 +1786,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
         # # Production: Verbose print removed  # Commented to reduce noise
             else:
                 # Fallback to cached if fresh analysis fails
-                pass  # Production: Verbose print removed
+                pass
                 behavior_analysis = await ondemand_service.get_cached_behavior_analysis(user_id, archetype)
                 analysis_type = "cached_fallback"
                 
@@ -1822,7 +1821,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
             try:
                 await rate_limiter.track_api_cost(user_id, "behavior_analysis")
             except Exception as cost_error:
-                pass  # # Production: Verbose print removed
+                pass
 
         # Prepare response data
         response_data = BehaviorAnalysisResponse(
@@ -1895,10 +1894,9 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
             try:
                 await rate_limiter.apply_rate_limit(http_request, "circadian_analysis")
             except Exception as rate_limit_error:
-                pass  # # Production: Verbose print removed
+                pass
                 raise rate_limit_error
 
-        # Production: Verbose print removed  # Enabled for detailed logging
 
         # MVP-Style Logging: Import and prepare input data
         from services.mvp_style_logger import mvp_logger
@@ -1958,7 +1956,7 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
             try:
                 await rate_limiter.track_api_cost(user_id, "circadian_analysis")
             except Exception as cost_error:
-                pass  # # Production: Verbose print removed
+                pass
 
         # Prepare response data
         response_data = CircadianAnalysisResponse(
@@ -2066,11 +2064,11 @@ async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
                 insights = insights_result.result
         # # Production: Verbose print removed  # Commented to reduce noise
             else:
-                pass  # Production: Verbose print removed
+                pass
                 insights = {"error": insights_result.error_message}
                 
         except Exception as insights_error:
-            pass  # # Production: Verbose print removed
+            pass
             insights = {"error": str(insights_error)}
         
         # Return enhanced results with insights
@@ -2371,7 +2369,7 @@ async def run_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
     try:
         print(f"🧠 [BEHAVIOR_WRAPPER] Starting DIRECT behavior analysis for {user_id[:8]}...")
-        pass  # Production: Verbose print removed
+        pass
         
         # Get user data using existing services
         from services.user_data_service import UserDataService
@@ -2665,7 +2663,7 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
             insights_stored = True
         # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
-            pass  # # Production: Verbose print removed
+            pass
         
         # Step 8: Log complete analysis data (input/output logging)
         await log_complete_analysis(
@@ -2711,7 +2709,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         )
         
         if not should_process and cached_result:
-            pass  # Production: Verbose print removed
+            pass
             return cached_result
         
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
@@ -2740,7 +2738,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                     
                     # If threshold not exceeded since last analysis, reuse it
                     if new_data_since_analysis < 50:  # Threshold not met
-                        pass  # Production: Verbose print removed
+                        pass
                         await memory_service.cleanup()
                         # Complete coordination with the result
                         enhanced_deduplicator.complete_request(user_id, archetype, "behavior_analysis", latest_analysis.analysis_result)
@@ -2750,7 +2748,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
                 
                 await memory_service.cleanup()
             except Exception as e:
-                pass  # # Production: Verbose print removed
+                pass
         
         # Step 1: Check if fresh analysis needed (50-item threshold logic WITH ARCHETYPE)
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
@@ -2853,7 +2851,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
         )
 
         if not should_process and cached_result:
-            pass  # Production: Verbose print removed
+            pass
             return cached_result
 
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
@@ -2882,7 +2880,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
 
                     # If threshold not exceeded since last analysis, reuse it
                     if new_data_since_analysis < 50:  # Threshold not met
-                        pass  # Production: Verbose print removed
+                        pass
 
                         # Result already cached in database - no additional caching needed
 
@@ -2891,13 +2889,12 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
                 await memory_service.cleanup()
 
             except Exception as threshold_error:
-                pass  # # Production: Verbose print removed
+                pass
                 # Continue with fresh analysis on error
 
         # FRESH ANALYSIS: Threshold exceeded or force_refresh requested
-        pass  # Production: Verbose print removed
-        # Production: Verbose print removed
-        pass  # Production: Verbose print removed
+        pass
+        pass
         print(f"   🧠 [MEMORY] Integrating 4-layer memory system for personalized analysis")
 
         # Use OnDemandAnalysisService to get proper metadata
@@ -2908,7 +2905,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
         )
 
         if not should_run and not force_refresh:
-            pass  # Production: Verbose print removed
+            pass
             return {"status": "skipped", "reason": "threshold_not_met", "circadian_analysis": {}}
 
         # Run memory-enhanced circadian analysis
@@ -2919,7 +2916,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
 
         # Result stored in database - no additional caching needed
 
-        pass  # Production: Verbose print removed
+        pass
         return circadian_result
 
     except Exception as e:
@@ -3073,7 +3070,7 @@ ANALYSIS INSTRUCTIONS: You have comprehensive health tracking data including sle
         return user_context_summary
         
     except Exception as e:
-        pass  # # Production: Verbose print removed
+        pass
         # Minimal fallback
         return f"Health analysis for {archetype} user {user_id}"
 
@@ -3114,7 +3111,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         
         # Log to console
         print(f"\n{'='*60}")
-        pass  # Production: Verbose print removed
+        pass
         print(f"{'='*60}")
         print(json.dumps(summary, indent=2))
         print(f"{'='*60}\n")
@@ -3130,7 +3127,7 @@ async def log_data_collection_summary(user_id: str, user_context, engagement_con
         print(f"💾 Data collection log saved to: {log_file}")
         
     except Exception as e:
-        pass  # # Production: Verbose print removed
+        pass
 
 async def log_complete_analysis(agent_type: str, user_id: str, archetype: str, 
                                input_data: dict, output_data: dict, memory_context, 
@@ -3174,7 +3171,7 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
         # print(f"📝 [MEMORY_ENHANCED] Complete analysis stored in memory system")  # Commented for error-only mode
         
     except Exception as e:
-        pass  # # Production: Verbose print removed
+        pass
 
 async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -> dict:
     """
@@ -3187,7 +3184,6 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
     - Complete logging of circadian analysis data
     """
     try:
-        # Production: Verbose print removed  # Enabled for detailed logging
 
         # Import memory integration service
         from services.memory_integration_service import MemoryIntegrationService
@@ -3196,7 +3192,6 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         memory_service = MemoryIntegrationService()
 
         # Step 1: Prepare memory-enhanced context
-        # Production: Verbose print removed  # Enabled for detailed logging
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
 
         # Step 2: Get user data for circadian analysis (need more days for pattern recognition)
@@ -3222,7 +3217,6 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         user_context_summary = await format_health_data_for_ai(user_context)
 
         # Step 5: Run AI-powered circadian analysis
-        # Production: Verbose print removed  # Enabled for detailed logging
         analysis_result = await run_circadian_analysis_gpt4o(enhanced_prompt, user_context_summary)
 
         # Step 6: Store analysis results in memory for future personalization (optional)
@@ -3230,18 +3224,18 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
             await memory_service.store_analysis_insights(
                 user_id, "circadian_analysis", analysis_result, memory_context
             )
-            pass  # Production: Verbose print removed
+            pass
         except Exception as insights_error:
-            pass  # # Production: Verbose print removed
+            pass
 
         # Step 7: Update user memory profile with circadian insights (optional)
         try:
             await memory_service.update_user_memory_profile(
                 user_id, {}, analysis_result, {}
             )
-            pass  # Production: Verbose print removed
+            pass
         except Exception as memory_error:
-            pass  # # Production: Verbose print removed
+            pass
 
         # Step 8: Store complete analysis in HolisticMemoryService
         from services.agents.memory.holistic_memory_service import HolisticMemoryService
@@ -3283,14 +3277,14 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
                 analysis_result=serializable_analysis,
                 archetype_used=archetype
             )
-            pass  # Production: Verbose print removed
+            pass
         except Exception as storage_error:
-            pass  # # Production: Verbose print removed
+            pass
 
         try:
             await holistic_memory.cleanup()
         except Exception as cleanup_error:
-            pass  # # Production: Verbose print removed
+            pass
 
         return analysis_result
 
@@ -3299,7 +3293,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         # Return the analysis_result if we got that far, otherwise return None
         try:
             if 'analysis_result' in locals() and analysis_result:
-                pass  # Production: Verbose print removed
+                pass
                 return analysis_result
         except:
             pass
@@ -3354,7 +3348,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
 
         # NEW: Log combined analysis information
         if circadian_analysis:
-            pass  # Production: Verbose print removed
+            pass
         else:
             print(f"🏃 [MEMORY_ENHANCED] Using behavior analysis only (circadian analysis not available)")
 
@@ -3404,7 +3398,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
                     )
                     print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
                 except Exception as e:
-                    pass  # # Production: Verbose print removed
+                    pass
 
             await holistic_memory.cleanup()
         except Exception as e:
@@ -3864,7 +3858,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
                     )
                     print(f"💾 [MEMORY_ENHANCED] Combined analysis stored with ID: {combined_analysis_id}")
                 except Exception as e:
-                    pass  # # Production: Verbose print removed
+                    pass
 
             await holistic_memory.cleanup()
         except Exception as e:
@@ -3939,7 +3933,7 @@ try:
     print("📁 [LEGACY] Legacy /api/analyze endpoint loaded from legacy folder")
     
 except ImportError as e:
-    pass  # # Production: Verbose print removed
+    pass
     
     @app.post("/api/analyze", response_model=AnalysisResponse)
     async def analyze_user_fallback(request: AnalysisRequest, http_request: Request):

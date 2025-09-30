@@ -20,11 +20,11 @@ except Exception as e:
     insights_service = None
 
 try:
-    from ..agents.memory.holistic_memory_service import HolisticMemoryService
-        # print("🔍 [DEBUG] HolisticMemoryService imported successfully")  # Commented to reduce noise
+    from ..ai_context_integration_service import AIContextIntegrationService
+        # print("🔍 [DEBUG] AIContextIntegrationService imported successfully")  # Commented to reduce noise
 except Exception as e:
-        # print(f"❌ [DEBUG] Failed to import HolisticMemoryService: {e}")  # Commented to reduce noise
-    HolisticMemoryService = None
+        # print(f"❌ [DEBUG] Failed to import AIContextIntegrationService: {e}")  # Commented to reduce noise
+    AIContextIntegrationService = None
 
 try:
     import structlog
@@ -73,7 +73,7 @@ async def generate_insights(request: InsightsRequest):
     MVP version - simplified without SharedBehaviorAnalysisService
     """
     try:
-        memory_service = HolisticMemoryService()
+        memory_service = AIContextIntegrationService()
         
         # Simple check: if force_refresh or no recent analysis, generate fresh
         source = "cached"

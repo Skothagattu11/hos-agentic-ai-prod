@@ -16,14 +16,14 @@ class ArchetypeAnalysisTracker:
     MVP Service for managing archetype-specific analysis timestamps
     Enables each archetype to maintain independent analysis windows
     
-    Uses direct Supabase client (same pattern as HolisticMemoryService) to avoid adapter issues
+    Uses direct Supabase client to avoid adapter issues
     """
     
     def __init__(self):
         self.supabase_client = None
         
     def _get_supabase_client(self):
-        """Get direct Supabase client (same pattern as HolisticMemoryService)"""
+        """Get direct Supabase client"""
         if not self.supabase_client:
             try:
                 # Get credentials from environment  
@@ -56,7 +56,7 @@ class ArchetypeAnalysisTracker:
         try:
             supabase = self._get_supabase_client()
             
-            # Direct Supabase query (same pattern as HolisticMemoryService)
+            # Direct Supabase query
             result = supabase.table('archetype_analysis_tracking') \
                 .select('last_analysis_at') \
                 .eq('user_id', user_id) \
@@ -95,7 +95,7 @@ class ArchetypeAnalysisTracker:
         try:
             supabase = self._get_supabase_client()
             
-            # Use direct Supabase UPSERT (same pattern as HolisticMemoryService)
+            # Use direct Supabase UPSERT
             # This uses Supabase's native upsert which is more reliable than adapter UPSERT
             
             # Prepare data for upsert

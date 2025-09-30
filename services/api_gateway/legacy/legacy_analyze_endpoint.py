@@ -84,7 +84,7 @@ async def legacy_analyze_user(request: AnalysisRequest, http_request: Request):
         from shared_libs.utils.system_prompts import get_system_prompt, get_archetype_adaptation
         
         # Import memory integration services
-        from services.memory_integration_service import MemoryIntegrationService
+        from services.ai_context_integration_service import AIContextIntegrationService
         from services.agents.memory.enhanced_memory_prompts import EnhancedMemoryPromptsService
         from services.simple_analysis_tracker import SimpleAnalysisTracker as AnalysisTracker
         
@@ -93,7 +93,7 @@ async def legacy_analyze_user(request: AnalysisRequest, http_request: Request):
         analysis_tracker = AnalysisTracker()
         
         # Initialize Memory Integration Service
-        memory_service = MemoryIntegrationService()
+        memory_service = AIContextIntegrationService()
         print(f"🧠 [LEGACY] Preparing memory-enhanced analysis context for {user_id}...")
         memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
         

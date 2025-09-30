@@ -355,6 +355,40 @@ Focus on actionable insights that will help personalize behavior analysis and ci
 Keep it concise but specific to this user's actual patterns.
 """
 
+            # Log input data for debugging/inspection
+            try:
+                logs_dir = "logs"
+                if not os.path.exists(logs_dir):
+                    os.makedirs(logs_dir)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                input_log_file = f"{logs_dir}/ai_context_input_{timestamp}_{user_id[:8]}.json"
+
+                input_data = {
+                    "timestamp": datetime.now().isoformat(),
+                    "user_id": user_id[:8] + "...",
+                    "archetype": archetype,
+                    "prompt": prompt,
+                    "raw_data_summary": {
+                        "calendar_selections_count": calendar_count,
+                        "task_checkins_count": checkin_count,
+                        "journal_count": journal_count,
+                        "plan_items_count": plan_items_count,
+                        "completion_rate": completion_rate,
+                        "data_period": raw_data.get('data_period', {})
+                    },
+                    "model": "gpt-4o-mini",
+                    "temperature": 0.1,
+                    "max_tokens": 1000
+                }
+
+                with open(input_log_file, 'w') as f:
+                    json.dump(input_data, f, indent=2, default=str)
+
+                logger.debug(f"📝 AI Context Input logged: {input_log_file}")
+            except Exception as log_error:
+                logger.warning(f"Failed to log AI context input: {log_error}")
+
             # Generate AI analysis
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -435,8 +469,12 @@ class AIContextGeneratorService:
         This replaces the complex memory prompt enhancement
         """
         try:
-            # Get or generate current context
-            context = await self.generate_user_context(user_id, archetype)
+            # FIXED: Check for existing recent context first (within last hour)
+            context = await self._get_recent_context(user_id, hours=1)
+
+            # Only generate new context if none exists recently
+            if not context:
+                context = await self.generate_user_context(user_id, archetype)
 
             if context and not context.startswith("Failed"):
                 enhanced_prompt = f"""
@@ -462,6 +500,36 @@ Make your analysis specific to this user's proven patterns and preferences.
         except Exception as e:
             logger.error(f"Failed to enhance prompt for {user_id}: {e}")
             return base_prompt
+
+    async def _get_recent_context(self, user_id: str, hours: int = 1) -> Optional[str]:
+        """Get context generated within the last N hours to avoid multiple generations"""
+        try:
+            cutoff_time = datetime.now() - timedelta(hours=hours)
+
+            if self.use_rest_api:
+                result = self.supabase_client.table('holistic_memory_analysis_context')\
+                    .select('context_summary, created_at')\
+                    .eq('user_id', user_id)\
+                    .gte('created_at', cutoff_time.isoformat())\
+                    .order('created_at', desc=True)\
+                    .limit(1)\
+                    .execute()
+                return result.data[0]['context_summary'] if result.data else None
+            else:
+                db = await self._ensure_db_connection()
+                query = """
+                    SELECT context_summary, created_at
+                    FROM holistic_memory_analysis_context
+                    WHERE user_id = $1 AND created_at >= $2
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """
+                result = await db.fetchrow(query, user_id, cutoff_time)
+                return result['context_summary'] if result else None
+
+        except Exception as e:
+            logger.error(f"Failed to get recent context for {user_id}: {e}")
+            return None
 
     async def _get_last_context(self, user_id: str) -> Optional[str]:
         """Get most recent context for this user"""
@@ -490,6 +558,35 @@ Make your analysis specific to this user's proven patterns and preferences.
 
         except Exception as e:
             logger.error(f"Failed to get last context for {user_id}: {e}")
+            return None
+
+    async def _get_last_context_with_timestamp(self, user_id: str) -> Optional[Dict]:
+        """Get most recent context WITH timestamp for cache validation"""
+        try:
+            if self.use_rest_api:
+                # Use REST API in development
+                context = self.supabase_client.table('holistic_memory_analysis_context')\
+                    .select('context_summary, created_at')\
+                    .eq('user_id', user_id)\
+                    .order('created_at', desc=True)\
+                    .limit(1)\
+                    .execute()
+                return context.data[0] if context.data else None
+            else:
+                # Use database adapter in production
+                db = await self._ensure_db_connection()
+                query = """
+                    SELECT context_summary, created_at
+                    FROM holistic_memory_analysis_context
+                    WHERE user_id = $1
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """
+                result = await db.fetchrow(query, user_id)
+                return dict(result) if result else None
+
+        except Exception as e:
+            logger.error(f"Failed to get last context with timestamp for {user_id}: {e}")
             return None
 
     async def _get_last_plans(self, user_id: str, archetype: str = None, limit: int = 3) -> List[Dict]:

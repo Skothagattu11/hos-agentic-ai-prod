@@ -36,7 +36,7 @@ for logger_name in [
     "shared_libs.monitoring.alerting", 
     "shared_libs.supabase_client.adapter",
     "shared_libs.caching.lru_cache",
-    "services.memory_integration_service",
+    "services.ai_context_integration_service",
     "services.user_data_service",
     "services.ondemand_analysis_service",
     "services.health_data_client",
