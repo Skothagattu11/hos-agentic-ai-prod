@@ -15,26 +15,26 @@ class SecuritySettings:
     def get_allowed_origins() -> List[str]:
         """Get allowed CORS origins based on environment"""
         environment = EnvironmentConfig.get_environment()
-        
-        # Production origins - only specific domains allowed
+
+        # Production origins - specific domains + all localhost ports
         production_origins = [
             "https://bio-coach-hub.vercel.app",
             "https://admin-hos.onrender.com",
             "https://holisticos.tech",
             "https://www.holisticos.tech",
-            "http://localhost:8080"  # Allow local development access to production
         ]
-        
+
         # Development origins - local development servers
         development_origins = [
             "http://localhost:3000",
-            "http://localhost:3001", 
+            "http://localhost:3001",
             "http://localhost:5173",
             "http://localhost:8080",
             "http://localhost:8002"
         ]
-        
+
         if environment == "production":
+            # Production: Use regex pattern to allow all localhost ports
             return production_origins
         elif environment == "development":
             return development_origins + production_origins  # Allow testing prod URLs locally

@@ -124,10 +124,30 @@ async def production_error_handler(request: Request, call_next):
 # Configure CORS with secure settings
 from shared_libs.config.security_settings import get_cors_config
 from shared_libs.middleware.input_validator import validate_request_middleware, RequestSizeLimit
+import re
 
+# Custom origin validator to allow all localhost ports
+def is_localhost_origin(origin: str) -> bool:
+    """Check if origin is localhost with any port"""
+    localhost_pattern = r'^https?://localhost(:\d+)?$'
+    return bool(re.match(localhost_pattern, origin))
+
+# Get base CORS config
 cors_config = get_cors_config()
-# Manual override to ensure X-API-Key header is allowed (temporary fix)
+
+# Manual override to ensure X-API-Key header is allowed
 cors_config['allow_headers'] = cors_config.get('allow_headers', []) + ['X-API-Key']
+
+# Add custom origin validator for localhost
+original_origins = cors_config.get('allow_origins', [])
+
+def custom_allow_origins(origin: str) -> bool:
+    """Allow configured origins + any localhost port"""
+    return origin in original_origins or is_localhost_origin(origin)
+
+# Use allow_origin_regex to match localhost with any port
+cors_config['allow_origin_regex'] = r'https?://localhost(:\d+)?'
+
 app.add_middleware(
     CORSMiddleware,
     **cors_config
