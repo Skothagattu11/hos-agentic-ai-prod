@@ -9,8 +9,9 @@ import logging
 import os
 import sys
 import json
+import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from pathlib import Path
 
 # Environment-aware logging
@@ -607,12 +608,12 @@ async def simple_health_check():
         
         # Quick connectivity tests (non-blocking)
         try:
-            # Test database connectivity if available
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
-            memory_service = HolisticMemoryService()
-            # Quick ping test (with short timeout)
-            db_healthy = await asyncio.wait_for(memory_service._test_connection(), timeout=2.0)
-            health_status["services"]["database"] = "operational" if db_healthy else "degraded"
+            # Test database connectivity using Supabase adapter
+            from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
+            adapter = SupabaseAsyncPGAdapter()
+            await asyncio.wait_for(adapter.connect(), timeout=2.0)
+            await adapter.close()
+            health_status["services"]["database"] = "operational"
         except asyncio.TimeoutError:
             health_status["services"]["database"] = "timeout"
         except Exception:
@@ -794,55 +795,21 @@ async def get_latest_routine_plan(user_id: str):
     """
     try:
         # # Production: Verbose print removed  # Commented to reduce noise
-        
-        # Get latest behavior analysis from memory
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
-        memory_service = HolisticMemoryService()
-        
-        try:
-            # Get most recent analysis that includes routine plan
-            analysis_history = await memory_service.get_analysis_history(user_id, limit=3)
-            
-            # Find most recent analysis with routine plan
-            routine_plan = None
-            behavior_analysis = None
-            
-            for analysis in analysis_history:
-                analysis_result = analysis.analysis_result
-                if isinstance(analysis_result, dict) and 'routine_plan' in analysis_result:
-                    routine_plan = analysis_result['routine_plan']
-                    behavior_analysis = analysis_result.get('behavior_analysis', {})
-                    break
-            
-            if not routine_plan:
-                return RoutinePlanResponse(
-                    status="not_found",
-                    user_id=user_id,
-                    routine_plan={},
-                    generation_metadata={
-                        "error": "No recent routine plan found. Please run a behavior analysis first.",
-                        "suggestion": "Use POST /api/analyze to generate initial analysis"
-                    },
-                    cached=False
-                )
-            
-            # Return cached routine with metadata
-            return RoutinePlanResponse(
-                status="success",
-                user_id=user_id,
-                routine_plan=routine_plan,
-                generation_metadata={
-                    "data_quality": "cached",
-                    "personalization_level": "high",
-                    "generated_from": "latest_behavior_analysis",
-                    "analysis_date": analysis_history[0].created_at.isoformat()
-                },
-                cached=True
-            )
-            
-        finally:
-            await memory_service.cleanup()
-            
+
+        # TODO: Replace with AI Context Integration Service query
+        # Analysis history is now handled by AI Context Integration Service
+        # For now, return not_found and prompt user to run fresh analysis
+        return RoutinePlanResponse(
+            status="not_found",
+            user_id=user_id,
+            routine_plan={},
+            generation_metadata={
+                "error": "Cached routine plans not yet available. Please run a behavior analysis first.",
+                "suggestion": "Use POST /api/analyze to generate initial analysis"
+            },
+            cached=False
+        )
+
     except Exception as e:
         print(f"❌ [ROUTINE_API_ERROR] Failed to get routine for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve routine plan: {str(e)}")
@@ -1224,12 +1191,19 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 from services.plan_extraction_service import PlanExtractionService
                 
                 # Find the most recent behavior analysis ID to associate plan items
-                from services.agents.memory.holistic_memory_service import HolisticMemoryService
-                memory_service = HolisticMemoryService()
-                analysis_history = await memory_service.get_analysis_history(user_id, analysis_type="behavior_analysis", limit=1)
-                
-                if analysis_history and routine_plan:
-                    analysis_result_id = str(analysis_history[0].id)
+                # Query holistic_analysis_results directly via Supabase
+                from shared_libs.supabase_client.data_fetcher import get_supabase_client
+                supabase = get_supabase_client()
+                analysis_result = supabase.table('holistic_analysis_results')\
+                    .select('id')\
+                    .eq('user_id', user_id)\
+                    .eq('analysis_type', 'behavior_analysis')\
+                    .order('created_at', desc=True)\
+                    .limit(1)\
+                    .execute()
+
+                if analysis_result.data and routine_plan:
+                    analysis_result_id = str(analysis_result.data[0]['id'])
                     print(f"📝 [PLAN_STORAGE] Storing plan items for analysis_result_id: {analysis_result_id}")
                     
                     # Extract plan items from the routine plan content
@@ -1343,7 +1317,7 @@ async def get_latest_nutrition_plan(user_id: str):
         # print(f"🥗 [NUTRITION_API] Getting latest nutrition for user {user_id[:8]}...")  # Commented to reduce noise
         
         # Get latest behavior analysis from memory
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         memory_service = HolisticMemoryService()
         
         try:
@@ -1533,7 +1507,7 @@ async def get_latest_insights(user_id: str):
         # # Production: Verbose print removed  # Commented to reduce noise
         
         # Get latest analysis with insights from memory
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         memory_service = HolisticMemoryService()
         
         try:
@@ -1581,7 +1555,7 @@ async def generate_fresh_insights(user_id: str, request: dict):
         print(f"✨ [INSIGHTS_GENERATE] Generating fresh insights for user {user_id[:8]}...")
         
         # Get latest behavior analysis as context
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         from services.agents.insights.main import HolisticInsightsAgent
         from shared_libs.event_system.base_agent import AgentEvent
         
@@ -1659,7 +1633,7 @@ async def provide_insight_feedback(user_id: str, insight_id: str, feedback: dict
         print(f"📝 [INSIGHTS_FEEDBACK] Recording feedback for insight {insight_id} from user {user_id[:8]}...")
         
         # Store feedback in memory system for future improvement
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         memory_service = HolisticMemoryService()
         
         try:
@@ -1715,7 +1689,7 @@ async def analyze_behavior(user_id: str, request: BehaviorAnalysisRequest, http_
 
         # Import required services
         from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         from services.mvp_style_logger import mvp_logger
 
         # Initialize services
@@ -2521,7 +2495,7 @@ Focus on actionable insights from the provided health metrics.
         }
 
 async def run_circadian_analysis_gpt4o(system_prompt: str, user_context: str) -> dict:
-    """Run circadian rhythm analysis using GPT-4o model - Phase 2"""
+    """Run circadian rhythm analysis using GPT-4o model with readiness assessment"""
     try:
         client = openai.AsyncOpenAI()
 
@@ -2530,28 +2504,57 @@ async def run_circadian_analysis_gpt4o(system_prompt: str, user_context: str) ->
             messages=[
                 {
                     "role": "system",
-                    "content": f"{system_prompt}\n\nYou are an expert circadian rhythm analyst. Focus on identifying sleep-wake patterns, energy fluctuations, and optimal timing for activities based on biomarker data."
+                    "content": f"{system_prompt}\n\nYou are an expert circadian rhythm and readiness analyst. Analyze sleep-wake patterns, energy fluctuations, optimal timing for activities, AND current readiness/recovery status based on biomarker data."
                 },
                 {
                     "role": "user",
                     "content": f"""
 {user_context}
 
-Analyze the circadian rhythm patterns from the biomarker data and provide comprehensive insights following the HolisticOS framework.
+Analyze the circadian rhythm patterns AND readiness status from the biomarker data.
 
-Focus on:
-- Sleep-wake cycle patterns and consistency
-- Energy level fluctuations throughout the day
-- Optimal timing windows for different activities
-- Chronotype assessment and recommendations
-- Integration opportunities with existing routines
+REQUIRED OUTPUT (JSON format):
 
-Provide structured JSON output with chronotype_assessment, energy_zone_analysis, schedule_recommendations, and biomarker_insights sections.
+1. READINESS ASSESSMENT:
+   - current_mode: "Performance" | "Productive" | "Recovery"
+     * Performance (High readiness, HRV optimal, recovery >75%%): Intense activities, peak output
+     * Productive (Medium readiness, stable metrics, recovery 50-75%%): Moderate building activities
+     * Recovery (Low readiness, HRV low, recovery <50%%): Gentle, restorative activities
+   - confidence: 0.0-1.0 (confidence based on data quality)
+   - supporting_biomarkers: Key metrics that support this assessment (HRV, sleep quality, recovery score, readiness score)
+   - recommendation: Brief explanation of what this mode means for today's activities
+
+2. CHRONOTYPE ASSESSMENT:
+   - primary_chronotype: Type (Early Bird, Intermediate, Night Owl)
+   - confidence_score: 0.0-1.0
+   - supporting_evidence: Data supporting this assessment
+   - individual_variations: User-specific patterns
+
+3. ENERGY WINDOWS:
+   Provide time windows for energy levels:
+   - peak_energy_window: When energy is highest (80-100) - Format: "HH:MM AM/PM - HH:MM AM/PM"
+   - maintenance_energy_window: Moderate energy periods (50-75)
+   - low_energy_window: Recovery/low energy periods (<50)
+
+   You can specify multiple windows using "and":
+   Example: "8:00 AM - 10:00 AM and 3:00 PM - 5:00 PM"
+
+4. SCHEDULE RECOMMENDATIONS:
+   - optimal_wake_time: Best time range to wake up (e.g., "6:30 AM - 7:30 AM")
+   - optimal_sleep_time: Best time range to sleep (e.g., "10:00 PM - 11:00 PM")
+   - workout_timing: Best time for physical activity
+
+5. BIOMARKER INSIGHTS:
+   - key_patterns: Important patterns in the data
+   - areas_for_improvement: What can be optimized
+   - biomarker_trends: Trends over time
+
+Provide structured JSON output with ALL sections: readiness_assessment, chronotype_assessment, energy_zone_analysis, schedule_recommendations, and biomarker_insights.
                 """
                 }
             ],
-            temperature=0.2,  # Lower temperature for more consistent circadian analysis
-            max_tokens=3000,
+            temperature=0.2,
+            max_tokens=3500,  # Increased for readiness assessment
             response_format={"type": "json_object"}
         )
 
@@ -2563,37 +2566,332 @@ Provide structured JSON output with chronotype_assessment, energy_zone_analysis,
             analysis_data["model_used"] = "gpt-4o"
             analysis_data["analysis_type"] = "circadian_rhythm"
             analysis_data["analysis_timestamp"] = datetime.now().isoformat()
+
+            # Add mode_description for consistency with behavior analysis
+            if "readiness_assessment" in analysis_data:
+                mode = analysis_data["readiness_assessment"].get("current_mode", "Productive")
+                mode_mapping = {
+                    'Recovery': 'recovery mode (gentle, restorative activities with reduced intensity)',
+                    'Productive': 'productive mode (moderate, building activities with steady progress)',
+                    'Performance': 'performance mode (intense, optimization activities with peak output)'
+                }
+                analysis_data["readiness_assessment"]["mode_description"] = mode_mapping.get(mode, 'balanced activities')
+
             return analysis_data
         except json.JSONDecodeError as e:
-            print(f"JSON parse error in circadian analysis: {e}")
+            logger.error(f"JSON parse error in circadian analysis: {e}")
             return {
+                "readiness_assessment": {
+                    "current_mode": "Productive",
+                    "confidence": 0.5,
+                    "supporting_biomarkers": {},
+                    "recommendation": "Insufficient data for detailed readiness assessment",
+                    "mode_description": "productive mode (moderate, building activities with steady progress)"
+                },
                 "chronotype_assessment": {
-                    "primary_type": "intermediate",
+                    "primary_chronotype": "Intermediate",
                     "confidence_score": 0.7,
-                    "assessment_basis": "Limited data available"
+                    "supporting_evidence": {"data_quality": "limited"}
                 },
                 "energy_zone_analysis": {
-                    "peak_energy_window": "09:00-11:00",
-                    "low_energy_window": "14:00-16:00",
-                    "recovery_window": "22:00-06:00"
+                    "peak_energy_window": "8:00 AM - 10:00 AM",
+                    "maintenance_energy_window": "2:00 PM - 4:00 PM",
+                    "low_energy_window": "4:00 PM - 6:00 PM"
                 },
                 "schedule_recommendations": {
-                    "optimal_wake_time": "07:00",
-                    "optimal_sleep_time": "23:00",
-                    "workout_window": "08:00-10:00"
+                    "optimal_wake_time": "6:30 AM - 7:30 AM",
+                    "optimal_sleep_time": "10:00 PM - 11:00 PM",
+                    "workout_timing": "Morning or early afternoon"
                 },
-                "analysis_content": content,
+                "biomarker_insights": {
+                    "key_patterns": {},
+                    "areas_for_improvement": {},
+                    "biomarker_trends": {}
+                },
                 "model_used": "gpt-4o",
                 "analysis_type": "circadian_rhythm"
             }
 
     except Exception as e:
-        print(f"Error in GPT-4o circadian analysis: {e}")
+        logger.error(f"Error in GPT-4o circadian analysis: {e}")
         return {
             "error": str(e),
             "model_used": "gpt-4o - fallback",
-            "chronotype_assessment": {"primary_type": "unknown", "confidence_score": 0.3}
+            "readiness_assessment": {
+                "current_mode": "Productive",
+                "confidence": 0.3,
+                "supporting_biomarkers": {},
+                "recommendation": "Error during analysis",
+                "mode_description": "productive mode (moderate, building activities with steady progress)"
+            },
+            "chronotype_assessment": {"primary_chronotype": "unknown", "confidence_score": 0.3}
         }
+
+def _generate_energy_timeline_from_analysis(circadian_analysis: dict) -> dict:
+    """
+    Generate 96-slot energy timeline with interpolation from GPT-4o analysis
+
+    Args:
+        circadian_analysis: Raw GPT-4o output with time windows
+
+    Returns:
+        dict with energy_timeline array, summary, and metadata
+    """
+    # Energy zone thresholds
+    PEAK_THRESHOLD = 75
+    MAINTENANCE_THRESHOLD = 50
+
+    # Default energy levels for undefined periods
+    DEFAULT_EARLY_MORNING = 30  # 00:00-06:00
+    DEFAULT_LATE_NIGHT = 25     # 22:00-24:00
+    DEFAULT_UNSPECIFIED = 40    # Any gaps
+
+    # Extract energy windows from GPT-4o analysis
+    energy_zones = circadian_analysis.get('energy_zone_analysis', {})
+    schedule_recs = circadian_analysis.get('schedule_recommendations', {})
+
+    def parse_time_window(window_str: str) -> List[Tuple[int, int]]:
+        """
+        Parse time window string to list of (start_minutes, end_minutes)
+        Handles "and" conjunctions: "8:00 AM - 10:00 AM and 2:00 PM - 4:00 PM"
+        """
+        if not window_str or not isinstance(window_str, str):
+            return []
+
+        # Split by "and" to handle multiple ranges
+        ranges = []
+        parts = window_str.split(' and ')
+
+        for part in parts:
+            # Parse "HH:MM AM/PM - HH:MM AM/PM"
+            match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)', part.strip())
+            if match:
+                start_hour, start_min, start_period, end_hour, end_min, end_period = match.groups()
+
+                # Convert to 24-hour format
+                start_hour = int(start_hour)
+                end_hour = int(end_hour)
+
+                if start_period == 'PM' and start_hour != 12:
+                    start_hour += 12
+                elif start_period == 'AM' and start_hour == 12:
+                    start_hour = 0
+
+                if end_period == 'PM' and end_hour != 12:
+                    end_hour += 12
+                elif end_period == 'AM' and end_hour == 12:
+                    end_hour = 0
+
+                start_minutes = start_hour * 60 + int(start_min)
+                end_minutes = end_hour * 60 + int(end_min)
+
+                ranges.append((start_minutes, end_minutes))
+
+        return ranges
+
+    # Parse all energy windows
+    peak_ranges = []
+    maintenance_ranges = []
+    low_ranges = []
+
+    peak_window = energy_zones.get('peak_energy_window', '')
+    if peak_window:
+        peak_ranges = parse_time_window(peak_window)
+
+    maintenance_window = energy_zones.get('maintenance_energy_window', '')
+    if maintenance_window:
+        maintenance_ranges = parse_time_window(maintenance_window)
+
+    low_window = energy_zones.get('low_energy_window', '')
+    if low_window:
+        low_ranges = parse_time_window(low_window)
+
+    # Create energy blocks with levels
+    energy_blocks = []
+
+    # Add peak blocks (energy = 85)
+    for start, end in peak_ranges:
+        energy_blocks.append({
+            'start': start,
+            'end': end,
+            'energy': 85,
+            'zone': 'peak'
+        })
+
+    # Add maintenance blocks (energy = 60)
+    for start, end in maintenance_ranges:
+        energy_blocks.append({
+            'start': start,
+            'end': end,
+            'energy': 60,
+            'zone': 'maintenance'
+        })
+
+    # Add low energy blocks (energy = 35)
+    for start, end in low_ranges:
+        energy_blocks.append({
+            'start': start,
+            'end': end,
+            'energy': 35,
+            'zone': 'recovery'
+        })
+
+    # Sort blocks by start time
+    energy_blocks.sort(key=lambda x: x['start'])
+
+    def get_energy_for_slot(slot_minutes: int) -> Tuple[int, str]:
+        """
+        Calculate energy level and zone for a given time slot
+        Handles interpolation between blocks
+        """
+        # Check if slot is inside any defined block
+        for block in energy_blocks:
+            if block['start'] <= slot_minutes < block['end']:
+                return block['energy'], block['zone']
+
+        # Slot is in a gap - find surrounding blocks for interpolation
+        prev_block = None
+        next_block = None
+
+        for block in energy_blocks:
+            if block['end'] <= slot_minutes:
+                prev_block = block  # Most recent block before gap
+            elif block['start'] > slot_minutes:
+                next_block = block  # Next block after gap
+                break
+
+        # Interpolate between blocks
+        if prev_block and next_block:
+            gap_duration = next_block['start'] - prev_block['end']
+            position_in_gap = slot_minutes - prev_block['end']
+            progress = position_in_gap / gap_duration  # 0.0 to 1.0
+
+            energy_delta = next_block['energy'] - prev_block['energy']
+            interpolated_energy = prev_block['energy'] + (energy_delta * progress)
+
+            # Determine zone based on interpolated energy
+            if interpolated_energy >= PEAK_THRESHOLD:
+                zone = 'peak'
+            elif interpolated_energy >= MAINTENANCE_THRESHOLD:
+                zone = 'maintenance'
+            else:
+                zone = 'recovery'
+
+            return round(interpolated_energy), zone
+
+        # No surrounding blocks - use defaults based on time of day
+        hour = slot_minutes // 60
+
+        if hour < 6:  # Early morning (00:00-06:00)
+            return DEFAULT_EARLY_MORNING, 'recovery'
+        elif hour >= 22:  # Late night (22:00-24:00)
+            return DEFAULT_LATE_NIGHT, 'recovery'
+        else:  # Daytime unspecified
+            return DEFAULT_UNSPECIFIED, 'maintenance'
+
+    # Generate all 96 slots
+    timeline = []
+    for slot_index in range(96):
+        slot_minutes = slot_index * 15
+        hour = slot_minutes // 60
+        minute = slot_minutes % 60
+
+        time_str = f"{hour:02d}:{minute:02d}"
+        energy_level, zone = get_energy_for_slot(slot_minutes)
+
+        timeline.append({
+            "time": time_str,
+            "energy_level": energy_level,
+            "slot_index": slot_index,
+            "zone": zone
+        })
+
+    # Generate human-readable summary
+    def find_continuous_periods(timeline_data: list, zone_filter: str) -> List[str]:
+        """Find continuous periods of a specific zone"""
+        periods = []
+        start_idx = None
+
+        for i, slot in enumerate(timeline_data):
+            if slot['zone'] == zone_filter:
+                if start_idx is None:
+                    start_idx = i
+            else:
+                if start_idx is not None:
+                    # Period ended
+                    start_time = timeline_data[start_idx]['time']
+                    end_time = timeline_data[i-1]['time']
+                    periods.append(f"{start_time}-{end_time}")
+                    start_idx = None
+
+        # Handle case where period extends to end of day
+        if start_idx is not None:
+            start_time = timeline_data[start_idx]['time']
+            end_time = timeline_data[-1]['time']
+            periods.append(f"{start_time}-{end_time}")
+
+        return periods
+
+    peak_periods = find_continuous_periods(timeline, 'peak')
+    maintenance_periods = find_continuous_periods(timeline, 'maintenance')
+    low_periods = find_continuous_periods(timeline, 'recovery')
+
+    # Calculate total minutes per zone
+    total_peak = sum(1 for slot in timeline if slot['zone'] == 'peak') * 15
+    total_maintenance = sum(1 for slot in timeline if slot['zone'] == 'maintenance') * 15
+    total_recovery = sum(1 for slot in timeline if slot['zone'] == 'recovery') * 15
+
+    # Find optimal wake/sleep windows from timeline
+    # Wake: First sustained rise above 50
+    wake_window = None
+    for i in range(len(timeline) - 3):
+        if all(timeline[i+j]['energy_level'] > 50 for j in range(3)):
+            wake_start = timeline[i]['time']
+            wake_end = timeline[min(i+4, 95)]['time']
+            wake_window = f"{wake_start}-{wake_end}"
+            break
+
+    # Sleep: First sustained drop below 35 (starting from 15:00 onwards)
+    sleep_window = None
+    for i in range(60, len(timeline) - 3):
+        if all(timeline[i+j]['energy_level'] < 35 for j in range(3)):
+            sleep_start = timeline[max(0, i-4)]['time']
+            sleep_end = timeline[i]['time']
+            sleep_window = f"{sleep_start}-{sleep_end}"
+            break
+
+    summary = {
+        "optimal_wake_window": wake_window or "06:30-07:30",
+        "peak_energy_periods": peak_periods,
+        "maintenance_periods": maintenance_periods,
+        "low_energy_periods": low_periods,
+        "optimal_sleep_window": sleep_window or "22:00-23:00",
+        "total_peak_minutes": total_peak,
+        "total_maintenance_minutes": total_maintenance,
+        "total_recovery_minutes": total_recovery
+    }
+
+    metadata = {
+        "total_slots": 96,
+        "slot_duration_minutes": 15,
+        "interpolation_method": "linear",
+        "default_energy_levels": {
+            "early_morning": DEFAULT_EARLY_MORNING,
+            "late_night": DEFAULT_LATE_NIGHT,
+            "unspecified_periods": DEFAULT_UNSPECIFIED
+        },
+        "zone_thresholds": {
+            "peak": PEAK_THRESHOLD,
+            "maintenance": MAINTENANCE_THRESHOLD,
+            "recovery": MAINTENANCE_THRESHOLD
+        }
+    }
+
+    return {
+        "energy_timeline": timeline,
+        "summary": summary,
+        "timeline_metadata": metadata
+    }
 
 async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) -> dict:
     """
@@ -2714,7 +3012,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
         
         # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
         if not force_refresh:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
             from services.ondemand_analysis_service import get_ondemand_service
             
             memory_service = HolisticMemoryService()
@@ -2806,7 +3104,7 @@ async def get_or_create_shared_behavior_analysis(user_id: str, archetype: str, f
 async def get_cached_behavior_analysis_from_memory(user_id: str) -> dict:
     """Retrieve cached behavior analysis from memory system"""
     try:
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
+        # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
         memory_service = HolisticMemoryService()
         
         # Get latest behavior analysis specifically from memory
@@ -2854,59 +3152,27 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
             pass
             return cached_result
 
-        # ENHANCED THRESHOLD CHECK: Additional safety before proceeding
-        if not force_refresh:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
-            from services.ondemand_analysis_service import get_ondemand_service
-
-            memory_service = HolisticMemoryService()
-            try:
-                # Get most recent circadian analysis for this archetype
-                recent_analyses = await memory_service.get_analysis_history(
-                    user_id,
-                    analysis_type="circadian_analysis",
-                    archetype=archetype,
-                    limit=1
-                )
-
-                if recent_analyses:
-                    latest_analysis = recent_analyses[0]
-
-                    # Check if threshold exceeded SINCE this analysis was created
-                    ondemand_service = await get_ondemand_service()
-                    new_data_since_analysis = await ondemand_service._count_new_data_points(
-                        user_id, latest_analysis.created_at
-                    )
-
-                    # If threshold not exceeded since last analysis, reuse it
-                    if new_data_since_analysis < 50:  # Threshold not met
-                        pass
-
-                        # Result already cached in database - no additional caching needed
-
-                        return latest_analysis.analysis_result
-
-                await memory_service.cleanup()
-
-            except Exception as threshold_error:
-                pass
-                # Continue with fresh analysis on error
-
-        # FRESH ANALYSIS: Threshold exceeded or force_refresh requested
+        # FRESH ANALYSIS: Proceed with threshold check via OnDemandAnalysisService
         pass
         pass
         print(f"   🧠 [MEMORY] Integrating 4-layer memory system for personalized analysis")
 
         # Use OnDemandAnalysisService to get proper metadata
-        from services.ondemand_analysis_service import get_ondemand_service
+        from services.ondemand_analysis_service import get_ondemand_service, AnalysisDecision
         ondemand_service = await get_ondemand_service()
-        should_run, ondemand_metadata = await ondemand_service.should_run_analysis(
-            user_id, force_refresh=force_refresh
+        decision, ondemand_metadata = await ondemand_service.should_run_analysis(
+            user_id,
+            force_refresh=force_refresh,
+            requested_archetype=archetype,
+            analysis_type="circadian_analysis"  # Track circadian separately
         )
 
-        if not should_run and not force_refresh:
-            pass
-            return {"status": "skipped", "reason": "threshold_not_met", "circadian_analysis": {}}
+        # Check if we should skip (threshold not met)
+        if decision == AnalysisDecision.MEMORY_ENHANCED_CACHE and not force_refresh:
+            logger.info(f"⏭️  [CIRCADIAN_THRESHOLD] Skipping circadian analysis - threshold not met for {user_id[:8]}... + {archetype}")
+            logger.info(f"   Reason: {ondemand_metadata.get('reason', 'insufficient new data')}")
+            logger.info(f"   New data points: {ondemand_metadata.get('new_data_points', 0)}, Threshold: {ondemand_metadata.get('threshold_used', 50)}")
+            return {"status": "skipped", "reason": "threshold_not_met", "circadian_analysis": {}, "metadata": ondemand_metadata}
 
         # Run memory-enhanced circadian analysis
         circadian_result = await run_memory_enhanced_circadian_analysis(user_id, archetype)
@@ -2921,7 +3187,7 @@ async def get_or_create_shared_circadian_analysis(user_id: str, archetype: str, 
 
     except Exception as e:
         print(f"❌ [SHARED_CIRCADIAN] Error in shared circadian analysis: {e}")
-        await enhanced_deduplicator.mark_request_failed(user_id, archetype, "circadian_analysis")
+        enhanced_deduplicator.mark_request_complete(user_id, archetype, "circadian_analysis")
         return {"status": "error", "error": str(e), "circadian_analysis": {}}
 
 
@@ -3175,24 +3441,23 @@ async def log_complete_analysis(agent_type: str, user_id: str, archetype: str,
 
 async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -> dict:
     """
-    Memory-Enhanced Circadian Analysis - Following same pattern as behavior analysis
+    AI Context-Enhanced Circadian Analysis - Uses AIContextIntegrationService
     Features:
-    - Memory context preparation using MemoryIntegrationService
-    - Memory-enhanced circadian prompt generation
-    - Storing circadian analysis results in memory tables
-    - Updating user memory profile with circadian insights
+    - AI context preparation using AIContextIntegrationService
+    - Context-enhanced circadian prompt generation
+    - Storing circadian analysis results in holistic_analysis_results table
     - Complete logging of circadian analysis data
     """
     try:
 
-        # Import memory integration service
-        from services.memory_integration_service import MemoryIntegrationService
+        # Import AI context integration service
+        from services.ai_context_integration_service import AIContextIntegrationService
 
-        # Initialize memory integration service
-        memory_service = MemoryIntegrationService()
+        # Initialize AI context service
+        context_service = AIContextIntegrationService()
 
-        # Step 1: Prepare memory-enhanced context
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
+        # Step 1: Prepare AI context-enhanced analysis context
+        memory_context = await context_service.prepare_memory_enhanced_context(user_id, None, archetype)
 
         # Step 2: Get user data for circadian analysis (need more days for pattern recognition)
         from services.user_data_service import UserDataService
@@ -3205,13 +3470,11 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
 
         # # Production: Verbose print removed  # Commented for error-only mode
 
-        # Step 3: Get and enhance system prompt with memory
+        # Step 3: Get and enhance system prompt with AI context
         system_prompt = get_system_prompt("circadian_analysis")  # Will use default if not exists
-        enhanced_prompt = await memory_service.enhance_agent_prompt(
+        enhanced_prompt = await context_service.enhance_agent_prompt(
             system_prompt, memory_context, "circadian_analysis"
         )
-
-        # print(f"🧠 [CIRCADIAN_ENHANCED] Enhanced circadian prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
 
         # Step 4: Format user context for AI analysis
         user_context_summary = await format_health_data_for_ai(user_context)
@@ -3219,72 +3482,74 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         # Step 5: Run AI-powered circadian analysis
         analysis_result = await run_circadian_analysis_gpt4o(enhanced_prompt, user_context_summary)
 
-        # Step 6: Store analysis results in memory for future personalization (optional)
+        # Step 5.5: Generate 96-slot energy timeline from GPT-4o output
         try:
-            await memory_service.store_analysis_insights(
-                user_id, "circadian_analysis", analysis_result, memory_context
-            )
-            pass
-        except Exception as insights_error:
-            pass
+            timeline_data = _generate_energy_timeline_from_analysis(analysis_result)
 
-        # Step 7: Update user memory profile with circadian insights (optional)
+            # Merge timeline into analysis result
+            analysis_result['energy_timeline'] = timeline_data['energy_timeline']
+            analysis_result['summary'] = timeline_data['summary']
+            analysis_result['timeline_metadata'] = timeline_data['timeline_metadata']
+
+            logger.info(f"Generated {len(timeline_data['energy_timeline'])} energy timeline slots")
+        except Exception as timeline_error:
+            logger.error(f"Failed to generate energy timeline: {timeline_error}")
+            # Continue without timeline - graceful degradation
+            analysis_result['energy_timeline'] = []
+            analysis_result['summary'] = {}
+            analysis_result['timeline_metadata'] = {}
+
+        # Step 6: Store analysis results (now includes timeline) in holistic_analysis_results table
+        storage_success = False
         try:
-            await memory_service.update_user_memory_profile(
-                user_id, {}, analysis_result, {}
-            )
-            pass
-        except Exception as memory_error:
-            pass
+            # Convert data_quality to dict if it's a Pydantic model
+            data_quality_dict = data_quality.dict() if hasattr(data_quality, 'dict') else data_quality
 
-        # Step 8: Store complete analysis in HolisticMemoryService
-        from services.agents.memory.holistic_memory_service import HolisticMemoryService
-        holistic_memory = HolisticMemoryService()
-
-        # Convert data_quality to dict if it's a Pydantic model
-        data_quality_dict = data_quality.dict() if hasattr(data_quality, 'dict') else data_quality
-
-        complete_analysis = {
-            "analysis_result": analysis_result,
-            "user_context": {
-                "data_summary": {
-                    "scores_count": len(user_context.scores) if hasattr(user_context, 'scores') else 0,
-                    "biomarkers_count": len(user_context.biomarkers) if hasattr(user_context, 'biomarkers') else 0,
-                    "date_range": str(user_context.date_range) if hasattr(user_context, 'date_range') else "unknown"
-                }
-            } if user_context else None,
-            "memory_context": {
-                "analysis_mode": memory_context.analysis_mode,
-                "days_to_fetch": memory_context.days_to_fetch,
-                "personalized_focus_areas": memory_context.personalized_focus_areas,
-                "created_at": memory_context.created_at.isoformat() if hasattr(memory_context, 'created_at') and memory_context.created_at else None
-            } if memory_context else None,
-            "data_quality": data_quality_dict,
-            "enhanced_prompt_length": len(enhanced_prompt),
-            "analysis_type": "memory_enhanced_circadian",
-            "timestamp": datetime.now().isoformat()
-        }
-
-        # Try to store analysis result, but don't fail if storage has issues
-        try:
-            # Convert complete_analysis to JSON and back to handle any remaining serialization issues
-            import json
-            serializable_analysis = json.loads(json.dumps(complete_analysis, default=str))
-
-            await holistic_memory.store_analysis_result(
+            storage_result = await context_service.store_analysis_insights(
                 user_id=user_id,
                 analysis_type="circadian_analysis",
-                analysis_result=serializable_analysis,
-                archetype_used=archetype
+                analysis_result=analysis_result,  # Now includes energy_timeline
+                archetype=archetype
             )
-            pass
-        except Exception as storage_error:
-            pass
 
-        try:
-            await holistic_memory.cleanup()
-        except Exception as cleanup_error:
-            pass
+            if storage_result:
+                storage_success = True
+                logger.info(f"✅ [CIRCADIAN_STORAGE] Stored circadian analysis to holistic_analysis_results for {user_id[:8]}... + {archetype}")
+            else:
+                logger.error(f"❌ [CIRCADIAN_STORAGE] Storage returned False for {user_id[:8]}... + {archetype}")
+
+        except Exception as storage_error:
+            logger.error(f"❌ [CIRCADIAN_STORAGE] Exception storing circadian analysis: {storage_error}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Continue execution - analysis was successful even if storage failed
+
+        # Step 7: Update archetype_analysis_tracking (only if storage succeeded)
+        if storage_success:
+            try:
+                from services.archetype_analysis_tracker import get_archetype_tracker
+                tracker = await get_archetype_tracker()
+
+                # Update last analysis timestamp for this user+archetype+analysis_type
+                tracking_success = await tracker.update_last_analysis_date(
+                    user_id=user_id,
+                    archetype=archetype,
+                    analysis_date=datetime.now(timezone.utc),
+                    analysis_type="circadian_analysis"  # Track circadian separately from behavior
+                )
+
+                if tracking_success:
+                    logger.info(f"✅ [ARCHETYPE_TRACKING] Updated archetype_analysis_tracking for {user_id[:8]}... + {archetype} + circadian_analysis")
+                else:
+                    logger.warning(f"⚠️  [ARCHETYPE_TRACKING] Failed to update tracking (non-critical)")
+
+            except Exception as tracking_error:
+                logger.error(f"❌ [ARCHETYPE_TRACKING] Exception updating tracking: {tracking_error}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                # Non-critical error - continue even if tracking fails
+        else:
+            logger.warning(f"⚠️  [ARCHETYPE_TRACKING] Skipping tracking update - storage failed")
 
         return analysis_result
 
@@ -3371,7 +3636,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         # Step 7: Store complete routine plan in holistic_analysis_results table
         # print(f"💾 [MEMORY_ENHANCED] Storing complete routine plan in database...")  # Commented for error-only mode
         try:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
             holistic_memory = HolisticMemoryService()
             
             # Store the complete routine result
@@ -3506,7 +3771,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         # Step 7: Store complete nutrition plan in holistic_analysis_results table
         # print(f"💾 [MEMORY_ENHANCED] Storing complete nutrition plan in database...")  # Commented for error-only mode
         try:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
             holistic_memory = HolisticMemoryService()
             
             # Store the complete nutrition result
@@ -3568,55 +3833,71 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
 
 
 async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
-    """Run nutrition planning using gpt-4o for plan generation - Phase 3.2"""
+    """Run nutrition planning using gpt-4o - now includes readiness mode"""
     try:
         client = openai.AsyncOpenAI()
-        
+
+        # Extract readiness mode from behavior analysis
+        readiness_level = behavior_analysis.get('readiness_level', 'Medium')
+        mode_mapping = {
+            'Low': 'recovery mode (focus on anti-inflammatory foods, easy-to-digest meals, hydration)',
+            'Medium': 'productive mode (balanced macros, sustained energy, regular meal timing)',
+            'High': 'performance mode (optimized nutrition for peak output, strategic meal timing, nutrient density)'
+        }
+        mode_description = mode_mapping.get(readiness_level, 'balanced nutrition')
+
         response = await client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
-                    "role": "system", 
-                    "content": f"{system_prompt}\n\nYou are a nutrition planning expert. Create detailed, practical nutrition plans based on health data and behavioral insights."
+                    "role": "system",
+                    "content": f"{system_prompt}\n\nYou are a nutrition planning expert. Create detailed, practical nutrition plans based on health data, behavioral insights, and readiness status."
                 },
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": f"""
 {user_context}
 
 BEHAVIORAL INSIGHTS:
 {json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
+READINESS MODE: {readiness_level} - {mode_description}
+
 Create a comprehensive {archetype} nutrition plan for TODAY using the HolisticOS approach.
+Tailor the nutrition strategy to the current readiness mode ({readiness_level}):
+- Performance mode: Higher calories, optimized pre/post-workout nutrition, nutrient timing
+- Productive mode: Balanced meals, sustained energy, consistent meal timing
+- Recovery mode: Anti-inflammatory foods, easy digestion, extra hydration, recovery nutrients
 
 Include the following structure:
-1. **Daily Nutritional Targets** (calories, protein, carbs, fats, fiber, vitamins)
+1. **Daily Nutritional Targets** (calories, protein, carbs, fats, fiber, vitamins) - adjusted for {readiness_level} mode
 2. **7 Meal Blocks** with detailed breakdown:
-   - Early_Morning: Light hydration/preparation
-   - Breakfast: Balanced start with protein and complex carbs
+   - Early_Morning: Hydration/preparation (adjust for readiness mode)
+   - Breakfast: Balanced start (lighter for recovery, more substantial for performance)
    - Morning_Snack: Energy maintenance
    - Lunch: Balanced midday nutrition
    - Afternoon_Snack: Sustained energy
    - Dinner: Recovery and satisfaction
    - Evening_Snack: Sleep preparation
-3. **Nutrition Tips** for each meal explaining timing and composition
+3. **Nutrition Tips** for each meal explaining timing, composition, and readiness mode alignment
 4. **Health Data Integration** - reference the provided health metrics
 
-Make this plan practical, evidence-based, and specifically tailored to the {archetype} archetype and the provided health data patterns.
+Make this plan practical, evidence-based, and specifically tailored to the {archetype} archetype, readiness mode, and health data patterns.
 """
                 }
             ],
-            temperature=0.4,  # Balanced creativity for practical planning
+            temperature=0.4,
             max_tokens=2000
         )
-        
+
         return {
             "date": datetime.now().strftime("%Y-%m-%d"),
             "archetype": archetype,
             "content": response.choices[0].message.content,
             "model_used": "gpt-4o",
             "plan_type": "comprehensive_nutrition",
-            "system": "HolisticOS"
+            "system": "HolisticOS",
+            "readiness_mode": readiness_level
         }
         
     except Exception as e:
@@ -3694,25 +3975,60 @@ Make this routine practical, evidence-based, and specifically tailored to the {a
         }
 
 async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, circadian_analysis: dict = None) -> dict:
-    """Run routine planning using gpt-4o for plan generation - Phase 3.2"""
+    """Run routine planning using gpt-4o - now uses energy_timeline array"""
     try:
         client = openai.AsyncOpenAI()
 
-        # Extract readiness mode and map to descriptions
-        readiness_level = behavior_analysis.get('readiness_level', 'Medium')
-        mode_mapping = {
-            'Low': 'recovery mode (gentle, restorative activities with reduced intensity)',
-            'Medium': 'productive mode (moderate, building activities with steady progress)',
-            'High': 'performance mode (intense, optimization activities with peak output)'
-        }
-        mode_description = mode_mapping.get(readiness_level, 'balanced activities')
+        # Extract readiness mode from circadian analysis (if available) or behavior analysis
+        if circadian_analysis and 'readiness_assessment' in circadian_analysis:
+            readiness_level = circadian_analysis['readiness_assessment'].get('current_mode', 'Productive')
+            mode_description = circadian_analysis['readiness_assessment'].get('mode_description', 'balanced activities')
+        else:
+            # Fallback to behavior analysis
+            readiness_level = behavior_analysis.get('readiness_level', 'Medium')
+            mode_mapping = {
+                'Low': 'recovery mode (gentle, restorative activities with reduced intensity)',
+                'Medium': 'productive mode (moderate, building activities with steady progress)',
+                'High': 'performance mode (intense, optimization activities with peak output)'
+            }
+            mode_description = mode_mapping.get(readiness_level, 'balanced activities')
+
+        # Prepare circadian context for prompt
+        circadian_context = ""
+        if circadian_analysis:
+            # Include both timeline (for precise scheduling) and summary (for quick reference)
+            timeline_available = 'energy_timeline' in circadian_analysis and len(circadian_analysis.get('energy_timeline', [])) > 0
+
+            if timeline_available:
+                circadian_context = f"""
+CIRCADIAN ENERGY DATA:
+
+Energy Timeline (96 time slots, 15-minute intervals):
+Each slot has: time (HH:MM), energy_level (0-100), zone (peak/maintenance/recovery)
+
+Quick Summary:
+- Optimal wake window: {circadian_analysis.get('summary', {}).get('optimal_wake_window', 'N/A')}
+- Peak energy periods: {circadian_analysis.get('summary', {}).get('peak_energy_periods', [])}
+- Maintenance periods: {circadian_analysis.get('summary', {}).get('maintenance_periods', [])}
+- Low energy periods: {circadian_analysis.get('summary', {}).get('low_energy_periods', [])}
+- Optimal sleep window: {circadian_analysis.get('summary', {}).get('optimal_sleep_window', 'N/A')}
+
+Full Energy Timeline:
+{json.dumps(circadian_analysis.get('energy_timeline', []), indent=2, cls=DateTimeEncoder)}
+"""
+            else:
+                # Fallback to old format if timeline not available
+                circadian_context = f"""
+CIRCADIAN RHYTHM DATA:
+{json.dumps(circadian_analysis, indent=2, cls=DateTimeEncoder)}
+"""
 
         response = await client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
                     "role": "system",
-                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, and archetype frameworks."
+                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks."
                 },
                 {
                     "role": "user",
@@ -3722,29 +4038,41 @@ async def run_routine_planning_4o(system_prompt: str, user_context: str, behavio
 BEHAVIORAL INSIGHTS:
 {json.dumps(behavior_analysis, indent=2, cls=DateTimeEncoder)}
 
-{f"CIRCADIAN RHYTHM DATA:{chr(10)}{json.dumps(circadian_analysis, indent=2, cls=DateTimeEncoder)}{chr(10)}" if circadian_analysis else ""}
+{circadian_context}
 
 READINESS MODE: {readiness_level} - {mode_description}
 
 INSTRUCTIONS:
 Create a {archetype} routine plan for TODAY with 4 time blocks.
 
-Extract specific time ranges from the circadian data and format each block as:
-**Block Name (Specific Time Range): Purpose**
+ENERGY TIMELINE ANALYSIS:
+If energy_timeline is available, use it to find optimal time windows:
+- Each slot has: time (HH:MM format), energy_level (0-100), zone (peak/maintenance/recovery)
+- Peak zones (energy >= 75): Best for high-intensity workouts, important meetings, challenging tasks
+- Maintenance zones (energy 50-74): Good for moderate activities, routine tasks, steady work
+- Recovery zones (energy < 50): Best for light activities, rest, low-intensity tasks
 
-Time block mapping:
-- Morning block: Use the exact optimal_wake_time range from circadian data
-- Peak block: Use the exact peak_energy_window range from circadian data
-- Afternoon block: Use maintenance_energy_window range, avoid low_energy_window
-- Evening block: End 1-2 hours before optimal_sleep_time
+YOUR TASK:
+1. Analyze the energy_timeline to identify optimal time windows
+2. Find peak energy periods (consecutive "peak" zone slots)
+3. Identify low energy periods to avoid scheduling demanding tasks
+4. Match activity intensity to readiness mode ({readiness_level})
 
-Format: "**Morning Wake-up (6:30-7:30 AM): Foundation Setting**" (example format)
+Create 4 time blocks:
+- Morning block: Start at optimal wake time (first sustained energy rise)
+- Peak block: Use longest consecutive "peak" zone period for high-intensity activities
+- Afternoon block: Use "maintenance" zones, avoid "recovery" zones
+- Evening block: Wind-down period starting when energy drops below 40
 
-Include specific time ranges, tasks, and reasoning for each block.
+Format each block as: "**Block Name (HH:MM-HH:MM): Purpose**"
+Example: "**Peak Performance (08:30-10:15): High-Intensity Workout**"
+
+Include specific tasks, reasoning, and timing for each block.
+Match activity intensity to current readiness mode.
 """
                 }
             ],
-            temperature=0.4,  # Balanced creativity for practical planning
+            temperature=0.4,
             max_tokens=2000
         )
         
@@ -3754,13 +4082,14 @@ Include specific time ranges, tasks, and reasoning for each block.
             "content": response.choices[0].message.content,
             "model_used": "gpt-4o",
             "plan_type": "comprehensive_routine",
-            "system": "HolisticOS"
+            "system": "HolisticOS",
+            "readiness_mode": readiness_level
         }
-        
+
     except Exception as e:
-        print(f"Error in 4o routine planning: {e}")
+        logger.error(f"Error in routine planning: {e}")
         return {
-            "error": str(e), 
+            "error": str(e),
             "model_used": "gpt-4o - fallback",
             "archetype": archetype,
             "date": datetime.now().strftime("%Y-%m-%d")
@@ -3831,7 +4160,7 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         # Step 7: Store complete routine plan in holistic_analysis_results table
         # print(f"💾 [MEMORY_ENHANCED] Storing complete routine plan in database...")  # Commented for error-only mode
         try:
-            from services.agents.memory.holistic_memory_service import HolisticMemoryService
+            # HolisticMemoryService removed - functionality replaced by AIContextIntegrationService
             holistic_memory = HolisticMemoryService()
             
             # Store the complete routine result

@@ -57,17 +57,24 @@ class OnDemandAnalysisService:
             return False
     
     async def should_run_analysis(
-        self, 
-        user_id: str, 
+        self,
+        user_id: str,
         force_refresh: bool = False,
-        requested_archetype: str = None
+        requested_archetype: str = None,
+        analysis_type: str = "behavior_analysis"
     ) -> Tuple[AnalysisDecision, Dict[str, Any]]:
         """
-        Determine if fresh behavior analysis should run
-        
+        Determine if fresh analysis should run (behavior or circadian)
+
         CRITICAL: This method must be called BEFORE any data fetching or timestamp updates
         to avoid race conditions in threshold detection.
-        
+
+        Args:
+            user_id: User identifier
+            force_refresh: Force fresh analysis regardless of threshold
+            requested_archetype: Archetype to check (e.g., "Foundation Builder")
+            analysis_type: Type of analysis ("behavior_analysis" or "circadian_analysis")
+
         Returns:
             (decision, metadata) where metadata contains:
             - new_data_points: count of new data
@@ -106,10 +113,11 @@ class OnDemandAnalysisService:
                     archetype_tracker = await get_archetype_tracker()
                     
                     last_analysis, timestamp_source = await archetype_tracker.get_last_analysis_date_with_fallback(
-                        user_id, requested_archetype
+                        user_id, requested_archetype, analysis_type
                     )
-                    
+
                     metadata["timestamp_source"] = timestamp_source
+                    metadata["analysis_type"] = analysis_type
                     
                 except Exception as e:
                     logger.warning(f"[ONDEMAND] Archetype tracker failed, using global fallback: {e}")
