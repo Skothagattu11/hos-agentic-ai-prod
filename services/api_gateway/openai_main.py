@@ -278,6 +278,17 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate Energy Zones Service endpoints: {e}")
 
+# 🤖 HOLISTIC INTEGRATION ENDPOINTS (for holistic-ai conversational service)
+try:
+    from holistic_integration import router as holistic_integration_router
+    app.include_router(holistic_integration_router)
+    pass
+    # Endpoints available for conversational AI service
+except ImportError as e:
+    pass  # Holistic Integration endpoints not available
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate Holistic Integration endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 

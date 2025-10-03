@@ -84,15 +84,20 @@ class SupabaseAsyncPGAdapter:
                 await db_pool.initialize(self.database_url)
                 self._connected = True
                 logger.debug("✅ Connected via database connection pool")
+
+                # Also initialize Supabase client as fallback for development mode
+                if self.supabase_url and self.supabase_key:
+                    self.client = create_client(self.supabase_url, self.supabase_key)
+                    logger.debug("✅ Supabase client initialized as fallback")
             else:
                 logger.debug("Attempting Supabase client connection...")
                 logger.debug(f"URL: {self.supabase_url[:30]}..." if self.supabase_url else "URL: None")
                 logger.debug(f"Key: {'Present' if self.supabase_key else 'Missing'}")
-                
+
                 self.client = create_client(self.supabase_url, self.supabase_key)
                 self._connected = True
                 logger.debug(f"✅ Connected to Supabase successfully - client type: {type(self.client)}")
-            
+
             return self
         except Exception as e:
             logger.error(f"Connection failed: {e}")
@@ -224,14 +229,26 @@ class SupabaseAsyncPGAdapter:
         Returns list of dictionaries like asyncpg
         """
         self._ensure_connected()
-        
+
         try:
             # Use connection pool for direct PostgreSQL queries if available
             if self.use_connection_pool:
                 return await self._fetch_with_pool(query, args)
             else:
                 return await self._fetch_with_supabase_client(query, args)
-                
+
+        except DatabaseException as e:
+            # If connection pool fails in development mode, fall back to Supabase REST API
+            error_msg = str(e)
+            if (self.use_connection_pool and
+                "Development mode: Using Supabase client fallback" in error_msg and
+                self.client is not None):
+                logger.debug("Connection pool unavailable in dev mode, falling back to Supabase client for fetch")
+                return await self._fetch_with_supabase_client(query, args)
+            else:
+                # For any other DatabaseException, preserve original behavior
+                logger.error(f"Query fetch failed: {e}")
+                raise DatabaseException(f"Database query failed: {e}")
         except Exception as e:
             logger.error(f"Query fetch failed: {e}")
             if self.use_connection_pool:
@@ -247,29 +264,40 @@ class SupabaseAsyncPGAdapter:
             # Convert asyncpg Records to dictionaries
             return [dict(record) for record in results]
         except Exception as e:
-            logger.error(f"Pool query failed: {query[:100]}... Error: {e}")
+            # Log as debug in development mode (fallback is expected)
+            if "Development mode" in str(e):
+                logger.debug(f"Pool unavailable in dev mode, will use fallback: {e}")
+            else:
+                logger.error(f"Pool query failed: {query[:100]}... Error: {e}")
             raise DatabaseException(f"Database query failed: {e}")
     
     async def _fetch_with_supabase_client(self, query: str, args: tuple) -> List[Dict[str, Any]]:
         """Execute SELECT query using Supabase client"""
-        parsed_query = self._parse_query(query, args)
+        # Parse query WITHOUT substituting parameters (to avoid escaping issues)
+        parsed_query = self._parse_query_structure(query)
         self._validate_query(parsed_query, 'SELECT')
-        
+
         # Handle COUNT queries specially
         if 'COUNT' in query.upper():
             return await self._handle_count_query(parsed_query, args)
-        
+
         # Build Supabase query
         supabase_query = self.client.table(parsed_query['table']).select(parsed_query['columns'])
         
-        # Add WHERE clause if present
-        # Apply WHERE conditions
+        # Add WHERE clause if present - use raw args to avoid escaping issues
+        # Apply WHERE conditions with proper parameter substitution
         if parsed_query.get('where_conditions'):
             for condition in parsed_query['where_conditions']:
                 column = condition['column']
                 operator = condition['operator']
-                value = condition['value']
-                
+                param_index = condition.get('param_index')
+
+                # Use raw arg value if parameter placeholder was used
+                if param_index is not None and param_index < len(args):
+                    value = args[param_index]
+                else:
+                    value = condition['value']
+
                 if operator == 'eq':
                     supabase_query = supabase_query.eq(column, value)
                 elif operator == 'gte':
@@ -299,7 +327,7 @@ class SupabaseAsyncPGAdapter:
         Returns dictionary or None like asyncpg
         """
         self._ensure_connected()
-        
+
         try:
             if self.use_connection_pool:
                 # Use connection pool for direct PostgreSQL queries
@@ -309,9 +337,22 @@ class SupabaseAsyncPGAdapter:
                 # Handle INSERT with RETURNING specially for Supabase client
                 if 'INSERT' in query.upper() and 'RETURNING' in query.upper():
                     return await self._handle_insert_returning(query, args)
-                
+
                 rows = await self.fetch(query, *args)
                 return rows[0] if rows else None
+        except DatabaseException as e:
+            # If connection pool fails in development mode, fall back to Supabase REST API
+            error_msg = str(e)
+            if (self.use_connection_pool and
+                "Development mode: Using Supabase client fallback" in error_msg and
+                self.client is not None):
+                logger.debug("Connection pool unavailable in dev mode, falling back to Supabase client")
+                rows = await self._fetch_with_supabase_client(query, args)
+                return rows[0] if rows else None
+            else:
+                # For any other DatabaseException, preserve original behavior
+                logger.error(f"Query fetchrow failed: {e}")
+                raise DatabaseException(f"Database fetchrow failed: {e}")
         except Exception as e:
             logger.error(f"Query fetchrow failed: {e}")
             if self.use_connection_pool:
@@ -332,6 +373,131 @@ class SupabaseAsyncPGAdapter:
         except Exception as e:
             print(f"[❌] Query fetchval failed: {e}")
             raise
+
+    def _parse_query_structure(self, query: str) -> Dict[str, Any]:
+        """
+        Parse SQL query structure WITHOUT substituting parameters
+        This avoids quote escaping issues when using Supabase REST API
+        """
+        import re
+
+        query = query.strip()
+        query_upper = query.upper()
+        result = {}
+
+        # Parse SELECT queries
+        if query_upper.startswith('SELECT'):
+            result['operation'] = 'SELECT'
+
+            # Extract columns
+            from_pos = query_upper.find(' FROM ')
+            if from_pos == -1:
+                return result
+
+            columns_part = query[6:from_pos].strip()  # Skip "SELECT"
+            result['columns'] = columns_part if columns_part != '*' else '*'
+
+            # Extract table name
+            table_start = from_pos + 6
+            table_end = self._find_next_keyword_pos(query_upper, table_start,
+                                                    [' WHERE ', ' ORDER BY ', ' LIMIT ', ' GROUP BY '])
+            result['table'] = query[table_start:table_end].strip()
+
+            # Extract WHERE clause with parameter placeholders
+            where_pos = query_upper.find(' WHERE ')
+            if where_pos != -1:
+                where_start = where_pos + 7
+                where_end = self._find_next_keyword_pos(query_upper, where_start,
+                                                        [' ORDER BY ', ' LIMIT ', ' GROUP BY '])
+                where_clause = query[where_start:where_end].strip()
+                result['where_conditions'] = self._parse_where_with_params(where_clause)
+
+            # Extract ORDER BY
+            order_pos = query_upper.find(' ORDER BY ')
+            if order_pos != -1:
+                order_start = order_pos + 10
+                order_end = self._find_next_keyword_pos(query_upper, order_start, [' LIMIT ', ' GROUP BY '])
+                order_clause = query[order_start:order_end].strip()
+
+                # Parse ORDER BY - get first column and direction
+                order_parts = order_clause.split(',')[0].strip()
+                is_desc = 'DESC' in order_parts.upper()
+
+                # Extract column name
+                column_match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*)', order_parts)
+                if column_match:
+                    column_name = column_match.group(1).lower()
+                    result['order_by'] = {
+                        'column': column_name,
+                        'desc': is_desc
+                    }
+
+            # Extract LIMIT
+            limit_pos = query_upper.find(' LIMIT ')
+            if limit_pos != -1:
+                limit_end = self._find_next_keyword_pos(query_upper, limit_pos, [' GROUP BY ', ' ORDER BY '])
+                limit_value = query[limit_pos + 7:limit_end].strip()
+                try:
+                    result['limit'] = int(limit_value)
+                except ValueError:
+                    pass
+
+        return result
+
+    def _parse_where_with_params(self, where_clause: str) -> list:
+        """
+        Parse WHERE clause keeping parameter placeholders ($1, $2, etc.)
+        Returns conditions with param_index for later substitution
+        """
+        import re
+        conditions = []
+
+        # Split by AND
+        and_parts = where_clause.split(' AND ')
+
+        for part in and_parts:
+            part = part.strip()
+            if not part:
+                continue
+
+            # Match pattern: column operator value/placeholder
+            # Handle >=, <=, =
+            if '>=' in part:
+                column, value = part.split('>=', 1)
+                operator = 'gte'
+            elif '<=' in part:
+                column, value = part.split('<=', 1)
+                operator = 'lte'
+            elif '=' in part:
+                column, value = part.split('=', 1)
+                operator = 'eq'
+            else:
+                continue
+
+            column = column.strip()
+            value = value.strip()
+
+            # Check if value is a parameter placeholder
+            param_match = re.match(r'\$(\d+)', value)
+            if param_match:
+                param_index = int(param_match.group(1)) - 1  # Convert to 0-based index
+                conditions.append({
+                    'column': column,
+                    'operator': operator,
+                    'param_index': param_index,
+                    'value': None  # Will be filled from args
+                })
+            else:
+                # Literal value - clean quotes
+                clean_value = value.strip("'\"")
+                conditions.append({
+                    'column': column,
+                    'operator': operator,
+                    'param_index': None,
+                    'value': clean_value
+                })
+
+        return conditions
 
     def _parse_query(self, query: str, args: tuple) -> Dict[str, Any]:
         """
