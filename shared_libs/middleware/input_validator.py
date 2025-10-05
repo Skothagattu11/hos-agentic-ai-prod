@@ -15,53 +15,16 @@ logger = logging.getLogger(__name__)
 
 async def validate_request_middleware(request: Request, call_next: Callable) -> Any:
     """
-    Middleware to validate and sanitize incoming requests
-    Only performs basic security checks without breaking existing functionality
+    Lightweight validation middleware - only validates path params and headers
+    Body validation is handled by Pydantic models in endpoint handlers
     """
-    
+
     # Skip validation for health checks and static routes
-    if request.url.path in ["/", "/api/health", "/metrics", "/debug/openapi"]:
+    if request.url.path in ["/", "/api/health", "/metrics", "/debug/openapi", "/openapi.json"]:
         return await call_next(request)
-    
-    # Skip validation for GET requests (read-only)
-    if request.method == "GET":
-        return await call_next(request)
-    
+
     try:
-        # Only validate POST requests with JSON body
-        if request.method in ["POST", "PUT"] and "application/json" in request.headers.get("content-type", ""):
-            
-            # Read the request body
-            body = await request.body()
-            
-            if body:
-                try:
-                    # Parse JSON to validate structure
-                    json_data = json.loads(body)
-                    
-                    # Basic security validation
-                    if not _is_request_safe(json_data):
-                        logger.warning(f"Potentially unsafe request detected: {request.url.path}")
-                        return JSONResponse(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            content={"error": "Invalid request format"}
-                        )
-                    
-                    # Sanitize the data (but don't replace the original request)
-                    sanitized_data = sanitize_input(json_data)
-                    
-                    # Log if sanitization changed anything (for monitoring)
-                    if sanitized_data != json_data:
-                        logger.info(f"Request sanitized for path: {request.url.path}")
-                    
-                except json.JSONDecodeError:
-                    logger.warning(f"Invalid JSON in request: {request.url.path}")
-                    return JSONResponse(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        content={"error": "Invalid JSON format"}
-                    )
-        
-        # Validate path parameters (user_id, etc.)
+        # Validate path parameters (user_id, etc.) - safe to do, doesn't consume body
         if "user_id" in request.path_params:
             user_id = request.path_params["user_id"]
             if not _is_valid_user_id(user_id):
@@ -70,13 +33,22 @@ async def validate_request_middleware(request: Request, call_next: Callable) -> 
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={"error": "Invalid user ID format"}
                 )
-        
-        # Continue with the request
+
+        # Validate headers for potential injection attacks
+        for header_name, header_value in request.headers.items():
+            if not _is_safe_header(header_name, header_value):
+                logger.warning(f"Potentially unsafe header detected: {header_name}")
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": "Invalid request headers"}
+                )
+
+        # Continue with the request - body will be validated by Pydantic models
         response = await call_next(request)
         return response
-        
+
     except Exception as e:
-        logger.error(f"Error in input validation middleware: {e}")
+        logger.error(f"Error in input validation middleware: {e}", exc_info=True)
         # Don't break the request if validation fails
         return await call_next(request)
 
@@ -108,6 +80,26 @@ def _is_valid_user_id(user_id: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _is_safe_header(name: str, value: str) -> bool:
+    """Check if header is safe from injection attacks"""
+    if not isinstance(name, str) or not isinstance(value, str):
+        return False
+
+    # Check for null bytes
+    if '\x00' in name or '\x00' in value:
+        return False
+
+    # Check for CRLF injection
+    if '\r' in name or '\n' in name or '\r' in value or '\n' in value:
+        return False
+
+    # Basic length check to prevent DOS
+    if len(name) > 256 or len(value) > 8192:
+        return False
+
+    return True
 
 
 # Decorator for additional validation on specific endpoints

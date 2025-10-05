@@ -376,10 +376,13 @@ Focus on building upon proven patterns and avoiding consistently failed strategi
         except Exception as e:
             logger.error(f"Failed to store session context: {e}")
 
-    async def store_analysis_insights(self, user_id: str, analysis_type: str, analysis_result: dict, archetype: str = None) -> bool:
+    async def store_analysis_insights(self, user_id: str, analysis_type: str, analysis_result: dict, archetype: str = None, force_new_record: bool = False) -> bool:
         """
         Store analysis insights in holistic_analysis_results table
         Maintains compatibility with the original memory service interface
+
+        Args:
+            force_new_record: If True, always create new record (skip UPSERT logic for routine_plan)
         """
         try:
             # Import database service - use Supabase client without connection pool for development
@@ -417,7 +420,8 @@ Focus on building upon proven patterns and avoiding consistently failed strategi
                 input_summary_json = "{}"
 
             # For routine_plan, use UPSERT to update today's plan instead of creating duplicates
-            if analysis_type == "routine_plan":
+            # Unless force_new_record=True (e.g., markdown regeneration creates new plan every time)
+            if analysis_type == "routine_plan" and not force_new_record:
                 # Use direct Supabase client for UPSERT (REST API doesn't support complex SQL parsing)
                 if use_pool:
                     # Production: Use PostgreSQL UPSERT
