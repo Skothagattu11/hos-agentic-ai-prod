@@ -1434,12 +1434,30 @@ async def get_latest_nutrition_plan(user_id: str):
         print(f"❌ [NUTRITION_API_ERROR] Failed to get nutrition for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve nutrition plan: {str(e)}")
 
+async def _extract_plan_in_background(analysis_id: str, user_id: str):
+    """Background task to extract plan items from saved analysis"""
+    try:
+        from services.plan_extraction_service import PlanExtractionService
+        extraction_service = PlanExtractionService()
+
+        logger.info(f"📊 [BACKGROUND] Extracting plan for analysis_id: {analysis_id}")
+
+        stored_items = await extraction_service.extract_and_store_plan_items(
+            analysis_result_id=analysis_id,
+            profile_id=user_id
+        )
+
+        logger.info(f"✅ [BACKGROUND] Extraction completed: {len(stored_items)} items stored")
+    except Exception as e:
+        logger.error(f"❌ [BACKGROUND] Extraction failed for {analysis_id}: {e}", exc_info=True)
+
 @app.post("/api/user/{user_id}/routine/regenerate-from-markdown", response_model=MarkdownRegenerationResponse)
 @track_endpoint_metrics("markdown_routine_regeneration") if MONITORING_AVAILABLE else lambda x: x
 async def regenerate_routine_from_markdown(
     user_id: str,
     request: MarkdownRegenerationRequest,
-    http_request: Request
+    http_request: Request,
+    background_tasks: BackgroundTasks
 ):
     """
     Regenerate routine from conversational markdown using existing routine agent
@@ -1530,33 +1548,19 @@ async def regenerate_routine_from_markdown(
         analysis_id = analysis_result.data[0]['id'] if analysis_result.data else None
         logger.info(f"💾 [MARKDOWN_REGEN] Plan stored with analysis_id: {analysis_id}")
 
-        # Trigger extraction (same as regular routine generation)
+        # Trigger extraction in background (non-blocking for faster response)
         extraction_triggered = False
         if analysis_id and routine_plan:
-            try:
-                from services.plan_extraction_service import PlanExtractionService
-                extraction_service = PlanExtractionService()
+            logger.info(f"📊 [MARKDOWN_REGEN] Scheduling background extraction for analysis_id: {analysis_id}")
+            background_tasks.add_task(_extract_plan_in_background, analysis_id, user_id)
+            extraction_triggered = True
 
-                logger.info(f"📊 [MARKDOWN_REGEN] Triggering extraction for analysis_id: {analysis_id}")
-
-                # Use extract_and_store_plan_items - same flow as normal routine generation
-                stored_items = await extraction_service.extract_and_store_plan_items(
-                    analysis_result_id=analysis_id,
-                    profile_id=user_id
-                )
-
-                extraction_triggered = True
-                logger.info(f"✅ [MARKDOWN_REGEN] Extraction completed: {len(stored_items)} items stored")
-
-            except Exception as extraction_error:
-                logger.error(f"⚠️ [MARKDOWN_REGEN] Extraction failed: {extraction_error}", exc_info=True)
-
-        # Create response
+        # Create response (returns immediately, extraction happens in background)
         response = MarkdownRegenerationResponse(
             success=True,
             analysis_id=analysis_id,
             extraction_triggered=extraction_triggered,
-            message="Plan regenerated from markdown successfully"
+            message="Plan saved successfully. Extraction will complete in background."
         )
 
         # COORDINATION: Mark request complete and cache result
