@@ -255,12 +255,12 @@ async def get_analysis_extraction_status(
             .eq("analysis_result_id", analysis_id)\
             .execute()
         
-        # Check plan_items  
+        # Check plan_items
         plan_items_result = supabase.table("plan_items")\
             .select("id, title, time_block")\
             .eq("analysis_result_id", analysis_id)\
             .execute()
-        
+
         return {
             "analysis_result_id": analysis_id,
             "user_id": analysis_result.data['user_id'],
