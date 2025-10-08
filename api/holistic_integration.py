@@ -326,7 +326,12 @@ async def get_circadian_analysis(
                 "energy_zone_analysis": analysis_result.get('energy_zone_analysis', {}),
                 "biomarker_insights": analysis_result.get('biomarker_insights', {}),
                 "schedule_recommendations": analysis_result.get('schedule_recommendations', {}),
-                "integration_recommendations": analysis_result.get('integration_recommendations', {})
+                "integration_recommendations": analysis_result.get('integration_recommendations', {}),
+                # Include full energy timeline for calendar UI
+                "energy_timeline": analysis_result.get('energy_timeline', []),
+                "readiness_assessment": analysis_result.get('readiness_assessment', {}),
+                "timeline_metadata": analysis_result.get('timeline_metadata', {}),
+                "created_at": serialize_datetime(row['created_at'])
             }
         }
 
