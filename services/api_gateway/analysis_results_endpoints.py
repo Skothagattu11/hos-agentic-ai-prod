@@ -233,33 +233,53 @@ async def get_analysis_extraction_status(
 ):
     """
     Check extraction status for a specific analysis result
-    
+
     Returns whether time_blocks and plan_items have been extracted
+
+    OPTIMIZED: Uses parallel async queries to fetch all data at once
     """
     try:
         supabase = get_supabase_client()
-        
-        # Get the analysis
-        analysis_result = supabase.table("holistic_analysis_results")\
-            .select("*")\
-            .eq("id", analysis_id)\
-            .single()\
-            .execute()
-        
+
+        # Parallel async queries using asyncio.gather for speed
+        import asyncio
+
+        async def get_analysis():
+            return await asyncio.to_thread(
+                lambda: supabase.table("holistic_analysis_results")
+                .select("*")
+                .eq("id", analysis_id)
+                .single()
+                .execute()
+            )
+
+        async def get_time_blocks():
+            return await asyncio.to_thread(
+                lambda: supabase.table("time_blocks")
+                .select("id, block_title, time_range, purpose, why_it_matters, connection_to_insights, block_order")
+                .eq("analysis_result_id", analysis_id)
+                .order("block_order")
+                .execute()
+            )
+
+        async def get_plan_items():
+            return await asyncio.to_thread(
+                lambda: supabase.table("plan_items")
+                .select("id, title, scheduled_time, scheduled_end_time, description, task_type, priority_level, time_block_id")
+                .eq("analysis_result_id", analysis_id)
+                .order("scheduled_time")
+                .execute()
+            )
+
+        # Execute all 3 queries in parallel
+        analysis_result, time_blocks_result, plan_items_result = await asyncio.gather(
+            get_analysis(),
+            get_time_blocks(),
+            get_plan_items()
+        )
+
         if not analysis_result.data:
             raise HTTPException(status_code=404, detail=f"Analysis {analysis_id} not found")
-        
-        # Check time_blocks
-        time_blocks_result = supabase.table("time_blocks")\
-            .select("id, block_title, time_range")\
-            .eq("analysis_result_id", analysis_id)\
-            .execute()
-        
-        # Check plan_items
-        plan_items_result = supabase.table("plan_items")\
-            .select("id, title, time_block")\
-            .eq("analysis_result_id", analysis_id)\
-            .execute()
 
         return {
             "analysis_result_id": analysis_id,
@@ -271,16 +291,10 @@ async def get_analysis_extraction_status(
             "extraction_status": {
                 "has_time_blocks": len(time_blocks_result.data) > 0,
                 "time_blocks_count": len(time_blocks_result.data),
-                "time_blocks": [
-                    {"id": tb['id'], "title": tb['block_title'], "time_range": tb['time_range']}
-                    for tb in time_blocks_result.data[:5]  # First 5 for preview
-                ],
+                "time_blocks": time_blocks_result.data,  # Return all blocks with full data
                 "has_plan_items": len(plan_items_result.data) > 0,
                 "plan_items_count": len(plan_items_result.data),
-                "plan_items_preview": [
-                    {"id": pi['id'], "title": pi['title'], "time_block": pi['time_block']}
-                    for pi in plan_items_result.data[:5]  # First 5 for preview
-                ]
+                "plan_items_preview": plan_items_result.data  # Return ALL items (renamed for compatibility)
             },
             "needs_extraction": len(time_blocks_result.data) == 0 and len(plan_items_result.data) == 0
         }

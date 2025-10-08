@@ -29,7 +29,11 @@ class AIPlanExtractionService:
 
     def __init__(self, openai_client=None):
         """Initialize with OpenAI client"""
-        self.client = openai_client or openai.OpenAI()
+        # Configure with AGGRESSIVE timeout settings for fast failure
+        self.client = openai_client or openai.OpenAI(
+            max_retries=1,  # Only retry once (fail fast)
+            timeout=10.0    # 10 second timeout per request (total max: ~20s with retry)
+        )
 
     def _parse_time_string(self, time_str: Optional[str]) -> Optional[time]:
         """Convert HH:MM string to datetime.time object"""
@@ -75,57 +79,42 @@ class AIPlanExtractionService:
     async def _extract_complete_plan_ai(self, content: str, analysis_id: str, archetype: str) -> Dict[str, Any]:
         """Single AI call to extract both time blocks and tasks - efficient and fast"""
 
-        prompt = f"""
-        Extract the complete plan structure from this routine content. Return JSON with this exact format:
+        # OPTIMIZED: Shorter prompt = faster response
+        prompt = f"""Extract plan structure as JSON:
 
-        {{
-          "time_blocks": [
-            {{
-              "title": "Morning Activation (6:30-7:30 AM): Foundation Setting",
-              "time_range": "6:30-7:30 AM",
-              "purpose": "Foundation Setting",
-              "block_order": 1
-            }}
-          ],
-          "tasks": [
-            {{
-              "title": "10-minute mindfulness meditation",
-              "description": "Begin with a 10-minute mindfulness meditation to boost mental clarity",
-              "time_block_order": 1,
-              "scheduled_time": "06:30",
-              "scheduled_end_time": "06:40",
-              "estimated_duration_minutes": 10,
-              "task_type": "wellness",
-              "priority_level": "medium"
-            }}
-          ]
-        }}
+{{
+  "time_blocks": [{{"title": "Zone (time): purpose", "time_range": "HH:MM-HH:MM AM/PM", "purpose": "text", "block_order": 1}}],
+  "tasks": [{{"title": "task", "description": "desc", "time_block_order": 1, "scheduled_time": "HH:MM", "scheduled_end_time": "HH:MM", "estimated_duration_minutes": 30, "task_type": "wellness", "priority_level": "medium"}}]
+}}
 
-        Content to analyze:
-        {content}
+Rules:
+1. Extract time blocks with UNIQUE titles including time range
+2. Extract tasks with 24-hour HH:MM times (06:00 not 6:00 AM)
+3. Link tasks to blocks via time_block_order (1=first block, 2=second, etc)
+4. Only extract explicit times, don't infer
+5. Types: wellness/exercise/nutrition/productivity/recovery
 
-        CRITICAL INSTRUCTIONS:
-        1. Extract ALL time blocks and their individual actionable tasks
-        2. For each task, MUST extract the scheduled_time and scheduled_end_time in HH:MM format (24-hour)
-        3. Look for patterns like "6:00 AM - 6:30 AM" or "6:00-6:30 AM" or "10:00 AM - 11:30 AM"
-        4. Convert to 24-hour format: "6:00 AM" → "06:00", "2:00 PM" → "14:00", "10:00 PM" → "22:00"
-        5. Only extract times that are explicitly specified in the content - do NOT infer, calculate, or generate times
-        6. If no time is specified for a task, leave scheduled_time and scheduled_end_time as null
+Content:
+{content[:3000]}
 
-        Task types: wellness/exercise/nutrition/productivity/recovery
-        Priority levels: low/medium/high
-
-        Return only valid JSON, no explanation.
-        """
+Return JSON only."""
 
         try:
+            import time
+            start_time = time.time()
+
+            # Use gpt-4o-mini - best balance of speed, cost, and quality
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
-                model="gpt-4o-mini",
+                model="gpt-4o-mini",  # Fast, accurate, cost-effective
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
-                temperature=0.1
+                temperature=0.1,
+                max_tokens=2000  # Limit response size for speed
             )
+
+            api_time = time.time() - start_time
+            logger.info(f"⚡ OpenAI API call completed in {api_time:.2f}s")
 
             result = json.loads(response.choices[0].message.content)
 
@@ -140,9 +129,9 @@ class AIPlanExtractionService:
                     title=block_data.get('title', f'Time Block {i}'),
                     time_range=block_data.get('time_range', 'Not specified'),
                     purpose=block_data.get('purpose', 'General activity'),
-                    why_it_matters=None,
-                    connection_to_insights=None,
-                    health_data_integration=None,
+                    why_it_matters=block_data.get('why_it_matters'),
+                    connection_to_insights=block_data.get('connection_to_insights'),
+                    health_data_integration=block_data.get('health_data_integration'),
                     block_order=block_data.get('block_order', i),
                     parent_routine_id=analysis_id,
                     archetype=archetype
@@ -181,14 +170,18 @@ class AIPlanExtractionService:
                 tasks.append(task)
                 global_task_order += 1
 
+            # Extract archetype connection for overall plan context
+            archetype_connection = result.get('archetype_connection')
+
             return {
                 'time_blocks': time_blocks,
-                'tasks': tasks
+                'tasks': tasks,
+                'archetype_connection': archetype_connection
             }
 
         except Exception as e:
             logger.error(f"❌ Single AI extraction failed: {str(e)}")
-            return {'time_blocks': [], 'tasks': []}
+            return {'time_blocks': [], 'tasks': [], 'archetype_connection': None}
 
 
 # Convenience function for easy integration

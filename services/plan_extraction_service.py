@@ -11,7 +11,7 @@ import asyncio
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, time
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from supabase import create_client, Client
 import os
@@ -26,7 +26,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # EXTRACTION METHOD TOGGLE - Simple configuration
-EXTRACTION_METHOD = os.getenv('PLAN_EXTRACTION_METHOD', 'regex')  # 'regex' or 'ai'
+# Regex is FASTER, FREE, and 100% RELIABLE for structured plans
+EXTRACTION_METHOD = os.getenv('PLAN_EXTRACTION_METHOD', 'regex')  # 'regex' or 'ai' - Default: regex (instant)
+
+# Log the extraction method being used
+logger.info(f"🔧 Plan Extraction Method: {EXTRACTION_METHOD} (from env var: {os.getenv('PLAN_EXTRACTION_METHOD', 'NOT SET')})")
 
 # Production logging control - only errors and warnings in production
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
@@ -132,12 +136,30 @@ class PlanExtractionService:
                 logger.warning(f"No extractable content found in analysis result: {analysis_result_id}")
                 return []
             
-            # Extract using normalized approach with time blocks
-            extracted_plan = await self._extract_plan_with_normalized_structure(plan_content, analysis_result, profile_id)
-            logger.info(f"Extracted {len(extracted_plan.time_blocks)} time blocks with {len(extracted_plan.tasks)} tasks")
-            
+            # Extract using AUTO-DETECTED parser (JSON/Markdown/etc)
+            import time
+            from services.parsers.parser_factory import parser_factory
+
+            total_start = time.time()
+
+            extraction_start = time.time()
+
+            # Auto-detect format and use appropriate parser
+            extracted_plan = parser_factory.parse(plan_content, analysis_result, profile_id)
+
+            if not extracted_plan or not extracted_plan.time_blocks or not extracted_plan.tasks:
+                # Fallback to old extraction method if parsers fail
+                logger.warning("⚠️ Auto-parsers failed, falling back to legacy extraction")
+                extracted_plan = await self._extract_plan_with_normalized_structure(plan_content, analysis_result, profile_id)
+
+            extraction_time = time.time() - extraction_start
+            logger.info(f"Extracted {len(extracted_plan.time_blocks)} time blocks with {len(extracted_plan.tasks)} tasks in {extraction_time:.2f}s")
+
             # Store time blocks first
+            store_blocks_start = time.time()
             stored_time_blocks = await self._store_time_blocks(analysis_result_id, profile_id, extracted_plan.time_blocks, analysis_result.get('archetype', 'Unknown'))
+            store_blocks_time = time.time() - store_blocks_start
+            logger.info(f"Stored time blocks in {store_blocks_time:.2f}s")
             
             # Create time block ID mapping - use block indices for proper matching
             time_block_id_map = {}
@@ -158,15 +180,19 @@ class PlanExtractionService:
                 logger.debug(f"        Title: '{tb.title}' -> {stored_tb['id']}")
             
             # Store tasks with time block relationships
+            store_items_start = time.time()
             stored_items = await self._store_plan_items_with_time_blocks(
-                analysis_result_id, 
-                profile_id, 
+                analysis_result_id,
+                profile_id,
                 extracted_plan.tasks,
                 time_block_id_map,
                 override_plan_date
             )
-            
-            logger.info(f"Successfully stored {len(stored_time_blocks)} time blocks and {len(stored_items)} plan items for profile {profile_id}")
+            store_items_time = time.time() - store_items_start
+
+            total_time = time.time() - total_start
+            logger.info(f"✅ Successfully stored {len(stored_time_blocks)} time blocks and {len(stored_items)} plan items in {total_time:.2f}s total")
+            logger.info(f"   Breakdown: extraction={extraction_time:.2f}s, store_blocks={store_blocks_time:.2f}s, store_items={store_items_time:.2f}s")
             return stored_items
             
         except Exception as e:
@@ -1387,19 +1413,30 @@ class PlanExtractionService:
     async def _extract_plan_with_normalized_structure(self, content: str, analysis_result: Dict[str, Any], profile_id: str) -> ExtractedPlan:
         """
         Extract plan with normalized time blocks and tasks structure
-        Supports both regex and AI extraction methods
+        Supports both regex and AI extraction methods with automatic fallback
         """
         try:
             # TOGGLE: Choose extraction method based on configuration
             if EXTRACTION_METHOD == 'ai':
                 from services.ai_plan_extraction_service import extract_plan_with_ai
-                extracted_plan = await extract_plan_with_ai(content, analysis_result)
+                try:
+                    extracted_plan = await extract_plan_with_ai(content, analysis_result)
+
+                    # Check if AI extraction returned empty results (indication of failure)
+                    if not extracted_plan.time_blocks or not extracted_plan.tasks:
+                        logger.warning("⚠️ AI extraction returned empty results, falling back to regex")
+                        raise Exception("Empty AI extraction result")
+
+                except Exception as ai_error:
+                    logger.error(f"❌ AI extraction failed: {ai_error}")
+                    logger.info("🔄 Falling back to regex extraction...")
+                    extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
             else:
                 extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
 
             # Ensure profile_id is set correctly
             extracted_plan.user_id = profile_id
-            
+
             return extracted_plan
             
         except Exception as e:
@@ -1461,7 +1498,13 @@ class PlanExtractionService:
         try:
             # Prepare time block data for insertion
             time_block_data = []
+            block_titles_seen = set()
             for tb in time_blocks:
+                # Check for duplicates
+                if tb.title in block_titles_seen:
+                    logger.warning(f"⚠️ Duplicate block_title detected: {tb.title}")
+                block_titles_seen.add(tb.title)
+
                 block_data = {
                     'analysis_result_id': analysis_result_id,
                     'profile_id': profile_id,
@@ -1476,7 +1519,10 @@ class PlanExtractionService:
                     'plan_type': 'routine'
                 }
                 time_block_data.append(block_data)
-            
+
+            # Log all block titles being inserted
+            logger.info(f"Inserting {len(time_block_data)} time blocks with titles: {[bd['block_title'][:50] + '...' for bd in time_block_data]}")
+
             # Insert time blocks
             result = self.supabase.table("time_blocks")\
                 .upsert(time_block_data, on_conflict="analysis_result_id,block_title")\
@@ -1517,38 +1563,18 @@ class PlanExtractionService:
                 time_block_id = None
                 task_block_key = task.time_block_id
                 
-                # Strategy 1: Direct exact match
+                # Direct exact match (should always work with AI extraction)
                 if task_block_key in time_block_id_map:
                     time_block_id = time_block_id_map[task_block_key]
                     logger.debug(f"✅ Direct match: '{task.title}' -> '{task_block_key}'")
                 else:
-                    # Strategy 2: Match core keywords from task's time_block_id
-                    task_words = set(re.sub(r'[^\w\s]', '', task_block_key.lower()).split())
-                    task_words.discard('') # Remove empty strings
-                    
-                    best_match = None
-                    best_score = 0
-                    
-                    for block_key, block_id in time_block_id_map.items():
-                        if not block_key:  # Skip empty keys
-                            continue
-                            
-                        block_words = set(re.sub(r'[^\w\s]', '', block_key.lower()).split())
-                        
-                        # Calculate similarity score based on common words
-                        common_words = task_words.intersection(block_words)
-                        if common_words:
-                            # Give higher score to more specific matches
-                            score = len(common_words) / max(len(task_words), len(block_words))
-                            if score > best_score:
-                                best_score = score
-                                best_match = (block_key, block_id)
-                    
-                    if best_match and best_score > 0.3:  # At least 30% similarity
-                        time_block_id = best_match[1]
-                        logger.debug(f"✅ Fuzzy match: '{task.title}' -> '{best_match[0]}' (score: {best_score:.2f})")
-                    else:
-                        logger.warning(f"❌ No match found for task '{task.title}' with time_block_id '{task_block_key}'")
+                    # If direct match fails, log warning and use first available block
+                    logger.warning(f"❌ No direct match for task '{task.title}' with time_block_id '{task_block_key}'")
+                    logger.warning(f"Available keys: {list(time_block_id_map.keys())[:5]}")
+                    # Fallback: use first block if available
+                    if time_block_id_map:
+                        time_block_id = list(time_block_id_map.values())[0]
+                        logger.warning(f"Using fallback block: {time_block_id}")
                 
                 # Log the mapping for debugging
                 if time_block_id:
