@@ -166,54 +166,48 @@ async def get_latest_analysis_with_data(
         
         logger.info(f"Finding latest analysis with data for user {user_id}")
         
-        # Get recent analyses
+        # Get recent analyses - order by analysis_date first (most recent date), then created_at
+        # This ensures we get today's plan before yesterday's plan
         query = supabase.table("holistic_analysis_results")\
             .select("*")\
             .eq("user_id", user_id)\
+            .order("analysis_date", desc=True)\
             .order("created_at", desc=True)\
             .limit(20)  # Check last 20 analyses
-        
+
         if analysis_type:
             query = query.eq("analysis_type", analysis_type)
-        
+
         result = query.execute()
-        
+
         if not result.data:
             raise HTTPException(status_code=404, detail=f"No analyses found for user {user_id}")
-        
-        # Check each analysis for extracted data
-        for analysis in result.data:
-            # Check if this analysis has time_blocks
-            time_blocks_result = supabase.table("time_blocks")\
-                .select("id")\
-                .eq("analysis_result_id", analysis['id'])\
-                .limit(1)\
-                .execute()
-            
-            # Check if this analysis has plan_items
-            plan_items_result = supabase.table("plan_items")\
-                .select("id")\
-                .eq("analysis_result_id", analysis['id'])\
-                .limit(1)\
-                .execute()
-            
-            # If either exists, this is our target
-            if time_blocks_result.data or plan_items_result.data:
-                return {
-                    "analysis_result_id": analysis['id'],
-                    "user_id": analysis['user_id'],
-                    "archetype": analysis.get('archetype', 'Unknown'),
-                    "analysis_type": analysis.get('analysis_type', 'Unknown'),
-                    "analysis_date": analysis.get('analysis_date'),
-                    "created_at": analysis['created_at'],
-                    "has_time_blocks": len(time_blocks_result.data) > 0,
-                    "has_plan_items": len(plan_items_result.data) > 0,
-                    "message": "Found analysis with extracted data"
-                }
-        
-        # No analysis with extracted data found
-        # Return the most recent analysis anyway for potential extraction
+
+        # ALWAYS return the LATEST analysis by date (first in the list)
+        # Client will handle extraction if needed
         most_recent = result.data[0]
+
+        logger.info(f"Latest analysis: {most_recent['id'][:8]}... (date: {most_recent.get('analysis_date')}, created: {most_recent.get('created_at')})")
+
+        # Check if this latest analysis has time_blocks
+        time_blocks_result = supabase.table("time_blocks")\
+            .select("id")\
+            .eq("analysis_result_id", most_recent['id'])\
+            .limit(1)\
+            .execute()
+
+        # Check if this latest analysis has plan_items
+        plan_items_result = supabase.table("plan_items")\
+            .select("id")\
+            .eq("analysis_result_id", most_recent['id'])\
+            .limit(1)\
+            .execute()
+
+        has_time_blocks = len(time_blocks_result.data) > 0
+        has_plan_items = len(plan_items_result.data) > 0
+
+        logger.info(f"Latest analysis extraction status: time_blocks={has_time_blocks}, plan_items={has_plan_items}")
+
         return {
             "analysis_result_id": most_recent['id'],
             "user_id": most_recent['user_id'],
@@ -221,10 +215,10 @@ async def get_latest_analysis_with_data(
             "analysis_type": most_recent.get('analysis_type', 'Unknown'),
             "analysis_date": most_recent.get('analysis_date'),
             "created_at": most_recent['created_at'],
-            "has_time_blocks": False,
-            "has_plan_items": False,
-            "message": "No analysis with extracted data found, returning most recent",
-            "needs_extraction": True
+            "has_time_blocks": has_time_blocks,
+            "has_plan_items": has_plan_items,
+            "message": "Found latest analysis with extracted data" if (has_time_blocks or has_plan_items) else "Latest analysis needs extraction",
+            "needs_extraction": not (has_time_blocks or has_plan_items)
         }
         
     except HTTPException:
