@@ -11,7 +11,7 @@ import logging
 import asyncio
 import os
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, time
 import openai
 from dataclasses import asdict
 
@@ -30,6 +30,18 @@ class AIPlanExtractionService:
     def __init__(self, openai_client=None):
         """Initialize with OpenAI client"""
         self.client = openai_client or openai.OpenAI()
+
+    def _parse_time_string(self, time_str: Optional[str]) -> Optional[time]:
+        """Convert HH:MM string to datetime.time object"""
+        if not time_str:
+            return None
+        try:
+            # Parse HH:MM format (24-hour)
+            hour, minute = map(int, time_str.split(':'))
+            return time(hour=hour, minute=minute)
+        except (ValueError, AttributeError) as e:
+            logger.warning(f"Failed to parse time string '{time_str}': {e}")
+            return None
 
     async def extract_plan_with_ai(self, content: str, analysis_result: Dict[str, Any]) -> ExtractedPlan:
         """
@@ -149,13 +161,17 @@ class AIPlanExtractionService:
                 # Find corresponding time block
                 time_block_id = f"{analysis_id}_block_{time_block_order}"
 
+                # Parse time strings to time objects
+                scheduled_time = self._parse_time_string(task_data.get('scheduled_time'))
+                scheduled_end_time = self._parse_time_string(task_data.get('scheduled_end_time'))
+
                 task = ExtractedTask(
                     task_id=task_id,
                     title=task_data.get('title', 'Activity'),
                     description=task_data.get('description', ''),
                     time_block_id=time_block_id,
-                    scheduled_time=task_data.get('scheduled_time'),
-                    scheduled_end_time=task_data.get('scheduled_end_time'),
+                    scheduled_time=scheduled_time,
+                    scheduled_end_time=scheduled_end_time,
                     estimated_duration_minutes=task_data.get('estimated_duration_minutes'),
                     task_type=task_data.get('task_type', 'general'),
                     priority_level=task_data.get('priority_level', 'medium'),
