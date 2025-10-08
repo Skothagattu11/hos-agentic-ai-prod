@@ -306,6 +306,15 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate Holistic Integration endpoints: {e}")
 
+# 📊 CONTEXT ENDPOINTS (comprehensive chatbot context)
+try:
+    from .context_endpoints import router as context_router
+    app.include_router(context_router)
+except ImportError as e:
+    pass  # Context endpoints not available
+except Exception as e:
+    print(f"❌ [ERROR] Failed to integrate context endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
