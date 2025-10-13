@@ -3849,6 +3849,22 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
                     analysis_id = result.data[0]['id']
                     logger.info(f"✅ Stored routine plan in database with ID: {analysis_id}")
 
+                    # Extract and store plan items immediately after saving the plan
+                    try:
+                        from services.plan_extraction_service import PlanExtractionService
+                        extraction_service = PlanExtractionService()
+
+                        logger.info(f"📊 [PLAN_EXTRACTION] Starting extraction for analysis_id: {analysis_id}")
+                        stored_items = await extraction_service.extract_and_store_plan_items(
+                            analysis_result_id=analysis_id,
+                            profile_id=user_id
+                        )
+                        logger.info(f"✅ [PLAN_EXTRACTION] Extracted {len(stored_items)} plan items")
+                    except Exception as extraction_error:
+                        logger.error(f"❌ [PLAN_EXTRACTION] Failed to extract plan items: {extraction_error}", exc_info=True)
+                        # Don't fail the entire request if extraction fails
+                        pass
+
         except Exception as storage_error:
             logger.error(f"⚠️ Failed to store routine plan in database: {storage_error}")
             # Continue execution even if storage fails
@@ -4328,7 +4344,55 @@ CORRECT OUTPUT:
 NOW PROCESS THE USER'S PLAN ABOVE. Output ONLY valid JSON. Count their blocks and preserve everything exactly.
 """
         else:
-            # NORMAL MODE: Generate from behavior + circadian analysis
+            # NORMAL MODE: Generate from behavior + circadian analysis using FIXED 5-BLOCK STRUCTURE
+
+            # Calculate times for the 5 fixed blocks based on circadian analysis
+            # Default times if no circadian data available
+            morning_start = "06:00 AM"
+            morning_end = "09:00 AM"
+            peak_start = "09:00 AM"
+            peak_end = "12:00 PM"
+            midday_start = "12:00 PM"
+            midday_end = "03:00 PM"
+            evening_start = "03:00 PM"
+            evening_end = "06:00 PM"
+            winddown_start = "06:00 PM"
+            winddown_end = "10:00 PM"
+
+            # If circadian timeline is available, calculate optimal times for each block
+            if circadian_analysis and 'energy_timeline' in circadian_analysis:
+                timeline = circadian_analysis['energy_timeline']
+
+                # Find first high energy slot for morning block
+                for slot in timeline:
+                    if slot.get('energy_level', 0) > 60 and slot.get('zone') in ['peak', 'maintenance']:
+                        morning_start = slot.get('time', morning_start)
+                        break
+
+                # Find peak energy period
+                peak_slots = [s for s in timeline if s.get('zone') == 'peak']
+                if peak_slots:
+                    peak_start = peak_slots[0].get('time', peak_start)
+                    peak_end = peak_slots[-1].get('time', peak_end) if len(peak_slots) > 1 else peak_end
+
+                # Find recovery/low energy period for midday slump
+                recovery_slots = [s for s in timeline if s.get('zone') == 'recovery' and '12:' in s.get('time', '') or '13:' in s.get('time', '') or '14:' in s.get('time', '')]
+                if recovery_slots:
+                    midday_start = recovery_slots[0].get('time', midday_start)
+                    midday_end = recovery_slots[-1].get('time', midday_end) if len(recovery_slots) > 1 else midday_end
+
+                # Evening routine: moderate energy period
+                evening_slots = [s for s in timeline if s.get('zone') == 'maintenance' and ('15:' in s.get('time', '') or '16:' in s.get('time', '') or '17:' in s.get('time', ''))]
+                if evening_slots:
+                    evening_start = evening_slots[0].get('time', evening_start)
+                    evening_end = evening_slots[-1].get('time', evening_end) if len(evening_slots) > 1 else evening_end
+
+                # Wind down: evening recovery period
+                winddown_slots = [s for s in timeline if s.get('zone') == 'recovery' and ('18:' in s.get('time', '') or '19:' in s.get('time', '') or '20:' in s.get('time', '') or '21:' in s.get('time', ''))]
+                if winddown_slots:
+                    winddown_start = winddown_slots[0].get('time', winddown_start)
+                    winddown_end = winddown_slots[-1].get('time', winddown_end) if len(winddown_slots) > 1 else winddown_end
+
             user_message = f"""
 {user_context}
 
@@ -4339,56 +4403,143 @@ BEHAVIORAL INSIGHTS:
 
 READINESS MODE: {readiness_level} - {mode_description}
 
-INSTRUCTIONS:
-Create a detailed {archetype} routine plan for TODAY.
+🎯 YOUR TASK: Generate a {archetype} routine plan with EXACTLY 5 FIXED TIME BLOCKS.
 
-ENERGY TIMELINE ANALYSIS:
-If energy_timeline is available, use it to find optimal time windows:
-- Each slot has: time (HH:MM format), energy_level (0-100), zone (peak/maintenance/recovery)
-- Peak zones (energy >= 75): Best for high-intensity workouts, important meetings, challenging tasks
-- Maintenance zones (energy 50-74): Good for moderate activities, routine tasks, steady work
-- Recovery zones (energy < 50): Best for light activities, rest, low-intensity tasks
+You MUST create a JSON response with these EXACT 5 blocks (no more, no less):
 
-YOUR TASK:
-1. Analyze the energy_timeline to identify optimal time windows
-2. Find peak energy periods (consecutive "peak" zone slots)
-3. Identify low energy periods to avoid scheduling demanding tasks
-4. Match activity intensity to readiness mode ({readiness_level})
-5. Create time-blocked sections with specific activities
-6. Include purpose, tasks, and timing for each section
-7. Connect recommendations to {archetype} archetype characteristics
+1. **Morning Block** ({morning_start} - {morning_end}): Gentle activation, breakfast, morning routine
+2. **Peak Energy Block** ({peak_start} - {peak_end}): Most demanding work, important meetings, challenging tasks
+3. **Mid-day Slump** ({midday_start} - {midday_end}): Lunch, rest, light activities to recharge
+4. **Evening Routine** ({evening_start} - {evening_end}): Moderate work, exercise, evening meal prep
+5. **Wind Down** ({winddown_start} - {winddown_end}): Relaxation, preparation for sleep, digital sunset
 
-Format as a clear, structured routine plan with:
-- Time blocks with specific time ranges
-- Purpose for each block
-- Specific tasks with timing
-- Connection to archetype and health data
+📋 REQUIRED JSON STRUCTURE:
+
+You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start_time, end_time are FIXED, but purpose and tasks come from YOUR ANALYSIS):
+
+{{
+  "time_blocks": [
+    {{
+      "block_name": "Morning Block",
+      "start_time": "{morning_start}",
+      "end_time": "{morning_end}",
+      "zone_type": "maintenance",
+      "purpose": "<ANALYZE behavior + circadian data and write appropriate purpose>",
+      "tasks": [
+        {{
+          "start_time": "<Time within morning block>",
+          "end_time": "<Time within morning block>",
+          "title": "<Task title based on analysis>",
+          "description": "<Task description based on user's needs, archetype, and energy levels>",
+          "task_type": "<exercise|nutrition|work|focus|recovery|wellness|social>",
+          "priority": "<high|medium|low>"
+        }}
+        // Add 2-5 tasks based on circadian energy data and behavioral insights
+      ]
+    }},
+    {{
+      "block_name": "Peak Energy Block",
+      "start_time": "{peak_start}",
+      "end_time": "{peak_end}",
+      "zone_type": "peak",
+      "purpose": "<ANALYZE and write purpose for peak energy period>",
+      "tasks": [
+        // Generate 2-5 high-intensity tasks suitable for peak energy
+      ]
+    }},
+    {{
+      "block_name": "Mid-day Slump",
+      "start_time": "{midday_start}",
+      "end_time": "{midday_end}",
+      "zone_type": "recovery",
+      "purpose": "<ANALYZE and write purpose for recovery period>",
+      "tasks": [
+        // Generate 2-4 light recovery tasks
+      ]
+    }},
+    {{
+      "block_name": "Evening Routine",
+      "start_time": "{evening_start}",
+      "end_time": "{evening_end}",
+      "zone_type": "maintenance",
+      "purpose": "<ANALYZE and write purpose for evening routine>",
+      "tasks": [
+        // Generate 2-5 moderate evening tasks
+      ]
+    }},
+    {{
+      "block_name": "Wind Down",
+      "start_time": "{winddown_start}",
+      "end_time": "{winddown_end}",
+      "zone_type": "recovery",
+      "purpose": "<ANALYZE and write purpose for wind down period>",
+      "tasks": [
+        // Generate 2-4 relaxing wind-down tasks
+      ]
+    }}
+  ]
+}}
+
+⚡ CRITICAL INSTRUCTIONS:
+
+**FIXED ELEMENTS (DO NOT CHANGE):**
+- Exactly 5 time blocks with these exact names: "Morning Block", "Peak Energy Block", "Mid-day Slump", "Evening Routine", "Wind Down"
+- Times shown above (calculated from circadian analysis)
+- zone_type values: maintenance, peak, recovery as shown
+
+**DYNAMIC ELEMENTS (BASED ON YOUR ANALYSIS):**
+1. **purpose**: Analyze behavioral insights, circadian data, archetype ({archetype}), and readiness mode ({readiness_level}) to write appropriate purpose for each block
+2. **tasks**: Generate 2-5 tasks per block based on:
+   - Circadian energy timeline (match intensity to energy level)
+   - Behavioral patterns and needs
+   - {archetype} archetype characteristics
+   - Readiness mode: {readiness_level}
+   - Zone type (peak = high intensity, maintenance = moderate, recovery = light)
+3. **task details**: Each task needs:
+   - start_time/end_time: Within the block's time range, in 12-hour format (e.g., "06:00 AM")
+   - title: Clear, actionable task name
+   - description: Detailed explanation tailored to user's needs and health data
+   - task_type: exercise, nutrition, work, focus, recovery, wellness, or social
+   - priority: high, medium, or low based on health impact
+
+🚨 YOU MUST OUTPUT ONLY VALID JSON - NO MARKDOWN, NO EXTRA TEXT, JUST JSON.
 """
 
         response = await client.chat.completions.create(
             model="gpt-4o",
+            response_format={"type": "json_object"},  # Force structured JSON output
             messages=[
                 {
                     "role": "system",
-                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks."
+                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks.\n\nYou MUST respond with ONLY valid JSON in this exact structure:\n{{\n  \"time_blocks\": [\n    {{\n      \"block_name\": \"Morning Block\",\n      \"start_time\": \"06:00 AM\",\n      \"end_time\": \"09:00 AM\",\n      \"zone_type\": \"maintenance\",\n      \"purpose\": \"Gentle activation and preparation for the day\",\n      \"tasks\": [\n        {{\n          \"start_time\": \"06:00 AM\",\n          \"end_time\": \"06:30 AM\",\n          \"title\": \"Wake-up and hydration\",\n          \"description\": \"Start with a glass of water and light stretching\",\n          \"task_type\": \"general\",\n          \"priority\": \"high\"\n        }}\n      ]\n    }}\n  ]\n}}"
                 },
                 {
                     "role": "user",
                     "content": user_message
                 }
             ],
-            temperature=0.3 if markdown_plan else 0.4,
+            temperature=0.3 if markdown_plan else 0.2,
             max_tokens=2000
         )
-        
+
+        # Parse the JSON response
+        content = response.choices[0].message.content
+        try:
+            structured_data = json.loads(content)
+        except json.JSONDecodeError:
+            logger.error(f"❌ Failed to parse JSON response from GPT-4: {content[:500]}")
+            # Fallback to text content
+            structured_data = {"content": content}
+
         return {
             "date": datetime.now().strftime("%Y-%m-%d"),
             "archetype": archetype,
-            "content": response.choices[0].message.content,
+            "content": json.dumps(structured_data),  # Store as JSON string
             "model_used": "gpt-4o",
             "plan_type": "comprehensive_routine",
             "system": "HolisticOS",
-            "readiness_mode": readiness_level
+            "readiness_mode": readiness_level,
+            "structured_format": True  # Flag indicating this uses new format
         }
 
     except Exception as e:
