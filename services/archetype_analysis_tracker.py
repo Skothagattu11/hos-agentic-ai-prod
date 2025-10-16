@@ -59,14 +59,14 @@ class ArchetypeAnalysisTracker:
 
             # Direct Supabase query with analysis_type
             result = supabase.table('archetype_analysis_tracking') \
-                .select('last_analysis_at') \
+                .select('analysis_timestamp') \
                 .eq('user_id', user_id) \
                 .eq('archetype', archetype) \
                 .eq('analysis_type', analysis_type) \
                 .execute()
 
             if result.data and len(result.data) > 0:
-                timestamp_str = result.data[0]['last_analysis_at']
+                timestamp_str = result.data[0]['analysis_timestamp']
                 timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
                 logger.debug(f"[ARCHETYPE_TRACKER] Found last {analysis_type} for {user_id} + {archetype}: {timestamp}")
                 return timestamp
@@ -106,7 +106,8 @@ class ArchetypeAnalysisTracker:
                 'user_id': user_id,
                 'archetype': archetype,
                 'analysis_type': analysis_type,  # NEW: Track analysis type
-                'last_analysis_at': analysis_date.isoformat(),
+                'analysis_timestamp': analysis_date.isoformat(),  # Primary timestamp field
+                'last_analysis_at': analysis_date.isoformat(),  # Legacy column (NOT NULL constraint)
                 'analysis_count': 1,  # Will be overridden if updating
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }
@@ -166,17 +167,17 @@ class ArchetypeAnalysisTracker:
             db = await self._ensure_db_connection()
             
             query = """
-                SELECT archetype, last_analysis_at, analysis_count
-                FROM archetype_analysis_tracking 
+                SELECT archetype, analysis_timestamp, analysis_count
+                FROM archetype_analysis_tracking
                 WHERE user_id = $1
-                ORDER BY last_analysis_at DESC
+                ORDER BY analysis_timestamp DESC
             """
-            
+
             rows = await db.fetch(query, user_id)
-            
+
             history = {}
             for row in rows:
-                history[row['archetype']] = row['last_analysis_at']
+                history[row['archetype']] = row['analysis_timestamp']
             
             logger.debug(f"[ARCHETYPE_TRACKER] Retrieved history for {user_id}: {len(history)} archetypes")
             return history
@@ -187,8 +188,8 @@ class ArchetypeAnalysisTracker:
     
     async def get_last_analysis_date_with_fallback(self, user_id: str, archetype: str, analysis_type: str = "behavior_analysis") -> tuple[Optional[datetime], str]:
         """
-        Get archetype-specific timestamp with fallback to global timestamp
-        Ensures system continues working even if archetype tracking fails
+        Get archetype-specific timestamp - NO PROFILES TABLE FALLBACK
+        Returns None if no archetype-specific tracking exists (triggers 7-day window)
 
         Args:
             user_id: User identifier
@@ -196,33 +197,20 @@ class ArchetypeAnalysisTracker:
             analysis_type: Type of analysis ("behavior_analysis" or "circadian_analysis")
 
         Returns:
-            (timestamp, source) where source is: 'archetype_specific', 'global_fallback', 'emergency_fallback'
+            (timestamp, source) where source is: 'archetype_specific' or 'emergency_fallback'
         """
         try:
-            # First try archetype-specific + analysis-type-specific timestamp
+            # Try archetype-specific + analysis-type-specific timestamp
             archetype_timestamp = await self.get_last_analysis_date(user_id, archetype, analysis_type)
             if archetype_timestamp:
                 return archetype_timestamp, "archetype_specific"
 
-            # Fallback to global profiles.last_analysis_at using direct Supabase client
-            supabase = self._get_supabase_client()
-            result = supabase.table('profiles') \
-                .select('last_analysis_at') \
-                .eq('id', user_id) \
-                .execute()
-
-            if result.data and len(result.data) > 0 and result.data[0].get('last_analysis_at'):
-                timestamp_str = result.data[0]['last_analysis_at']
-                timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-                logger.warning(f"[ARCHETYPE_TRACKER] Using global fallback for {user_id} + {analysis_type}")
-                return timestamp, "global_fallback"
-
-            # Emergency fallback - return None to trigger 7-day window
-            logger.warning(f"[ARCHETYPE_TRACKER] No timestamps found - using emergency fallback for {analysis_type}")
+            # No fallback to profiles table - return None to trigger 7-day window
+            logger.info(f"[ARCHETYPE_TRACKER] No archetype tracking found for {user_id} + {archetype} + {analysis_type} - will fetch 7 days")
             return None, "emergency_fallback"
 
         except Exception as e:
-            logger.error(f"[ARCHETYPE_TRACKER] Fallback failed for {user_id} + {analysis_type}: {e}")
+            logger.error(f"[ARCHETYPE_TRACKER] Error in fallback for {user_id} + {analysis_type}: {e}")
             # Emergency fallback to 7-day window
             return None, "emergency_fallback"
 

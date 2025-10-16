@@ -188,7 +188,7 @@ async def get_user_available_archetypes(
             tracking_result = supabase.table('archetype_analysis_tracking')\
                 .select('*')\
                 .eq('user_id', user_id)\
-                .order('last_analysis_at', desc=True)\
+                .order('analysis_timestamp', desc=True)\
                 .limit(limit)\
                 .execute()
             
@@ -216,17 +216,17 @@ async def get_user_available_archetypes(
             # Extract data from archetype_analysis_tracking table
             archetype_name = tracking_row.get('archetype', 'Unknown Archetype')
             analysis_count = tracking_row.get('analysis_count', 0)
-            last_analysis_at = tracking_row.get('last_analysis_at')
+            analysis_timestamp = tracking_row.get('analysis_timestamp')
             created_at = tracking_row.get('created_at')
             updated_at = tracking_row.get('updated_at')
-            
+
             # Use the tracking ID as analysis_id since we don't have actual analysis records
             analysis_id = str(tracking_row.get('id', ''))
-            
+
             # Handle date formatting
             created_at_str = created_at if isinstance(created_at, str) else str(created_at) if created_at else None
             updated_at_str = updated_at if isinstance(updated_at, str) else str(updated_at) if updated_at else None
-            last_used_str = last_analysis_at if isinstance(last_analysis_at, str) else str(last_analysis_at) if last_analysis_at else None
+            last_used_str = analysis_timestamp if isinstance(analysis_timestamp, str) else str(analysis_timestamp) if analysis_timestamp else None
             
             archetype_data = {
                 "analysis_id": analysis_id,

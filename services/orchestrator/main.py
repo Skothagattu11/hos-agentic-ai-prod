@@ -28,7 +28,12 @@ from shared_libs.utils.system_prompts import get_system_prompt
 from services.agents.memory.main import HolisticMemoryAgent
 from services.agents.insights.main import HolisticInsightsAgent
 from services.agents.adaptation.main import HolisticAdaptationEngine
-# Note: Behavior, Nutrition, and Routine agents would need to be imported if they existed
+
+# NEW: Import dedicated analysis services with Sahha integration
+from services.behavior_analysis_service import get_behavior_analysis_service
+from services.circadian_analysis_service import CircadianAnalysisService
+
+# Note: Nutrition and Routine agents would need to be imported if they existed
 # For now, we'll create placeholder responses for them
 
 class WorkflowStage(Enum):
@@ -97,22 +102,26 @@ class HolisticOrchestrator(BaseAgent):
             self.memory_agent = HolisticMemoryAgent()
             self.insights_agent = HolisticInsightsAgent()
             self.adaptation_agent = HolisticAdaptationEngine()
-            
-            # Placeholder agents for behavior, nutrition, and routine
+
+            # NEW: Initialize dedicated analysis services with Sahha integration
+            self.behavior_service = get_behavior_analysis_service()
+            self.circadian_service = CircadianAnalysisService()
+
+            # Placeholder agents for nutrition and routine
             # These would be real agents if they existed in the system
-            self.behavior_agent = None
             self.nutrition_agent = None
             self.routine_agent = None
-            
-            self.logger.debug("Direct agent instances created successfully")
-            
+
+            self.logger.debug("Direct agent instances and analysis services created successfully")
+
         except Exception as e:
             self.logger.error(f"Failed to initialize agent instances: {e}")
             # Continue without agent instances - will use placeholders
             self.memory_agent = None
             self.insights_agent = None
             self.adaptation_agent = None
-            self.behavior_agent = None
+            self.behavior_service = None
+            self.circadian_service = None
             self.nutrition_agent = None
             self.routine_agent = None
         
@@ -144,8 +153,12 @@ class HolisticOrchestrator(BaseAgent):
             elif target_agent == "adaptation_engine_agent" and self.adaptation_agent:
                 return await self.adaptation_agent.process(agent_event)
             elif target_agent == "behavior_analysis_agent":
-                # Placeholder for behavior analysis agent
-                return await self._placeholder_behavior_analysis(agent_event)
+                # NEW: Use dedicated BehaviorAnalysisService with Sahha integration
+                if self.behavior_service:
+                    return await self._call_behavior_service(agent_event)
+                else:
+                    # Fallback to placeholder if service not available
+                    return await self._placeholder_behavior_analysis(agent_event)
             elif target_agent == "nutrition_plan_agent":
                 # Placeholder for nutrition plan agent
                 return await self._placeholder_nutrition_plan(agent_event)
@@ -629,13 +642,62 @@ class HolisticOrchestrator(BaseAgent):
         )
     
     # =============================================================================
-    # PLACEHOLDER AGENT METHODS (for agents that don't exist yet)
+    # DEDICATED SERVICE INTEGRATION (NEW: Sahha-powered analysis)
     # =============================================================================
-    
+
+    async def _call_behavior_service(self, event: AgentEvent) -> AgentResponse:
+        """
+        NEW: Call dedicated BehaviorAnalysisService with direct Sahha integration
+        Replaces the old placeholder method
+        """
+        try:
+            # Prepare context for analysis
+            enhanced_context = {
+                "archetype": event.archetype,
+                "memory_context": event.payload.get("memory_context", {}),
+                "user_context": event.payload.get("user_context", {})
+            }
+
+            # Call BehaviorAnalysisService with Sahha integration
+            # If user_id + archetype provided → uses Sahha
+            # Otherwise → uses legacy Supabase flow
+            analysis_result = await self.behavior_service.analyze(
+                enhanced_context=enhanced_context,
+                user_id=event.user_id,  # Enables Sahha fetch
+                archetype=event.archetype  # For watermark tracking
+            )
+
+            return AgentResponse(
+                response_id=f"behavior_service_{datetime.now().timestamp()}",
+                agent_id="behavior_analysis_agent",
+                success=True,
+                result={
+                    "analysis_result": analysis_result,
+                    "workflow_id": event.payload.get("workflow_id"),
+                    "sahha_integrated": True  # Indicates new service
+                },
+                timestamp=datetime.now()
+            )
+
+        except Exception as e:
+            self.logger.error(f"BehaviorAnalysisService error: {e}")
+            # Fallback to placeholder on error
+            return await self._placeholder_behavior_analysis(event)
+
+    # =============================================================================
+    # PLACEHOLDER AGENT METHODS (LEGACY - for fallback only)
+    # =============================================================================
+
     async def _placeholder_behavior_analysis(self, event: AgentEvent) -> AgentResponse:
-        """Placeholder for behavior analysis agent - simulates behavior analysis"""
+        """
+        LEGACY PLACEHOLDER: Kept for fallback only
+        This method is only called if BehaviorAnalysisService fails
+        NEW CODE USES: _call_behavior_service() with BehaviorAnalysisService + Sahha integration
+        """
         await asyncio.sleep(1)  # Simulate processing time
-        
+
+        self.logger.warning(f"[LEGACY] Using placeholder behavior analysis for {event.user_id[:8]}... - BehaviorAnalysisService unavailable")
+
         return AgentResponse(
             response_id=f"behavior_placeholder_{datetime.now().timestamp()}",
             agent_id="behavior_analysis_agent",
@@ -664,7 +726,8 @@ class HolisticOrchestrator(BaseAgent):
                     }
                 },
                 "workflow_id": event.payload.get("workflow_id"),
-                "placeholder": True
+                "placeholder": True,
+                "legacy_fallback": True  # Indicates this is fallback, not primary flow
             },
             timestamp=datetime.now()
         )

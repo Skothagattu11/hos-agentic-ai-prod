@@ -426,6 +426,8 @@ class RoutinePlanResponse(BaseModel):
     status: str
     user_id: str
     routine_plan: Dict[str, Any]
+    behavior_analysis: Optional[Dict[str, Any]] = None  # Include behavior analysis in response
+    circadian_analysis: Optional[Dict[str, Any]] = None  # Include circadian analysis in response
     generation_metadata: Dict[str, Any]
     cached: bool = False
 
@@ -500,7 +502,17 @@ async def initialize_agents():
         memory_agent = HolisticMemoryAgent()
         insights_agent = HolisticInsightsAgent()
         adaptation_agent = HolisticAdaptationEngine()
-        
+
+        # NEW: Initialize background job queue worker for Sahha data archival
+        try:
+            from services.background import get_job_queue
+            job_queue = get_job_queue()
+            await job_queue.start()
+            logger.info("[STARTUP] Background worker started successfully")
+        except Exception as e:
+            logger.error(f"[STARTUP] Failed to start background worker: {e}")
+            # Non-critical - continue without background archival
+
         # REMOVED: Automatic background scheduler - now using on-demand analysis
         # Behavior analysis will be triggered only when routine/nutrition plans are requested
         # # Production: Verbose print removed  # Commented to reduce noise
@@ -555,11 +567,20 @@ async def shutdown_agents():
     """Clean shutdown of all agents and services"""
     try:
         print("🛑 Shutting down HolisticOS Multi-Agent System...")
-        
+
+        # NEW: Stop background worker
+        try:
+            from services.background import get_job_queue
+            job_queue = get_job_queue()
+            await job_queue.stop()
+            logger.info("[SHUTDOWN] Background worker stopped")
+        except Exception as e:
+            logger.error(f"[SHUTDOWN] Failed to stop background worker: {e}")
+
         # Stop behavior analysis scheduler
         from services.scheduler.behavior_analysis_scheduler import stop_behavior_analysis_scheduler
         await stop_behavior_analysis_scheduler()
-        
+
         # Close database connection pool
         try:
             from shared_libs.database.connection_pool import db_pool
@@ -567,9 +588,9 @@ async def shutdown_agents():
         # # Production: Verbose print removed  # Commented to reduce noise
         except Exception as e:
             pass  # Database pool shutdown failed
-        
+
         # # Production: Verbose print removed  # Commented to reduce noise
-        
+
     except Exception as e:
         print(f"❌ Error during shutdown: {e}")
 
@@ -1314,11 +1335,13 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             # Mark request as complete
             request_deduplicator.mark_request_complete(user_id, archetype, "routine")
 
-            # Prepare response data
+            # Prepare response data (exclude analyses from response - only return routine plan)
             response_data = RoutinePlanResponse(
                 status="success",
                 user_id=user_id,
                 routine_plan=routine_plan,
+                behavior_analysis=None,  # Excluded from response per user request
+                circadian_analysis=None,  # Excluded from response per user request
                 generation_metadata={
                     "analysis_decision": "shared_behavior_analysis_service",
                     "analysis_type": analysis_type,
@@ -1328,7 +1351,11 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                     "personalization_level": "high",
                     "archetype_used": archetype,
                     "preferences_applied": bool(request.preferences),
-                    "generation_time": datetime.now().isoformat()
+                    "generation_time": datetime.now().isoformat(),
+                    "behavior_analysis_used": behavior_success,  # Indicate if used (but not included in response)
+                    "circadian_analysis_used": circadian_success,  # Indicate if used (but not included in response)
+                    "sahha_integration": "direct_fetch",  # Indicate Sahha was used
+                    "o3_model_used": True  # Indicate o3 model was used
                 },
                 cached=(analysis_type == "cached")
             )
@@ -3133,14 +3160,24 @@ async def run_memory_enhanced_behavior_analysis(user_id: str, archetype: str) ->
         
         # Step 1: Prepare memory-enhanced context
         # # Production: Verbose print removed  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
-        
+        memory_context_obj = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
+
+        # Convert ContextEnhancedContext object to dict with relevant memory fields
+        memory_context = {
+            "ai_context_summary": memory_context_obj.ai_context_summary,
+            "behavior_analysis_history": memory_context_obj.behavior_analysis_history,
+            "circadian_analysis_history": memory_context_obj.circadian_analysis_history,
+            "engagement_insights": memory_context_obj.engagement_insights,
+            "analysis_mode": memory_context_obj.analysis_mode,
+            "days_to_fetch": memory_context_obj.days_to_fetch
+        }
+
         # Step 2: Get user data for analysis
         from services.user_data_service import UserDataService
         from shared_libs.utils.system_prompts import get_system_prompt
-        
+
         user_service = UserDataService()
-        
+
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
         
@@ -3401,8 +3438,18 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
         
         try:
             # Use OnDemandAnalysisService metadata for memory context preparation
-            memory_context = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata, archetype)
-            
+            memory_context_obj = await memory_service.prepare_memory_enhanced_context(user_id, ondemand_metadata, archetype)
+
+            # Convert ContextEnhancedContext object to dict with relevant memory fields
+            memory_context = {
+                "ai_context_summary": memory_context_obj.ai_context_summary,
+                "behavior_analysis_history": memory_context_obj.behavior_analysis_history,
+                "circadian_analysis_history": memory_context_obj.circadian_analysis_history,
+                "engagement_insights": memory_context_obj.engagement_insights,
+                "analysis_mode": memory_context_obj.analysis_mode,
+                "days_to_fetch": memory_context_obj.days_to_fetch
+            }
+
             # CRITICAL FIX: Pass locked timestamp to prevent race conditions
             locked_timestamp = ondemand_metadata.get('fixed_timestamp') if ondemand_metadata else None
             if locked_timestamp:
@@ -3411,18 +3458,37 @@ async def run_fresh_behavior_analysis_like_api_analyze(user_id: str, archetype: 
             else:
         # # Production: Verbose print removed  # Commented to reduce noise
                 user_context, latest_data_timestamp = await user_service.get_analysis_data(user_id, None, analysis_number)
-            
+
             # Get behavior analysis system prompt
             behavior_prompt = get_system_prompt("behavior_analysis")
-            
+
             # EXACT same context summary creation as /api/analyze (lines 1324-1348)
-            user_context_summary = await create_context_summary_like_api_analyze(user_context, memory_context, archetype, user_id)
-            
-            # EXACT same behavior analysis execution as /api/analyze (lines 1382-1386)  
-            # Note: Removed complex logging infrastructure to focus on core functionality
-            behavior_agent_data = await prepare_behavior_agent_data(user_context, user_context_summary)
-            behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
-            # Note: Agent handoff logging removed - focus on core functionality
+            user_context_summary = await create_context_summary_like_api_analyze(user_context, memory_context_obj, archetype, user_id)
+
+            # NEW: Use BehaviorAnalysisService with Sahha direct integration
+            # This replaces the old run_behavior_analysis_o3 call
+            from services.behavior_analysis_service import get_behavior_analysis_service
+
+            behavior_service = get_behavior_analysis_service()
+
+            # Prepare enhanced context for new service
+            # Convert Pydantic model to dict for JSON serialization
+            enhanced_context = {
+                "user_context": user_context.model_dump() if hasattr(user_context, 'model_dump') else (user_context.dict() if hasattr(user_context, 'dict') else user_context),
+                "archetype": archetype,
+                "memory_context": memory_context  # Now a dict with behavior/circadian history
+            }
+
+            # Call new service with Sahha integration (will use user_id to fetch Sahha data)
+            behavior_analysis = await behavior_service.analyze(
+                enhanced_context=enhanced_context,
+                user_id=user_id,  # Enables Sahha direct fetch
+                archetype=archetype  # For watermark tracking
+            )
+
+            # OLD: Commented out - kept for reference
+            # behavior_agent_data = await prepare_behavior_agent_data(user_context, user_context_summary)
+            # behavior_analysis = await run_behavior_analysis_o3(behavior_prompt, user_context_summary)
             
             # EXACT same memory storage as /api/analyze (lines 1525-1531)
             await memory_service.store_analysis_insights(user_id, "behavior_analysis", behavior_analysis, archetype)
@@ -3640,7 +3706,17 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         context_service = AIContextIntegrationService()
 
         # Step 1: Prepare AI context-enhanced analysis context
-        memory_context = await context_service.prepare_memory_enhanced_context(user_id, None, archetype)
+        memory_context_obj = await context_service.prepare_memory_enhanced_context(user_id, None, archetype)
+
+        # Convert ContextEnhancedContext object to dict with relevant memory fields
+        memory_context = {
+            "ai_context_summary": memory_context_obj.ai_context_summary,
+            "behavior_analysis_history": memory_context_obj.behavior_analysis_history,
+            "circadian_analysis_history": memory_context_obj.circadian_analysis_history,
+            "engagement_insights": memory_context_obj.engagement_insights,
+            "analysis_mode": memory_context_obj.analysis_mode,
+            "days_to_fetch": memory_context_obj.days_to_fetch
+        }
 
         # Step 2: Get user data for circadian analysis (need more days for pattern recognition)
         from services.user_data_service import UserDataService
@@ -3656,14 +3732,34 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         # Step 3: Get and enhance system prompt with AI context
         system_prompt = get_system_prompt("circadian_analysis")  # Will use default if not exists
         enhanced_prompt = await context_service.enhance_agent_prompt(
-            system_prompt, memory_context, "circadian_analysis"
+            system_prompt, memory_context_obj, "circadian_analysis"
         )
 
         # Step 4: Format user context for AI analysis
         user_context_summary = await format_health_data_for_ai(user_context)
 
-        # Step 5: Run AI-powered circadian analysis
-        analysis_result = await run_circadian_analysis_gpt4o(enhanced_prompt, user_context_summary)
+        # Step 5: NEW - Run AI-powered circadian analysis using CircadianAnalysisService with Sahha
+        from services.circadian_analysis_service import CircadianAnalysisService
+
+        circadian_service = CircadianAnalysisService()
+
+        # Prepare enhanced context for new service
+        # Convert Pydantic model to dict for JSON serialization
+        enhanced_context = {
+            "user_context": user_context.model_dump() if hasattr(user_context, 'model_dump') else (user_context.dict() if hasattr(user_context, 'dict') else user_context),
+            "archetype": archetype,
+            "memory_context": memory_context  # Now a dict with behavior/circadian history
+        }
+
+        # Call new service with Sahha integration (will use user_id to fetch Sahha data)
+        analysis_result = await circadian_service.analyze(
+            enhanced_context=enhanced_context,
+            user_id=user_id,  # Enables Sahha direct fetch
+            archetype=archetype  # For watermark tracking
+        )
+
+        # OLD: Commented out - kept for reference
+        # analysis_result = await run_circadian_analysis_gpt4o(enhanced_prompt, user_context_summary)
 
         # Step 5.5: Generate 96-slot energy timeline from GPT-4o output
         try:
@@ -3770,23 +3866,33 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         
         # Step 1: Prepare memory-enhanced context
         # # Production: Verbose print removed  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
-        
+        memory_context_obj = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
+
+        # Convert ContextEnhancedContext object to dict with relevant memory fields
+        memory_context = {
+            "ai_context_summary": memory_context_obj.ai_context_summary,
+            "behavior_analysis_history": memory_context_obj.behavior_analysis_history,
+            "circadian_analysis_history": memory_context_obj.circadian_analysis_history,
+            "engagement_insights": memory_context_obj.engagement_insights,
+            "analysis_mode": memory_context_obj.analysis_mode,
+            "days_to_fetch": memory_context_obj.days_to_fetch
+        }
+
         # Step 2: Get user data for routine generation
         from services.user_data_service import UserDataService
         from shared_libs.utils.system_prompts import get_system_prompt
-        
+
         user_service = UserDataService()
-        
+
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
-        
+
         # # Production: Verbose print removed  # Commented for error-only mode
-        
+
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("routine_plan")
         enhanced_prompt = await memory_service.enhance_agent_prompt(
-            system_prompt, memory_context, "routine_plan"
+            system_prompt, memory_context_obj, "routine_plan"
         )
         
         # print(f"🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
@@ -3883,9 +3989,9 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
         # Add memory enhancement metadata to result
         routine_result.update({
             "memory_enhanced": True,
-            "analysis_mode": memory_context.analysis_mode,
-            "days_fetched": memory_context.days_to_fetch,
-            "memory_focus_areas": memory_context.personalized_focus_areas,
+            "analysis_mode": memory_context.get("analysis_mode", "initial"),
+            "days_fetched": memory_context.get("days_to_fetch", 7),
+            "memory_focus_areas": [],  # Removed from dict - agents extract from context
             "analysis_id": analysis_id
         })
         
@@ -3927,23 +4033,33 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         
         # Step 1: Prepare memory-enhanced context
         # # Production: Verbose print removed  # Commented to reduce noise
-        memory_context = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
-        
+        memory_context_obj = await memory_service.prepare_memory_enhanced_context(user_id, None, archetype)
+
+        # Convert ContextEnhancedContext object to dict with relevant memory fields
+        memory_context = {
+            "ai_context_summary": memory_context_obj.ai_context_summary,
+            "behavior_analysis_history": memory_context_obj.behavior_analysis_history,
+            "circadian_analysis_history": memory_context_obj.circadian_analysis_history,
+            "engagement_insights": memory_context_obj.engagement_insights,
+            "analysis_mode": memory_context_obj.analysis_mode,
+            "days_to_fetch": memory_context_obj.days_to_fetch
+        }
+
         # Step 2: Get user data for nutrition generation
         from services.user_data_service import UserDataService
         from shared_libs.utils.system_prompts import get_system_prompt
-        
+
         user_service = UserDataService()
-        
+
         # Get user data (service handles days internally based on analysis history)
         user_context, data_quality = await user_service.get_analysis_data(user_id)
-        
+
         # # Production: Verbose print removed  # Commented for error-only mode
-        
+
         # Step 3: Get and enhance system prompt with memory
         system_prompt = get_system_prompt("nutrition_plan")
         enhanced_prompt = await memory_service.enhance_agent_prompt(
-            system_prompt, memory_context, "nutrition_plan"
+            system_prompt, memory_context_obj, "nutrition_plan"
         )
         
         # print(f"🧠 [MEMORY_ENHANCED] Enhanced nutrition prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
@@ -3987,9 +4103,9 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         # Add memory enhancement metadata to result
         nutrition_result.update({
             "memory_enhanced": True,
-            "analysis_mode": memory_context.analysis_mode,
-            "days_fetched": memory_context.days_to_fetch,
-            "memory_focus_areas": memory_context.personalized_focus_areas,
+            "analysis_mode": memory_context.get("analysis_mode", "initial"),
+            "days_fetched": memory_context.get("days_to_fetch", 7),
+            "memory_focus_areas": [],  # Removed from dict - agents extract from context
             "insights_stored": insights_stored
         })
         

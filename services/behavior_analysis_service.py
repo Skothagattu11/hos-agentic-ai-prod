@@ -1,6 +1,6 @@
 """
-Circadian Analysis Service - AI-Powered Biomarker Analysis
-Enhanced with Direct Sahha Integration (Phase 4 - MVP Style)
+Behavior Analysis Service - AI-Powered Behavioral Pattern Analysis
+Enhanced with Direct Sahha Integration (MVP Style)
 
 Features:
 - Direct Sahha API calls (with watermark for incremental sync)
@@ -18,22 +18,22 @@ from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
-class CircadianAnalysisService:
+class BehaviorAnalysisService:
     """
-    AI-powered circadian rhythm analysis service using OpenAI models
+    AI-powered behavior analysis service using OpenAI models
     Enhanced with direct Sahha integration (MVP-style: simple, clean, pragmatic)
     """
 
     def __init__(self):
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # UPDATED: Use gpt-4o for fast circadian analysis (213s with o3 was too slow)
+        # UPDATED: Use gpt-4o for fast behavioral analysis (213s with o3 was too slow)
         self.model = "gpt-4o"
 
         # NEW: Initialize Sahha integration (lazy load to avoid circular imports)
         self.sahha_service = None
         self.use_sahha_direct = os.getenv("USE_SAHHA_DIRECT", "true").lower() == "true"
 
-        logger.debug(f"CircadianAnalysisService initialized (Model: {self.model}, Sahha direct: {self.use_sahha_direct})")
+        logger.debug(f"BehaviorAnalysisService initialized (Model: {self.model}, Sahha direct: {self.use_sahha_direct})")
 
     async def analyze(
         self,
@@ -42,7 +42,7 @@ class CircadianAnalysisService:
         archetype: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        AI-powered circadian analysis - Enhanced with direct Sahha integration
+        AI-powered behavior analysis - Enhanced with direct Sahha integration
 
         NEW: If user_id + archetype provided → uses direct Sahha fetch
         OLD: If only enhanced_context → uses Supabase (backward compatible)
@@ -55,15 +55,15 @@ class CircadianAnalysisService:
 
         # NEW FLOW: Direct Sahha Integration
         if self.use_sahha_direct and user_id and archetype:
-            logger.info(f"[CIRCADIAN_SAHHA] Using direct Sahha fetch for {user_id[:8]}...")
+            logger.info(f"[BEHAVIOR_SAHHA] Using direct Sahha fetch for {user_id[:8]}...")
             try:
                 return await self._analyze_with_sahha(enhanced_context, user_id, archetype)
             except Exception as e:
-                logger.error(f"[CIRCADIAN_SAHHA] Failed: {e}, falling back to Supabase")
+                logger.error(f"[BEHAVIOR_SAHHA] Failed: {e}, falling back to Supabase")
                 # Fall through to old flow
 
         # OLD FLOW: Supabase-based (fallback or if Sahha disabled)
-        logger.debug("[CIRCADIAN_SUPABASE] Using Supabase data (fallback or disabled)")
+        logger.debug("[BEHAVIOR_SUPABASE] Using Supabase data (fallback or disabled)")
         return await self._analyze_legacy(enhanced_context)
 
     async def _analyze_with_sahha(
@@ -85,22 +85,22 @@ class CircadianAnalysisService:
 
             # Get watermark for incremental fetch
             watermark, source = await self.archetype_tracker.get_last_analysis_date_with_fallback(
-                user_id, archetype, "circadian_analysis"
+                user_id, archetype, "behavior_analysis"
             )
-            logger.debug(f"[CIRCADIAN_SAHHA] Watermark: {watermark} (source: {source})")
+            logger.debug(f"[BEHAVIOR_SAHHA] Watermark: {watermark} (source: {source})")
 
             # Fetch from Sahha (incremental if watermark exists)
             health_context = await self.sahha_service.fetch_health_data_for_analysis(
                 user_id=user_id,
                 archetype=archetype,
-                analysis_type="circadian_analysis",
+                analysis_type="behavior_analysis",
                 watermark=watermark,
                 days=3 if not watermark else 2  # 3 days initial, 2 days follow-up (reduced to minimize tokens)
             )
 
             # Check if we got data
             if health_context.data_quality.quality_level == "insufficient":
-                logger.warning(f"[CIRCADIAN_SAHHA] Insufficient data, falling back to Supabase")
+                logger.warning(f"[BEHAVIOR_SAHHA] Insufficient data, falling back to Supabase")
                 return await self._analyze_legacy(enhanced_context)
 
             # Update enhanced_context with fresh Sahha data
@@ -114,14 +114,14 @@ class CircadianAnalysisService:
 
             # Update tracking timestamp
             await self.archetype_tracker.update_last_analysis_date(
-                user_id, archetype, datetime.now(), "circadian_analysis"
+                user_id, archetype, datetime.now(), "behavior_analysis"
             )
 
-            logger.info(f"[CIRCADIAN_SAHHA] Analysis completed for {user_id[:8]}...")
+            logger.info(f"[BEHAVIOR_SAHHA] Analysis completed for {user_id[:8]}...")
             return result
 
         except Exception as e:
-            logger.error(f"[CIRCADIAN_SAHHA] Error: {e}")
+            logger.error(f"[BEHAVIOR_SAHHA] Error: {e}")
             raise  # Let caller handle fallback
 
     async def _analyze_legacy(self, enhanced_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -134,10 +134,10 @@ class CircadianAnalysisService:
             archetype = enhanced_context.get("archetype", "Foundation Builder")
             memory_context = enhanced_context.get("memory_context", {})
 
-            logger.debug(f"Starting circadian analysis for archetype: {archetype}")
+            logger.debug(f"Starting behavior analysis for archetype: {archetype}")
 
             # Get specialized system prompt
-            system_prompt = self._get_circadian_system_prompt(archetype)
+            system_prompt = self._get_behavior_system_prompt(archetype)
 
             # Prepare AI analysis prompt
             user_prompt = self._prepare_analysis_prompt(biomarker_data, memory_context, archetype)
@@ -157,12 +157,12 @@ class CircadianAnalysisService:
             # Parse AI response
             ai_analysis = json.loads(response.choices[0].message.content)
 
-            logger.debug("AI analysis completed successfully")
+            logger.debug("AI behavior analysis completed successfully")
 
             # Add metadata (matches existing pattern)
             ai_analysis["analysis_metadata"] = {
                 "model_used": self.model,
-                "analysis_type": "ai_powered_circadian",
+                "analysis_type": "ai_powered_behavior",
                 "token_usage": response.usage.total_tokens if response.usage else 0,
                 "analysis_timestamp": datetime.now().isoformat(),
                 "data_quality": self._assess_data_quality(biomarker_data)
@@ -171,34 +171,37 @@ class CircadianAnalysisService:
             return ai_analysis
 
         except Exception as e:
-            logger.error(f"Error in circadian analysis: {e}")
+            logger.error(f"Error in behavior analysis: {e}")
             # Return error structure matching existing pattern
             return {
-                "chronotype_assessment": {
-                    "primary_type": "unknown",
-                    "confidence_score": 0.0,
-                    "supporting_evidence": [f"Analysis failed: {str(e)}"]
+                "behavioral_signature": {
+                    "primary_motivation": "unknown",
+                    "consistency_score": 0.0,
+                    "behavioral_patterns": []
                 },
-                "energy_zone_analysis": {
-                    "peak_windows": [],
-                    "productive_windows": [],
-                    "maintenance_windows": [],
-                    "recovery_windows": []
+                "sophistication_assessment": {
+                    "score": 0,
+                    "category": "Unknown",
+                    "readiness_indicators": []
                 },
-                "schedule_recommendations": {
-                    "optimal_daily_structure": {},
-                    "weekly_optimization": {},
-                    "archetype_customization": {"archetype": archetype}
+                "habit_analysis": {
+                    "established_habits": [],
+                    "emerging_patterns": [],
+                    "friction_points": []
                 },
-                "biomarker_insights": {
-                    "sleep_pattern_analysis": {},
-                    "hrv_trend_analysis": {},
-                    "activity_rhythm_analysis": {},
-                    "circadian_health_score": 0
+                "motivation_profile": {
+                    "primary_drivers": [],
+                    "engagement_style": "unknown",
+                    "barrier_patterns": []
+                },
+                "personalized_strategy": {
+                    "recommended_approach": "Unable to analyze",
+                    "habit_integration_method": "unknown",
+                    "motivation_tactics": []
                 },
                 "integration_recommendations": {
                     "for_routine_agent": {},
-                    "for_behavior_agent": {}
+                    "for_nutrition_agent": {}
                 },
                 "analysis_metadata": {
                     "analysis_type": "error",
@@ -207,51 +210,54 @@ class CircadianAnalysisService:
                 }
             }
 
-    def _get_circadian_system_prompt(self, archetype: str) -> str:
-        """Get specialized system prompt for circadian analysis"""
-        return f"""You are a specialized Circadian Rhythm and Energy Optimization AI agent for the HolisticOS health system.
+    def _get_behavior_system_prompt(self, archetype: str) -> str:
+        """Get specialized system prompt for behavior analysis"""
+        return f"""You are a specialized Behavioral Pattern Analysis AI agent for the HolisticOS health system.
 
-Your role is to analyze biomarker data (sleep patterns, HRV, activity rhythms, recovery metrics) and provide comprehensive circadian rhythm insights and energy zone recommendations.
+Your role is to analyze biomarker data (activity patterns, sleep consistency, heart rate variability, recovery metrics) and provide comprehensive behavioral insights and personalized strategy recommendations.
 
 ## USER ARCHETYPE: {archetype}
-Tailor your analysis and recommendations to this archetype's optimization style and preferences:
+Tailor your analysis and recommendations to this archetype's behavioral profile and preferences:
 
-- Foundation Builder: Simple, sustainable basics - focus on consistent patterns
-- Transformation Seeker: Ambitious lifestyle changes - provide detailed optimization
-- Systematic Improver: Methodical, evidence-based - include data rationale
-- Peak Performer: Elite-level optimization - advanced biohacking insights
-- Resilience Rebuilder: Recovery focus - prioritize restoration
-- Connected Explorer: Social/adventure oriented - flexible scheduling
+- Foundation Builder: Simple, sustainable basics - focus on consistent patterns and achievable habits
+- Transformation Seeker: Ambitious lifestyle changes - identify readiness and motivation drivers
+- Systematic Improver: Methodical, evidence-based - provide data-driven behavioral insights
+- Peak Performer: Elite-level optimization - analyze advanced behavioral patterns and performance psychology
+- Resilience Rebuilder: Recovery focus - assess stress patterns and restoration behaviors
+- Connected Explorer: Social/adventure oriented - evaluate social engagement and variety-seeking patterns
 
 ## ANALYSIS REQUIREMENTS:
 
-1. **Chronotype Assessment**: Determine user's natural chronotype based on sleep timing, activity patterns, and biomarker rhythms. Use categories: extreme_morning, moderate_morning, intermediate, moderate_evening, extreme_evening
+1. **Behavioral Signature**: Identify user's primary behavioral patterns based on activity consistency, sleep regularity, and recovery patterns. Assess motivation type (intrinsic/extrinsic), consistency score (0.0-1.0), and behavioral stability.
 
-2. **Energy Zone Mapping**: Identify specific time windows for:
-   - Peak performance windows (highest cognitive and physical capacity)
-   - Productive windows (sustained moderate-high performance)
-   - Maintenance windows (routine tasks, social activities)
-   - Recovery windows (rest, restoration, wind-down)
+2. **Sophistication Assessment**: Determine user's health sophistication level (0-100 score):
+   - Novice (0-30): Inconsistent patterns, reactive approach
+   - Intermediate (31-60): Building consistency, learning phase
+   - Advanced (61-80): Strong patterns, proactive approach
+   - Expert (81-100): Optimized behaviors, performance-focused
 
-3. **Schedule Optimization**: Provide timing recommendations for work, exercise, meals, and sleep based on circadian patterns
+3. **Habit Analysis**: Evaluate established habits, emerging patterns, and friction points based on biomarker consistency
 
-4. **Biomarker Integration**: Analyze HRV trends, sleep quality patterns, recovery indicators, and activity rhythms
+4. **Motivation Profile**: Identify primary motivation drivers, engagement style, and potential barriers
 
-5. **Integration Guidelines**: Provide specific recommendations for routine and behavior agents to consume
+5. **Personalized Strategy**: Provide specific recommendations for habit formation, motivation tactics, and barrier mitigation tailored to archetype
+
+6. **Integration Guidelines**: Provide specific recommendations for routine and nutrition agents to consume
 
 ## RESPONSE FORMAT:
 Respond with valid JSON containing these exact sections:
-- chronotype_assessment
-- energy_zone_analysis
-- schedule_recommendations
-- biomarker_insights
+- behavioral_signature
+- sophistication_assessment
+- habit_analysis
+- motivation_profile
+- personalized_strategy
 - integration_recommendations
 
-Focus on actionable, evidence-based recommendations derived from the biomarker patterns you observe. Include confidence scores (0.0-1.0) for all assessments."""
+Focus on actionable, evidence-based recommendations derived from the behavioral patterns you observe in the biomarker data. Include confidence scores (0.0-1.0) for all assessments."""
 
     def _prepare_analysis_prompt(self, biomarker_data: Dict, memory_context: Dict, archetype: str) -> str:
         """Prepare comprehensive prompt for AI analysis"""
-        return f"""Analyze this biomarker data for comprehensive circadian rhythm and energy optimization insights:
+        return f"""Analyze this biomarker data for comprehensive behavioral pattern analysis and personalized strategy recommendations:
 
 ## BIOMARKER DATA:
 {json.dumps(biomarker_data, indent=2)}
@@ -267,58 +273,119 @@ Focus on actionable, evidence-based recommendations derived from the biomarker p
 
 Please provide a comprehensive JSON analysis including:
 
-1. **chronotype_assessment**: {{
-   "primary_type": "moderate_morning|intermediate|etc",
-   "confidence_score": 0.0-1.0,
-   "supporting_evidence": ["evidence1", "evidence2"]
+1. **behavioral_signature**: {{
+   "primary_motivation": "intrinsic|extrinsic|mixed",
+   "consistency_score": 0.0-1.0,
+   "behavioral_patterns": [
+     {{
+       "pattern_type": "sleep|activity|recovery|nutrition",
+       "consistency": 0.0-1.0,
+       "trend": "improving|stable|declining",
+       "evidence": "explanation based on biomarkers"
+     }}
+   ],
+   "signature_summary": "overall behavioral profile description"
 }}
 
-2. **energy_zone_analysis**: {{
-   "peak_windows": [{{
-     "time_range": "09:00-11:00",
-     "energy_level": 85,
-     "confidence": 0.8,
-     "optimal_activities": ["complex_cognitive_work", "strategic_planning"],
-     "biomarker_support": "explanation"
-   }}],
-   "productive_windows": [...],
-   "maintenance_windows": [...],
-   "recovery_windows": [...]
+2. **sophistication_assessment**: {{
+   "score": 0-100,
+   "category": "Novice|Intermediate|Advanced|Expert",
+   "level": "beginner|intermediate|advanced|expert",
+   "readiness_indicators": [
+     {{
+       "indicator": "consistency|awareness|proactivity|optimization",
+       "present": true|false,
+       "evidence": "biomarker-based evidence"
+     }}
+   ],
+   "growth_potential": "assessment of potential for improvement"
 }}
 
-3. **schedule_recommendations**: {{
-   "optimal_daily_structure": {{
-     "wake_window": {{"ideal_time": "07:00", "acceptable_range": "06:30-07:30"}},
-     "peak_performance_blocks": [...],
-     "exercise_timing": {{...}},
-     "meal_timing": {{...}},
-     "evening_wind_down": {{...}}
-   }},
-   "weekly_optimization": {{...}},
-   "archetype_customization": {{...}}
+3. **habit_analysis**: {{
+   "established_habits": [
+     {{
+       "habit": "description",
+       "strength": 0.0-1.0,
+       "frequency": "daily|weekly|occasional",
+       "biomarker_support": "evidence from data"
+     }}
+   ],
+   "emerging_patterns": [
+     {{
+       "pattern": "description",
+       "maturity": 0.0-1.0,
+       "direction": "strengthening|weakening",
+       "recommendation": "how to reinforce or modify"
+     }}
+   ],
+   "friction_points": [
+     {{
+       "friction": "description of barrier",
+       "impact": "high|medium|low",
+       "mitigation_strategy": "specific recommendation"
+     }}
+   ]
 }}
 
-4. **biomarker_insights**: {{
-   "sleep_pattern_analysis": {{...}},
-   "hrv_trend_analysis": {{...}},
-   "activity_rhythm_analysis": {{...}},
-   "circadian_health_score": 0-100,
-   "improvement_opportunities": [...]
+4. **motivation_profile**: {{
+   "primary_drivers": ["achievement", "health", "performance", "social", "appearance"],
+   "engagement_style": "goal_oriented|process_oriented|socially_driven|data_driven",
+   "response_to_setbacks": "resilient|adaptive|discouraged",
+   "barrier_patterns": [
+     {{
+       "barrier": "description",
+       "frequency": "common|occasional|rare",
+       "override_strategy": "specific recommendation"
+     }}
+   ],
+   "optimal_motivation_tactics": ["tactic1", "tactic2"]
 }}
 
-5. **integration_recommendations**: {{
-   "for_routine_agent": {{
-     "exercise_timing_windows": [...],
-     "activity_intensity_by_time": {{...}},
-     "recovery_prioritization": {{...}}
-   }},
-   "for_behavior_agent": {{
-     "habit_timing_optimization": [...],
-     "energy_aware_goal_setting": {{...}}
+5. **personalized_strategy**: {{
+   "recommended_approach": "detailed strategy description",
+   "habit_integration_method": "stacking|replacement|addition|optimization",
+   "motivation_tactics": [
+     {{
+       "tactic": "specific tactic",
+       "when_to_use": "context for application",
+       "expected_effectiveness": 0.0-1.0
+     }}
+   ],
+   "barrier_mitigation": [
+     {{
+       "barrier": "identified barrier",
+       "mitigation": "specific strategy",
+       "implementation": "how to apply"
+     }}
+   ],
+   "archetype_customization": {{
+     "archetype_specific_recommendations": "tailored to {archetype}",
+     "style_adaptations": "how to adapt general recommendations"
    }}
 }}
 
-Base your analysis on the actual biomarker patterns you observe. If data is limited, indicate lower confidence scores and suggest improvements."""
+6. **integration_recommendations**: {{
+   "for_routine_agent": {{
+     "habit_timing_preferences": ["morning|afternoon|evening routines"],
+     "consistency_level_required": "high|medium|low",
+     "progression_pace": "aggressive|moderate|gentle",
+     "recovery_emphasis": 0.0-1.0
+   }},
+   "for_nutrition_agent": {{
+     "behavioral_eating_patterns": ["pattern1", "pattern2"],
+     "meal_timing_consistency": 0.0-1.0,
+     "nutrition_sophistication": "basic|intermediate|advanced",
+     "adherence_predictors": ["predictor1", "predictor2"]
+   }}
+}}
+
+Base your analysis on the actual biomarker patterns you observe. Look for:
+- Sleep consistency (regularity in sleep/wake times)
+- Activity patterns (consistency, intensity, recovery balance)
+- Heart rate variability trends (stress management, recovery capacity)
+- Recovery patterns (rest days, active recovery, overtraining signs)
+
+If data is limited, indicate lower confidence scores and suggest what additional data would improve accuracy."""
 
     def _assess_data_quality(self, biomarker_data: Dict) -> str:
         """Assess quality of available biomarker data"""
@@ -355,7 +422,7 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
 
     def _format_biomarkers(self, health_context) -> Dict:
         """
-        NEW: Format biomarkers from UserHealthContext for circadian analysis
+        NEW: Format biomarkers from UserHealthContext for behavior analysis
         """
         sleep_bio = []
         activity_bio = []
@@ -385,7 +452,7 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
 
     def _format_scores(self, health_context) -> list:
         """
-        NEW: Format scores from UserHealthContext for circadian analysis
+        NEW: Format scores from UserHealthContext for behavior analysis
         """
         return [
             {
@@ -395,3 +462,16 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
             }
             for score in health_context.scores
         ]
+
+
+# Singleton pattern for easy access
+_behavior_service_instance = None
+
+def get_behavior_analysis_service() -> BehaviorAnalysisService:
+    """Get or create the singleton behavior analysis service"""
+    global _behavior_service_instance
+
+    if _behavior_service_instance is None:
+        _behavior_service_instance = BehaviorAnalysisService()
+
+    return _behavior_service_instance

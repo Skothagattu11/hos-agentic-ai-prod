@@ -626,7 +626,7 @@ class UserDataService:
             # ARCHETYPE-SPECIFIC TRACKING: Timestamp updates now handled by AIContextIntegrationService
             # No need to update global profiles.last_analysis_at here
 
-            result = await self.get_user_health_data(user_id, days=7, analysis_number=analysis_number)
+            result = await self.get_user_health_data(user_id, days=3, analysis_number=analysis_number)  # Reduced to 3 days to minimize tokens
             
             # For first analysis, calculate latest timestamp from the fetched data
             latest_data_timestamp = datetime.now(timezone.utc)
