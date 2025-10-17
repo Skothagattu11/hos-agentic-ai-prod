@@ -315,6 +315,16 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ [ERROR] Failed to integrate context endpoints: {e}")
 
+# 💡 INSIGHTS V2 ENDPOINTS (standalone insights system - Phase 1)
+try:
+    from services.insights_v2.api_endpoints import router as insights_v2_router
+    app.include_router(insights_v2_router)
+    print("✅ [INSIGHTS_V2] Endpoints registered successfully")
+except ImportError as e:
+    print(f"⚠️ [INSIGHTS_V2] Module not available: {e}")
+except Exception as e:
+    print(f"❌ [INSIGHTS_V2] Failed to register endpoints: {e}")
+
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
