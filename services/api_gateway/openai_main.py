@@ -2886,9 +2886,201 @@ Provide structured JSON output with ALL sections: readiness_assessment, chronoty
             "chronotype_assessment": {"primary_chronotype": "unknown", "confidence_score": 0.3}
         }
 
+
+def _generate_generous_baseline_energy_timeline(chronotype: str = "moderate", archetype: str = "Foundation Builder") -> dict:
+    """
+    Generate a generous, motivating energy timeline when data is insufficient.
+
+    Shows:
+    - 2 clear peak periods (morning + afternoon)
+    - Productive windows for most of waking hours
+    - Only recovery during sleep
+
+    This creates a motivating baseline that users can live up to.
+
+    Args:
+        chronotype: User's chronotype (default: "moderate")
+        archetype: User's archetype (default: "Foundation Builder")
+
+    Returns:
+        dict with energy_timeline array, summary, and metadata
+    """
+    timeline = []
+
+    for slot_index in range(96):  # 24 hours * 4 (15-min slots)
+        time_minutes = slot_index * 15
+        hour = time_minutes // 60
+        minute = time_minutes % 60
+        time_str = f"{hour:02d}:{minute:02d}"
+
+        # GENEROUS ENERGY ASSIGNMENT
+        if 7 <= hour < 10:  # Morning Peak (07:00-10:00)
+            zone = "peak"
+            energy = 75 + (slot_index % 4) * 2  # 75-81 (varying within peak range)
+
+        elif 10 <= hour < 13:  # Productive Morning (10:00-13:00)
+            zone = "productive"
+            energy = 65 + (slot_index % 4)  # 65-68
+
+        elif 13 <= hour < 14 or (hour == 14 and (slot_index % 4) < 2):  # Post-lunch dip (13:00-14:30)
+            zone = "maintenance"
+            energy = 52 + (slot_index % 4)  # 52-55
+
+        elif (hour == 14 and (slot_index % 4) >= 2) or 15 <= hour < 17:  # Afternoon Peak (14:30-17:00)
+            zone = "productive"
+            energy = 68 + (slot_index % 4)  # 68-71
+
+        elif 17 <= hour < 21:  # Evening Maintenance (17:00-21:00)
+            zone = "maintenance"
+            energy = 50 - ((hour - 17) * 2)  # 50 declining to 42
+
+        elif 21 <= hour < 22:  # Sleep Prep (21:00-22:00)
+            zone = "recovery"
+            energy = 38 - (slot_index % 4) * 2  # 38 declining to 32
+
+        else:  # Sleep Time (22:00-07:00)
+            zone = "recovery"
+            energy = 25 + (slot_index % 4)  # 25-28
+
+        timeline.append({
+            "time": time_str,
+            "zone": zone,
+            "slot_index": slot_index,
+            "energy_level": energy
+        })
+
+    # Calculate summary statistics
+    peak_slots = [s for s in timeline if s['zone'] == 'peak']
+    productive_slots = [s for s in timeline if s['zone'] == 'productive']
+    maintenance_slots = [s for s in timeline if s['zone'] == 'maintenance']
+    recovery_slots = [s for s in timeline if s['zone'] == 'recovery']
+
+    # Find continuous periods
+    def find_continuous_periods(slots: list) -> list:
+        """Find continuous time periods from slots"""
+        if not slots:
+            return []
+        periods = []
+        start_time = slots[0]['time']
+        prev_idx = slots[0]['slot_index']
+
+        for i in range(1, len(slots)):
+            if slots[i]['slot_index'] != prev_idx + 1:
+                # Gap found - end previous period
+                periods.append(f"{start_time}-{slots[i-1]['time']}")
+                start_time = slots[i]['time']
+            prev_idx = slots[i]['slot_index']
+
+        # Add final period
+        periods.append(f"{start_time}-{slots[-1]['time']}")
+        return periods
+
+    summary = {
+        "peak_energy_periods": find_continuous_periods(peak_slots),
+        "productive_periods": find_continuous_periods(productive_slots),
+        "maintenance_periods": find_continuous_periods(maintenance_slots),
+        "recovery_periods": find_continuous_periods(recovery_slots),
+        "total_peak_minutes": len(peak_slots) * 15,
+        "total_productive_minutes": len(productive_slots) * 15,
+        "total_maintenance_minutes": len(maintenance_slots) * 15,
+        "total_recovery_minutes": len(recovery_slots) * 15
+    }
+
+    timeline_metadata = {
+        "generation_type": "generous_baseline",
+        "data_quality": "insufficient",
+        "baseline_reasoning": "Insufficient data - using optimistic motivating baseline",
+        "archetype": archetype,
+        "chronotype": chronotype,
+        "note": "This generous baseline will adjust based on your actual performance data"
+    }
+
+    return {
+        "energy_timeline": timeline,
+        "summary": summary,
+        "timeline_metadata": timeline_metadata
+    }
+
+
+def _assess_circadian_data_quality(circadian_analysis: dict) -> str:
+    """
+    Assess the quality of circadian analysis data to determine if generous baseline is needed.
+
+    PRIORITY: Trust AI's own data quality assessment FIRST, then validate with other factors.
+
+    Returns:
+        "insufficient" - Use generous baseline
+        "moderate" - Use generous baseline with minor adjustments
+        "good" - Use data-driven with generous bias
+        "excellent" - Use full data-driven analysis
+    """
+    try:
+        # PRIORITY 1: Check AI's own assessment of data quality
+        metadata = circadian_analysis.get('analysis_metadata', {})
+        ai_data_quality = metadata.get('data_quality', 'insufficient')
+
+        # If AI says insufficient, trust it and use generous baseline
+        if ai_data_quality == 'insufficient':
+            logger.info("[CIRCADIAN_GENEROUS] AI assessed data as insufficient - using generous baseline")
+            return "insufficient"
+
+        # If AI says limited, be moderately generous
+        if ai_data_quality == 'limited':
+            logger.info("[CIRCADIAN_GENEROUS] AI assessed data as limited - using generous defaults")
+            return "moderate"
+
+        # PRIORITY 2: Validate AI's "good" or "excellent" assessment with actual data
+        # Check energy zone analysis
+        energy_zones = circadian_analysis.get('energy_zone_analysis', {})
+        peak_windows = energy_zones.get('peak_windows', [])
+        productive_windows = energy_zones.get('productive_windows', [])
+
+        # Check biomarker insights
+        biomarker_insights = circadian_analysis.get('biomarker_insights', {})
+        circadian_score = biomarker_insights.get('circadian_health_score', 0)
+
+        # Check chronotype assessment
+        chronotype = circadian_analysis.get('chronotype_assessment', {})
+        confidence = chronotype.get('confidence_score', 0.0)
+
+        # Assess based on multiple factors
+        has_peak_windows = len(peak_windows) > 0
+        has_productive_windows = len(productive_windows) > 0
+        has_good_confidence = confidence >= 0.7
+        has_circadian_score = circadian_score > 60  # Require meaningful score
+
+        # Count quality indicators
+        quality_indicators = sum([
+            has_peak_windows,
+            has_productive_windows,
+            has_good_confidence,
+            has_circadian_score,
+            ai_data_quality in ["good", "excellent"]
+        ])
+
+        if quality_indicators >= 4:
+            logger.info("[CIRCADIAN_GENEROUS] Excellent data quality - using data-driven analysis")
+            return "excellent"
+        elif quality_indicators >= 3:
+            logger.info("[CIRCADIAN_GENEROUS] Good data quality - using data-driven with generous bias")
+            return "good"
+        elif quality_indicators >= 1:
+            logger.info("[CIRCADIAN_GENEROUS] Moderate data quality - using generous defaults")
+            return "moderate"
+        else:
+            logger.info("[CIRCADIAN_GENEROUS] Insufficient validation - using generous baseline")
+            return "insufficient"
+
+    except Exception as e:
+        logger.warning(f"Error assessing circadian data quality: {e}")
+        return "insufficient"
+
+
 def _generate_energy_timeline_from_analysis(circadian_analysis: dict) -> dict:
     """
     Generate 96-slot energy timeline with interpolation from GPT-4o analysis
+
+    NEW: Uses generous baseline when data is insufficient to provide motivating energy zones.
 
     Args:
         circadian_analysis: Raw GPT-4o output with time windows
@@ -2896,14 +3088,39 @@ def _generate_energy_timeline_from_analysis(circadian_analysis: dict) -> dict:
     Returns:
         dict with energy_timeline array, summary, and metadata
     """
+    # Assess data quality to determine if generous baseline is needed
+    data_quality = _assess_circadian_data_quality(circadian_analysis)
+
+    # Get archetype and chronotype for baseline generation
+    archetype = circadian_analysis.get('schedule_recommendations', {}).get('archetype_customization', {}).get('archetype', 'Foundation Builder')
+    chronotype = circadian_analysis.get('chronotype_assessment', {}).get('primary_type', 'moderate')
+
+    logger.info(f"[CIRCADIAN_GENEROUS] Data quality: {data_quality}, Archetype: {archetype}, Chronotype: {chronotype}")
+
+    # Use generous baseline if data is insufficient
+    if data_quality == "insufficient":
+        logger.info("[CIRCADIAN_GENEROUS] Using generous baseline - insufficient data for accurate analysis")
+        return _generate_generous_baseline_energy_timeline(chronotype, archetype)
+
+    # If moderate data quality, we'll use the data-driven approach but with generous defaults
+    # Continue with existing logic below for good/excellent data quality
+
     # Energy zone thresholds
     PEAK_THRESHOLD = 75
     MAINTENANCE_THRESHOLD = 50
 
-    # Default energy levels for undefined periods
-    DEFAULT_EARLY_MORNING = 30  # 00:00-06:00
-    DEFAULT_LATE_NIGHT = 25     # 22:00-24:00
-    DEFAULT_UNSPECIFIED = 40    # Any gaps
+    # Default energy levels for undefined periods (UPDATED to be more generous)
+    if data_quality == "moderate":
+        # More generous defaults for moderate data quality
+        DEFAULT_EARLY_MORNING = 35  # 00:00-06:00 (slightly higher)
+        DEFAULT_LATE_NIGHT = 30     # 22:00-24:00 (slightly higher)
+        DEFAULT_UNSPECIFIED = 55    # Any gaps (productive instead of maintenance)
+        logger.info("[CIRCADIAN_GENEROUS] Using generous defaults for moderate data quality")
+    else:
+        # Standard defaults for good/excellent data quality
+        DEFAULT_EARLY_MORNING = 30  # 00:00-06:00
+        DEFAULT_LATE_NIGHT = 25     # 22:00-24:00
+        DEFAULT_UNSPECIFIED = 40    # Any gaps
 
     # Extract energy windows from GPT-4o analysis
     energy_zones = circadian_analysis.get('energy_zone_analysis', {})
