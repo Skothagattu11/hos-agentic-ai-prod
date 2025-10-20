@@ -730,33 +730,50 @@ async def undo_batch_checkin(
 @router.get("/checkins/status/{profile_id}")
 async def get_checkin_status(
     profile_id: str,
+    date: Optional[str] = Query(None, description="Filter by planned date (YYYY-MM-DD)"),
+    analysis_id: Optional[str] = Query(None, description="Filter by analysis_result_id (for multiple plans on same date)"),
     supabase: Client = Depends(get_supabase)
 ):
     """
     Get simple check-in status for all tasks by profile_id
-    
+
     Returns a list of all completed plan_item_ids for the user.
     Frontend can use this for simple O(1) lookup to mark items as checked.
+
+    If date is provided, only returns check-ins for that specific date.
+    If analysis_id is provided, only returns check-ins for that specific plan
+    (useful when multiple plans exist for the same date).
     """
     try:
-        # Simple query: get all completed tasks for this profile
-        result = supabase.table("task_checkins")\
-            .select("plan_item_id, completion_status")\
+        # Query with optional filters
+        query = supabase.table("task_checkins")\
+            .select("plan_item_id, completion_status, analysis_result_id")\
             .eq("profile_id", profile_id)\
-            .eq("completion_status", "completed")\
-            .execute()
-        
+            .eq("completion_status", "completed")
+
+        # Add date filter if provided
+        if date:
+            query = query.eq("planned_date", date)
+
+        # Add analysis_result_id filter if provided (for multi-plan scenarios)
+        if analysis_id:
+            query = query.eq("analysis_result_id", analysis_id)
+
+        result = query.execute()
+
         # Extract just the plan_item_ids for simple frontend lookup
         completed_plan_item_ids = [
             item["plan_item_id"] for item in (result.data or [])
         ]
-        
-        logger.info(f"Check-in status retrieved for profile {profile_id}: {len(completed_plan_item_ids)} completed items")
-        
+
+        logger.info(f"Check-in status retrieved for profile {profile_id} (date: {date or 'all'}, analysis: {analysis_id or 'all'}): {len(completed_plan_item_ids)} completed items")
+
         return {
             "profile_id": profile_id,
             "completed_plan_item_ids": completed_plan_item_ids,
-            "total_completed": len(completed_plan_item_ids)
+            "total_completed": len(completed_plan_item_ids),
+            "date_filter": date,
+            "analysis_filter": analysis_id
         }
         
     except Exception as e:
