@@ -3899,13 +3899,58 @@ async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, b
 
         # # Production: Verbose print removed  # Commented for error-only mode
 
-        # Step 3: Get and enhance system prompt with memory
-        system_prompt = get_system_prompt("routine_plan")
-        enhanced_prompt = await memory_service.enhance_agent_prompt(
-            system_prompt, memory_context_obj, "routine_plan"
-        )
-        
-        # print(f"🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
+        # === NEW: FEATURE FLAG - Use Adaptive Routine Generation if enabled ===
+        from shared_libs.utils.environment_config import EnvironmentConfig
+
+        if EnvironmentConfig.use_adaptive_routine_generation():
+            # ADAPTIVE PATH: Dual-mode optimized routine generation (production default)
+            print(f"🔵 [ADAPTIVE_ROUTINE] Using optimized dual-mode routine generation")
+
+            from services.ai_context_generation_service import AIContextGeneratorService, SimpleEngagementDataService
+
+            # Get raw engagement data
+            engagement_service = SimpleEngagementDataService()
+            raw_data = await engagement_service.get_raw_engagement_data(user_id, days=30)
+
+            # Generate adaptive context (detects new vs existing user automatically)
+            context_generator = AIContextGeneratorService()
+            adaptive_context = await context_generator.generate_adaptive_routine_context(
+                raw_data, user_id, archetype
+            )
+
+            # Use routine_plan prompt (now points to adaptive generation by default)
+            system_prompt = get_system_prompt("routine_plan")
+
+            # Create enhanced prompt with adaptive context
+            enhanced_prompt = f"""{system_prompt}
+
+---
+USER CONTEXT ANALYSIS:
+
+{adaptive_context}
+
+---
+CIRCADIAN RHYTHM DATA:
+{circadian_analysis if circadian_analysis else "No circadian analysis available - use default time blocks"}
+
+This user has {"NO" if not await context_generator._get_last_plans(user_id, archetype, 1) else ""} previous routine history.
+Apply the appropriate mode (INITIAL or ADAPTIVE) based on this history."""
+
+            print(f"✅ [ADAPTIVE_ROUTINE] Generated context using {'INITIAL' if not await context_generator._get_last_plans(user_id, archetype, 1) else 'ADAPTIVE'} mode")
+
+            # Cleanup
+            await engagement_service.cleanup()
+            await context_generator.cleanup()
+        else:
+            # LEGACY PATH: Original memory-enhanced routine generation (backward compatibility only)
+            # Step 3: Get and enhance system prompt with memory
+            system_prompt = get_system_prompt("routine_plan_legacy")
+            enhanced_prompt = await memory_service.enhance_agent_prompt(
+                system_prompt, memory_context_obj, "routine_plan"
+            )
+
+            print(f"⚠️ [LEGACY_MODE] Using legacy routine generation (deprecated - consider enabling adaptive mode)")
+            # print(f"🧠 [MEMORY_ENHANCED] Enhanced routine prompt with memory context (+{len(enhanced_prompt) - len(system_prompt)} chars)")  # Commented for error-only mode
         
         # Step 4: Prepare routine agent data with memory context (including circadian analysis if available)
         user_context_summary = await format_health_data_for_ai(user_context)

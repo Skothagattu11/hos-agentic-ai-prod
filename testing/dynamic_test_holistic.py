@@ -2,17 +2,21 @@
 Dynamic Holistic Integration Test Script
 Fetches IDs dynamically from APIs to simulate real-world usage
 Saves JSON responses to logs folder
+
+NEW: Added adaptive routine generation testing
 """
 
 import requests
 import json
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any
 
 BASE_URL = "http://localhost:8002"
-TEST_USER_ID = "35pDPUIfAoRl2Y700bFkxPKYjjf2"
+TEST_USER_ID = "a57f70b4-d0a4-4aef-b721-a4b526f64869"  # Updated test user
+API_KEY = "hosa_flutter_app_2024"  # Required for routine/nutrition generation
 
 # Create logs directory
 LOGS_DIR = Path(__file__).parent.parent / "logs" / "holistic_integration_tests_dynamic"
@@ -74,12 +78,291 @@ def test_endpoint(name: str, url: str, log_filename: str) -> tuple[bool, Optiona
     return success, response_data
 
 
+def test_routine_generation(name: str, user_id: str, archetype: str, log_filename: str,
+                            adaptive_mode: bool = False) -> tuple[bool, Optional[Dict]]:
+    """
+    Test routine generation endpoint (POST)
+
+    Args:
+        name: Test name for display
+        user_id: User ID for generation
+        archetype: User archetype
+        log_filename: Log file name
+        adaptive_mode: True to enable adaptive routine generation
+    """
+    print(f"\n{'='*80}")
+    print(f"Testing: {name}")
+    print(f"POST: {BASE_URL}/api/user/{user_id[:8]}.../routine/generate")
+    print(f"Archetype: {archetype}")
+    print(f"Adaptive Mode: {'ENABLED' if adaptive_mode else 'DISABLED'}")
+    print(f"{'='*80}\n")
+
+    # Set environment variable for adaptive mode
+    if adaptive_mode:
+        os.environ["USE_ADAPTIVE_ROUTINE"] = "true"
+        print("🔵 Feature Flag: USE_ADAPTIVE_ROUTINE=true")
+    else:
+        os.environ["USE_ADAPTIVE_ROUTINE"] = "false"
+        print("📜 Feature Flag: USE_ADAPTIVE_ROUTINE=false (legacy)")
+
+    test_result = {
+        "test_name": name,
+        "endpoint": f"/api/user/{user_id}/routine/generate",
+        "timestamp": datetime.now().isoformat(),
+        "status_code": None,
+        "success": False,
+        "response": None,
+        "error": None,
+        "adaptive_mode": adaptive_mode,
+        "archetype": archetype
+    }
+
+    try:
+        payload = {
+            "archetype": archetype,
+            "preferences": {
+                "force_refresh": True
+            }
+        }
+
+        headers = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
+
+        print(f"⏳ Generating routine...")
+        response = requests.post(
+            f"{BASE_URL}/api/user/{user_id}/routine/generate",
+            json=payload,
+            headers=headers,
+            timeout=300
+        )
+
+        test_result["status_code"] = response.status_code
+        print(f"Status: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            test_result["response"] = data
+            test_result["success"] = True
+
+            # Analyze the routine
+            routine_plan = data.get('routine_plan', {})
+            time_blocks = routine_plan.get('time_blocks', [])
+
+            # Count tasks
+            total_tasks = 0
+            task_distribution = {}
+
+            for block in time_blocks:
+                block_name = block.get('block_name', 'Unknown')
+                tasks = block.get('tasks', [])
+                task_count = len(tasks)
+                total_tasks += task_count
+                task_distribution[block_name] = task_count
+
+            # Store analysis in result
+            test_result["analysis"] = {
+                "total_tasks": total_tasks,
+                "task_distribution": task_distribution,
+                "block_count": len(time_blocks)
+            }
+
+            print(f"\n✓ SUCCESS - Routine Generated")
+            print(f"\n📊 Task Analysis:")
+            print(f"   Total Tasks: {total_tasks}")
+            print(f"   Time Blocks: {len(time_blocks)}")
+            print(f"   Task Distribution:")
+            for block_name, count in task_distribution.items():
+                emoji = "✅" if count <= 2 else "⚠️"
+                print(f"     {emoji} {block_name}: {count} tasks")
+
+            # Check optimization for adaptive mode
+            if adaptive_mode:
+                optimized = total_tasks <= 6
+                print(f"\n🎯 Optimization Check:")
+                print(f"   Target: ≤6 tasks per day")
+                print(f"   Actual: {total_tasks} tasks")
+                print(f"   Status: {'✅ OPTIMIZED' if optimized else '⚠️ ABOVE TARGET'}")
+                test_result["analysis"]["optimized"] = optimized
+
+            success = True
+            response_data = data
+        else:
+            test_result["response"] = response.text
+            print(f"\n✗ FAILED: {response.text[:200]}")
+            success = False
+            response_data = None
+
+    except Exception as e:
+        test_result["error"] = str(e)
+        print(f"\n✗ ERROR: {e}")
+        success = False
+        response_data = None
+
+    # Save to JSON file
+    save_test_result(log_filename, test_result)
+
+    return success, response_data
+
+
+def compare_routine_modes(user_id: str, archetype: str) -> bool:
+    """
+    Compare legacy vs adaptive routine generation
+
+    Returns:
+        True if adaptive mode shows improvement
+    """
+    print(f"\n{'='*80}")
+    print("⚖️  COMPARISON TEST: Legacy vs Adaptive Routine Generation")
+    print(f"{'='*80}")
+
+    # Test 1: Legacy Mode
+    print("\n[1/2] Testing LEGACY Mode...")
+    legacy_success, legacy_data = test_routine_generation(
+        "Routine Generation (LEGACY)",
+        user_id,
+        archetype,
+        "routine_generation_legacy",
+        adaptive_mode=False
+    )
+
+    if not legacy_success:
+        print("\n❌ Legacy mode failed, cannot compare")
+        return False
+
+    # Small delay
+    print("\n⏳ Waiting 5 seconds before next test...")
+    import time
+    time.sleep(5)
+
+    # Test 2: Adaptive Mode
+    print("\n[2/2] Testing ADAPTIVE Mode...")
+    adaptive_success, adaptive_data = test_routine_generation(
+        "Routine Generation (ADAPTIVE)",
+        user_id,
+        archetype,
+        "routine_generation_adaptive",
+        adaptive_mode=True
+    )
+
+    if not adaptive_success:
+        print("\n❌ Adaptive mode failed, cannot compare")
+        return False
+
+    # Comparison
+    print(f"\n{'='*80}")
+    print("📊 COMPARISON RESULTS")
+    print(f"{'='*80}")
+
+    # Load saved results for comparison
+    legacy_result = json.loads((LOGS_DIR / "routine_generation_legacy.json").read_text())
+    adaptive_result = json.loads((LOGS_DIR / "routine_generation_adaptive.json").read_text())
+
+    legacy_tasks = legacy_result['analysis']['total_tasks']
+    adaptive_tasks = adaptive_result['analysis']['total_tasks']
+    reduction = legacy_tasks - adaptive_tasks
+    reduction_pct = (reduction / legacy_tasks * 100) if legacy_tasks > 0 else 0
+
+    print(f"\n🎯 Task Density Comparison:")
+    print(f"   Legacy System:   {legacy_tasks} tasks")
+    print(f"   Adaptive System: {adaptive_tasks} tasks")
+    print(f"   Reduction:       {reduction} tasks ({reduction_pct:.1f}%)")
+
+    print(f"\n📈 Improvement Metrics:")
+    if adaptive_tasks <= 6:
+        print(f"   ✅ Task count within target (≤6)")
+    else:
+        print(f"   ⚠️ Task count above target ({adaptive_tasks}/6)")
+
+    if reduction_pct >= 30:
+        print(f"   ✅ Significant task reduction ({reduction_pct:.1f}%)")
+    elif reduction_pct > 0:
+        print(f"   ⚠️ Moderate task reduction ({reduction_pct:.1f}%)")
+    else:
+        print(f"   ❌ No task reduction")
+
+    # Save comparison summary
+    comparison_summary = {
+        "timestamp": datetime.now().isoformat(),
+        "legacy": {
+            "total_tasks": legacy_tasks,
+            "distribution": legacy_result['analysis']['task_distribution']
+        },
+        "adaptive": {
+            "total_tasks": adaptive_tasks,
+            "distribution": adaptive_result['analysis']['task_distribution'],
+            "optimized": adaptive_result['analysis'].get('optimized', False)
+        },
+        "comparison": {
+            "task_reduction": reduction,
+            "reduction_percentage": reduction_pct,
+            "improvement": reduction > 0
+        }
+    }
+
+    save_test_result("comparison_summary", comparison_summary)
+
+    return reduction > 0
+
+
 def main():
     """Run dynamic tests - fetch IDs from APIs"""
+    print("\n" + "="*80)
     print("HOLISTIC INTEGRATION API - DYNAMIC TEST")
-    print(f"Base URL: {BASE_URL}")
-    print(f"Test User: {TEST_USER_ID}")
-    print("\nThis test dynamically fetches IDs from APIs to simulate real usage\n")
+    print("="*80)
+    print(f"\nBase URL: {BASE_URL}")
+    print(f"Test User: {TEST_USER_ID[:8]}...")
+    print("\nThis test dynamically fetches IDs from APIs to simulate real usage")
+
+    # NEW: Show test menu
+    print("\n📋 Available Test Modes:")
+    print("   1. Original Integration Tests (GET endpoints)")
+    print("   2. Adaptive Routine Generation Test (NEW)")
+    print("   3. Compare Legacy vs Adaptive Routine (NEW)")
+    print("   4. Full Test Suite (All tests)")
+
+    choice = input("\nSelect test mode (1-4) or Enter for default [1]: ").strip() or "1"
+
+    if choice == "2":
+        # Adaptive routine test only
+        print("\n🔵 Running Adaptive Routine Generation Test...")
+        success, _ = test_routine_generation(
+            "Adaptive Routine Generation",
+            TEST_USER_ID,
+            "Foundation Builder",
+            "adaptive_routine_test",
+            adaptive_mode=True
+        )
+        return 0 if success else 1
+
+    elif choice == "3":
+        # Comparison test
+        print("\n⚖️  Running Legacy vs Adaptive Comparison Test...")
+        improvement = compare_routine_modes(TEST_USER_ID, "Foundation Builder")
+        return 0 if improvement else 1
+
+    elif choice == "4":
+        # Full test suite - run both original and new tests
+        print("\n🚀 Running FULL TEST SUITE...")
+
+        # First, run adaptive routine comparison
+        print("\n" + "="*80)
+        print("PART 1: ADAPTIVE ROUTINE TESTING")
+        print("="*80)
+        adaptive_improved = compare_routine_modes(TEST_USER_ID, "Foundation Builder")
+
+        # Then run original integration tests
+        print("\n" + "="*80)
+        print("PART 2: INTEGRATION API TESTS")
+        print("="*80)
+        # Fall through to run original integration tests
+
+    # Original test mode (default for choice 1 and continuation of choice 4)
+    if choice not in ["1", "4"]:
+        # Choices 2 and 3 already handled and returned
+        return 0
+
+    print("\n" + "="*80)
+    print("RUNNING ORIGINAL INTEGRATION TESTS")
+    print("="*80)
 
     results = []
 

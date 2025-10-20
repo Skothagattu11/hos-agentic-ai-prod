@@ -699,6 +699,271 @@ Make your analysis specific to this user's proven patterns and preferences.
         except Exception as e:
             logger.error(f"Failed to ensure context table: {e}")
 
+    # ===== NEW: Dual-Mode Adaptive Routine Context Generation =====
+    # These methods implement the dual-mode system for optimized routine generation
+    # without modifying the existing generate_context method (kept for backward compatibility)
+
+    async def generate_adaptive_routine_context(
+        self,
+        raw_data: Dict[str, Any],
+        user_id: str,
+        archetype: str = None
+    ) -> str:
+        """
+        Generate context for adaptive routine generation with dual-mode support
+
+        NEW: This is the optimized context generator for routine plans.
+        Uses dual-mode approach: Initial baseline for new users, Adaptive evolution for existing users.
+
+        Args:
+            raw_data: Raw engagement data from SimpleEngagementDataService
+            user_id: User identifier
+            archetype: User archetype (Foundation Builder, Peak Performer, etc.)
+
+        Returns:
+            AI-generated context string for routine generation
+        """
+        try:
+            # Check if this is a new user (no past routine plans)
+            last_plans = await self._get_last_plans(user_id, archetype, limit=3)
+            is_new_user = not last_plans or len(last_plans) == 0
+
+            # Calculate engagement metrics
+            calendar_count = len(raw_data.get('calendar_selections', []))
+            checkin_count = len(raw_data.get('task_checkins', []))
+            journal_count = len(raw_data.get('daily_journals', []))
+
+            checkins = raw_data.get('task_checkins', [])
+            completed_count = sum(1 for c in checkins if c.get('completion_status') == 'completed')
+            completion_rate = (completed_count / len(checkins) * 100) if checkins else 0
+
+            if is_new_user:
+                prompt = self._generate_initial_routine_context_prompt(
+                    user_id, archetype, raw_data,
+                    calendar_count, checkin_count, journal_count
+                )
+                logger.info(f"🆕 Generating INITIAL routine context for new user {user_id[:8]}...")
+            else:
+                prompt = self._generate_adaptive_routine_context_prompt(
+                    user_id, archetype, raw_data,
+                    calendar_count, checkin_count, journal_count, completion_rate, last_plans
+                )
+                logger.info(f"🔄 Generating ADAPTIVE routine context for existing user {user_id[:8]}... (past plans: {len(last_plans)})")
+
+            # Generate AI analysis
+            response = await self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=1500  # Increased for detailed analysis
+            )
+
+            context_summary = response.choices[0].message.content
+            logger.info(f"✅ Generated {'INITIAL' if is_new_user else 'ADAPTIVE'} routine context for user {user_id[:8]}...")
+            return context_summary
+
+        except Exception as e:
+            logger.error(f"Failed to generate adaptive routine context for {user_id}: {e}")
+            return f"Context generation failed: {str(e)}"
+
+    def _generate_initial_routine_context_prompt(
+        self,
+        user_id: str,
+        archetype: str,
+        raw_data: Dict,
+        calendar_count: int,
+        checkin_count: int,
+        journal_count: int
+    ) -> str:
+        """Prompt for NEW users - establish baseline"""
+        return f"""
+Analyze this NEW user's data to create INITIAL BASELINE CONTEXT for routine generation.
+
+USER PROFILE:
+- User ID: {user_id[:8]}...
+- Archetype: {archetype or 'Not yet determined'}
+- Status: NEW USER - No previous routine history
+- Data Period: {raw_data.get('data_period', {}).get('days_analyzed', 30)} days
+
+INITIAL DATA AVAILABLE:
+- Calendar Selections: {calendar_count} items (if any - shows intent)
+- Task Check-ins: {checkin_count} completions (if any - early engagement)
+- Daily Journals: {journal_count} entries (if any - reflections)
+
+EARLY ENGAGEMENT DATA (if available):
+Calendar Intent: {json.dumps(raw_data.get('calendar_selections', []), indent=2, default=str)}
+Initial Check-ins: {json.dumps(raw_data.get('task_checkins', []), indent=2, default=str)}
+Early Journals: {json.dumps(raw_data.get('daily_journals', []), indent=2, default=str)}
+
+TASK: Create INITIAL BASELINE CONTEXT for a busy professional with {archetype} archetype.
+
+Since this is a NEW user, focus on:
+
+1. **ARCHETYPE-APPROPRIATE STARTING POINT**:
+   - What's the ideal MVP routine for a {archetype}?
+   - Recommended task count: Foundation Builder/Resilience Rebuilder (2 tasks), Connected Explorer (3 tasks), Systematic Improver/Transformation Seeker (4 tasks), Peak Performer (5 tasks)
+   - What task density is appropriate? (1-2 tasks per energy block)
+   - What progression path makes sense for this archetype?
+
+2. **ENERGY PATTERN BASELINE** (for busy professionals):
+   - Morning Block: What foundational tasks build energy? (1-2 tasks)
+   - Peak Energy Block: Should we include anything or leave empty? (0-1 tasks, usually 0)
+   - Mid-day Slump: Keep EMPTY for MVP (0 tasks - user is working)
+   - Evening Routine: What tasks help unwind and restore? (1-2 tasks)
+   - Wind Down: Sleep preparation task or keep empty? (0-1 tasks)
+
+3. **BUSY PROFESSIONAL CONSTRAINTS**:
+   - Assume flexible but busy schedule (work from home, office, or hybrid)
+   - Focus on tasks that fit AROUND work, not during Peak Energy or Mid-day Slump
+   - Emphasize low-friction, high-impact activities
+   - Total daily time investment: 20-60 minutes depending on archetype
+
+4. **EARLY SIGNALS** (if any data available):
+   - Did they select any tasks in calendar? What types?
+   - Did they complete any check-ins? What patterns?
+   - Did they journal? Any themes about energy, stress, preferences?
+   - Use these as HINTS, not hard constraints
+
+5. **MVP EVOLUTION READINESS**:
+   - Start conservative (fewer tasks = higher completion probability)
+   - Build in clear progression markers (when to add complexity)
+   - Set expectations for what "success" looks like in first 2 weeks
+   - Plan for first evolution point (after 7-14 days of data)
+
+OUTPUT FORMAT:
+
+## Archetype Profile: {archetype}
+- Recommended task count: [2-5 total based on archetype]
+- Task distribution: Morning Block ([1-2]), Peak Energy Block ([0-1]), Mid-day Slump ([0]), Evening Routine ([1-2]), Wind Down ([0-1])
+- Time commitment: [20-90 min/day based on archetype]
+
+## Energy Block Recommendations (Busy Professional)
+**Morning Block (Pre-Work):**
+- Recommended tasks: [1-2 foundational tasks]
+- Example tasks: [specific suggestions aligned with archetype]
+
+**Peak Energy Block (Work Hours):**
+- Recommended: [Usually EMPTY (0 tasks) - user is working, except Peak Performer archetype can have 1 micro-task]
+
+**Mid-day Slump (Work Hours):**
+- Recommended: [EMPTY (0 tasks) - user is working]
+
+**Evening Routine (Post-Work):**
+- Recommended tasks: [1-2 unwinding tasks]
+- Example tasks: [specific suggestions aligned with archetype]
+
+**Wind Down (Sleep Prep):**
+- Recommended: [0-1 calming tasks]
+- Example tasks: [if applicable]
+
+## Early Engagement Insights
+[Analyze any available calendar/checkin/journal data for hints about preferences]
+
+## MVP Routine Baseline Recommendation
+**Total Tasks:** [2-5 based on archetype]
+**Distribution:** Morning ([X]), Peak ([X]), Midday ([0]), Evening ([X]), Wind Down ([X])
+
+Focus on creating a SUSTAINABLE starting point that sets this user up for long-term success through progressive evolution."""
+
+    def _generate_adaptive_routine_context_prompt(
+        self,
+        user_id: str,
+        archetype: str,
+        raw_data: Dict,
+        calendar_count: int,
+        checkin_count: int,
+        journal_count: int,
+        completion_rate: float,
+        last_plans: List[Dict]
+    ) -> str:
+        """Prompt for EXISTING users - adaptive evolution"""
+        return f"""
+Analyze this user's health engagement data to generate ADAPTIVE EVOLUTION CONTEXT for routine optimization.
+
+USER PROFILE:
+- User ID: {user_id[:8]}...
+- Archetype: {archetype or 'Not specified'}
+- Status: EXISTING USER - Has routine history for evolution
+- Data Period: {raw_data.get('data_period', {}).get('days_analyzed', 30)} days
+
+ENGAGEMENT METRICS:
+- Calendar Selections: {calendar_count} items planned
+- Task Check-ins: {checkin_count} tasks tracked
+- Overall Completion Rate: {completion_rate:.1f}%
+- Daily Journals: {journal_count} entries
+
+PREVIOUS ROUTINE ITERATIONS (What we've tried):
+{json.dumps(last_plans, indent=2, default=str)}
+
+CALENDAR SELECTIONS (What they planned to do):
+{json.dumps(raw_data.get('calendar_selections', []), indent=2, default=str)}
+
+TASK CHECK-INS (What they ACTUALLY did + satisfaction):
+{json.dumps(raw_data.get('task_checkins', []), indent=2, default=str)}
+
+DAILY JOURNALS (Energy patterns and reflections):
+{json.dumps(raw_data.get('daily_journals', []), indent=2, default=str)}
+
+TASK: Generate ADAPTIVE EVOLUTION CONTEXT for next routine iteration.
+
+Your goal is NOT to create a new routine but to EVOLVE the existing one based on real performance data.
+
+## CRITICAL ANALYSIS FOR BUSY PROFESSIONALS - ADAPTIVE ROUTINE EVOLUTION
+
+### 1. KEEP & STRENGTHEN (Tasks with >80% completion or high satisfaction)
+Identify high-performing tasks and what made them successful. Recommend keeping these EXACTLY as they are.
+
+### 2. MODIFY & ADAPT (Tasks with 40-80% completion)
+Identify struggling tasks and propose specific adaptations (timing, duration, or approach changes).
+
+### 3. REMOVE OR REPLACE (Tasks with <40% completion)
+Identify failed tasks and explain why they should be removed.
+
+### 4. EVOLUTION STRATEGY (Based on completion rate: {completion_rate:.1f}%)
+Determine user's readiness:
+- OVERWHELMED (Completion <50%): Simplify to 2-3 tasks total
+- PLATEAUED (50-75%): Clean up routine, don't add yet
+- PROGRESSING (>75% for 7+ days): Add ONE small challenge
+- ADVANCED (>85% for 14+ days): Increase intensity of existing tasks
+
+### 5. ENERGY PATTERN OPTIMIZATION (5 Fixed Blocks)
+Analyze performance across:
+- Morning Block: Currently [X] tasks → Target [1-2] tasks
+- Peak Energy Block: Currently [X] tasks → Target [0-1] tasks (usually 0)
+- Mid-day Slump: Currently [X] tasks → Target [0] tasks
+- Evening Routine: Currently [X] tasks → Target [1-2] tasks
+- Wind Down: Currently [X] tasks → Target [0-1] tasks
+
+OUTPUT FORMAT:
+
+## What's Working (Keep & Strengthen)
+[List successful tasks with completion rates and satisfaction scores]
+
+## What Needs Adjustment (Modify & Adapt)
+[List struggling tasks with specific proposed changes]
+
+## What's Not Working (Remove)
+[List failed tasks with rationale for removal]
+
+## Evolution Strategy: [SIMPLIFY/MAINTAIN/PROGRESS/INTENSIFY]
+**Rationale:** [Based on {completion_rate:.1f}% completion rate]
+**Recommended Action:** [Specific guidance for next routine]
+
+## Task Continuity Recommendations
+**Tasks to KEEP (Exact):**
+- [List with completion %, satisfaction, "Don't change" note]
+
+**Tasks to ADAPT:**
+- [List with proposed changes and expected improvement]
+
+**Tasks to REMOVE:**
+- [List with failure reason]
+
+**Tasks to ADD (if ready):**
+- [Only if PROGRESS or INTENSIFY strategy]
+
+Focus on CONTINUOUS IMPROVEMENT through data-driven iterations, not ambitious reinvention."""
+
     async def cleanup(self):
         """Cleanup all services"""
         try:

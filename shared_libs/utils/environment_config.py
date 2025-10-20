@@ -126,7 +126,7 @@ class EnvironmentConfig:
     def get_timeout_config() -> Dict[str, int]:
         """Get timeout configurations based on environment"""
         environment = EnvironmentConfig.get_environment()
-        
+
         if environment == "production":
             return {
                 "openai_request": 60,
@@ -143,3 +143,19 @@ class EnvironmentConfig:
                 "routine_generation": 60,
                 "nutrition_generation": 60
             }
+
+    @staticmethod
+    def use_adaptive_routine_generation() -> bool:
+        """
+        Check if adaptive routine generation (dual-mode optimization) should be used.
+
+        Feature flag for optimized routine generation system with comprehensive wellness elements.
+
+        Default: true (production-ready adaptive routine generation)
+        Set USE_ADAPTIVE_ROUTINE=false to use legacy generation (backward compatibility only)
+
+        Returns:
+            True if adaptive routine generation enabled (default), False for legacy generation
+        """
+        flag_value = os.getenv("USE_ADAPTIVE_ROUTINE", "true").lower()
+        return flag_value in ["true", "1", "yes", "on"]
