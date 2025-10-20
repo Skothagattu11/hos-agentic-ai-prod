@@ -154,7 +154,7 @@ async def get_available_plan_items(
         
         supabase = create_client(supabase_url, supabase_key)
         filter_date = date or datetime.now().strftime('%Y-%m-%d')
-        
+
         # Enhanced query with time_blocks (removed archetype_name as it doesn't exist)
         query = supabase.table("plan_items")\
             .select("""
@@ -170,8 +170,9 @@ async def get_available_plan_items(
                     health_data_integration
                 )
             """)\
-            .eq("profile_id", profile_id)
-        
+            .eq("profile_id", profile_id)\
+            .eq("plan_date", filter_date)  # CRITICAL FIX: Filter by plan_date!
+
         # Apply archetype filter if specified
         if archetype_filter:
             query = query.eq("analysis_result_id", archetype_filter)
