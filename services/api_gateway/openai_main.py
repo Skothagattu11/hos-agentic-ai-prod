@@ -431,6 +431,7 @@ class HealthResponse(BaseModel):
 class PlanGenerationRequest(BaseModel):
     archetype: Optional[str] = None  # Use stored archetype if not provided
     preferences: Optional[Dict[str, Any]] = None  # User preferences for customization
+    timezone: Optional[str] = None  # User's IANA timezone (e.g., "America/New_York", "Asia/Kolkata")
 
 class RoutinePlanResponse(BaseModel):
     status: str
@@ -1090,6 +1091,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
         # Get behavior analysis from the standalone endpoint
         force_refresh = request.preferences.get('force_refresh', False) if request.preferences else False
         archetype = request.archetype or "Foundation Builder"
+        user_timezone = request.timezone  # Extract user's timezone from request
 
         # MVP-Style Logging: Import and prepare input data (independent of database)
         from services.mvp_style_logger import mvp_logger
@@ -1263,7 +1265,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 archetype=archetype,
                 behavior_analysis=behavior_analysis,
                 circadian_analysis=circadian_analysis if circadian_success else None,
-                combined_analysis=combined_analysis
+                combined_analysis=combined_analysis,
+                user_timezone=user_timezone  # Pass user timezone for accurate date calculation
             )
 
             # FINAL AGENT HANDOFF: Log the combined analysis → routine generation transformation
@@ -3854,7 +3857,7 @@ async def run_memory_enhanced_circadian_analysis(user_id: str, archetype: str) -
         print(f"❌ [CIRCADIAN_ENHANCED] Circadian analysis failed completely")
         return None
 
-async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict, circadian_analysis: dict = None, combined_analysis: dict = None, markdown_plan: str = None) -> dict:
+async def run_memory_enhanced_routine_generation(user_id: str, archetype: str, behavior_analysis: dict, circadian_analysis: dict = None, combined_analysis: dict = None, markdown_plan: str = None, user_timezone: str = None) -> dict:
     """
     Memory-Enhanced Routine Generation - Includes all features from /api/analyze
     Features:
@@ -3963,7 +3966,7 @@ Apply the appropriate mode (INITIAL or ADAPTIVE) based on this history."""
             print(f"🏃 [MEMORY_ENHANCED] Using behavior analysis only (circadian analysis not available)")
 
         # Step 5: Run routine planning with memory-enhanced prompt and combined analysis
-        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype, circadian_analysis, markdown_plan=markdown_plan)
+        routine_result = await run_routine_planning_4o(enhanced_prompt, user_context_summary, behavior_analysis, archetype, circadian_analysis, markdown_plan=markdown_plan, user_timezone=user_timezone)
 
         # Step 6: Store complete routine plan in holistic_analysis_results table using AIContextIntegrationService
         analysis_id = None
@@ -4182,7 +4185,7 @@ async def run_memory_enhanced_nutrition_generation(user_id: str, archetype: str,
         return await run_nutrition_planning_4o(system_prompt, user_context_summary, behavior_analysis, archetype)
 
 
-async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
+async def run_nutrition_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, user_timezone: str = None) -> dict:
     """Run nutrition planning using gpt-4o - now includes readiness mode"""
     try:
         client = openai.AsyncOpenAI()
@@ -4240,8 +4243,10 @@ Make this plan practical, evidence-based, and specifically tailored to the {arch
             max_tokens=2000
         )
 
+        from shared_libs.utils.timezone_helper import get_user_local_date
+
         return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
+            "date": get_user_local_date(user_timezone),
             "archetype": archetype,
             "content": response.choices[0].message.content,
             "model_used": "gpt-4o",
@@ -4249,12 +4254,13 @@ Make this plan practical, evidence-based, and specifically tailored to the {arch
             "system": "HolisticOS",
             "readiness_mode": readiness_level
         }
-        
+
     except Exception as e:
+        from shared_libs.utils.timezone_helper import get_user_local_date
         logger.error(f"Error in nutrition planning: {e}")
         # Return fallback nutrition plan
         return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
+            "date": get_user_local_date(user_timezone),
             "archetype": archetype,
             "content": f"HolisticOS {archetype} Nutrition Plan - Fallback plan due to processing error",
             "model_used": "fallback",
@@ -4263,7 +4269,7 @@ Make this plan practical, evidence-based, and specifically tailored to the {arch
             "error": str(e)
         }
 
-async def run_routine_planning_gpt4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str) -> dict:
+async def run_routine_planning_gpt4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, user_timezone: str = None) -> dict:
     """Run routine planning using gpt-4o for plan generation - Phase 4.2 Direct OpenAI Implementation"""
     try:
         client = openai.AsyncOpenAI()
@@ -4306,25 +4312,28 @@ Make this routine practical, evidence-based, and specifically tailored to the {a
             max_tokens=2000
         )
         
+        from shared_libs.utils.timezone_helper import get_user_local_date
+
         return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
+            "date": get_user_local_date(user_timezone),
             "archetype": archetype,
             "content": response.choices[0].message.content,
             "model_used": "gpt-4o",
             "plan_type": "comprehensive_routine",
             "system": "HolisticOS"
         }
-        
+
     except Exception as e:
+        from shared_libs.utils.timezone_helper import get_user_local_date
         print(f"Error in 4o nutrition planning: {e}")
         return {
-            "error": str(e), 
+            "error": str(e),
             "model_used": "gpt-4o - fallback",
             "archetype": archetype,
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "date": get_user_local_date(user_timezone)
         }
 
-async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, circadian_analysis: dict = None, markdown_plan: str = None) -> dict:
+async def run_routine_planning_4o(system_prompt: str, user_context: str, behavior_analysis: dict, archetype: str, circadian_analysis: dict = None, markdown_plan: str = None, user_timezone: str = None) -> dict:
     """
     Run routine planning using gpt-4o
 
@@ -4702,8 +4711,10 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
             # Fallback to text content
             structured_data = {"content": content}
 
+        from shared_libs.utils.timezone_helper import get_user_local_date
+
         return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
+            "date": get_user_local_date(user_timezone),
             "archetype": archetype,
             "content": json.dumps(structured_data),  # Store as JSON string
             "model_used": "gpt-4o",
@@ -4714,12 +4725,13 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
         }
 
     except Exception as e:
+        from shared_libs.utils.timezone_helper import get_user_local_date
         logger.error(f"Error in routine planning: {e}")
         return {
             "error": str(e),
             "model_used": "gpt-4o - fallback",
             "archetype": archetype,
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "date": get_user_local_date(user_timezone)
         }
 
 # =====================================================================
