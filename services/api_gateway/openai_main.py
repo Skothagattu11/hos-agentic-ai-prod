@@ -100,8 +100,55 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 app = FastAPI(
     title="HolisticOS Enhanced API Gateway",
     version="2.0.0",
-    description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation"
+    description="Multi-Agent Health Optimization System with Memory, Insights, and Adaptation",
+    # Configure security scheme for Swagger UI
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+    },
+    # Define security schemes in OpenAPI spec
+    openapi_tags=[
+        {
+            "name": "Insights V2",
+            "description": "Insights generation and management endpoints"
+        }
+    ]
 )
+
+# Customize OpenAPI schema to include security definitions
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    # Add API Key security scheme
+    openapi_schema["components"]["securitySchemes"] = {
+        "X-API-Key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+            "description": "API Key for authentication. Use: `hosa_flutter_app_2024`"
+        }
+    }
+
+    # Apply security to all /api/v2/insights endpoints
+    if "paths" in openapi_schema:
+        for path, path_item in openapi_schema["paths"].items():
+            if "/api/v2/insights" in path:
+                for method in path_item.values():
+                    if isinstance(method, dict) and "operationId" in method:
+                        method["security"] = [{"X-API-Key": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Production error handling middleware
 async def production_error_handler(request: Request, call_next):

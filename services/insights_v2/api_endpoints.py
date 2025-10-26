@@ -11,13 +11,17 @@ Endpoints:
 - POST /api/v2/insights/{insight_id}/feedback - Submit user feedback
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Security
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from .data_aggregation_service import get_data_aggregation_service
 from .insights_generation_service import get_insights_generation_service, Insight
+
+# Define API Key security scheme
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
 
 
 # Request/Response Models
@@ -47,23 +51,39 @@ class InsightsFeedbackRequest(BaseModel):
 
 
 class InsightsResponse(BaseModel):
-    """Response containing generated insights"""
-    status: str
-    user_id: str
-    insights: List[Dict[str, Any]]
-    generated_at: str
-    metadata: Dict[str, Any]
+    """Response containing generated insights - Flutter-compatible format"""
+    success: bool = Field(description="Whether insights were generated successfully")
+    insights: List[Dict[str, Any]] = Field(description="List of generated insights")
+    source: str = Field(description="Source of insights (e.g., 'generated', 'cached')")
+    count: int = Field(description="Number of insights returned")
 
 
-# Create router
-router = APIRouter(prefix="/api/v2/insights", tags=["Insights V2"])
+# Define API key verification function first
+async def verify_api_key(api_key: str = Security(api_key_header)) -> str:
+    """Verify the API key"""
+    if api_key != "hosa_flutter_app_2024":
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key"
+        )
+    return api_key
 
 
-@router.post("/{user_id}/generate", response_model=InsightsResponse)
+# Create router with global security dependency
+router = APIRouter(
+    prefix="/api/v2/insights",
+    tags=["Insights V2"],
+    dependencies=[Security(verify_api_key)]
+)
+
+
+@router.post(
+    "/{user_id}/generate",
+    response_model=InsightsResponse
+)
 async def generate_insights(
     user_id: str,
-    request: GenerateInsightsRequest,
-    http_request: Request
+    request: GenerateInsightsRequest
 ):
     """
     **Manual Trigger: Generate Fresh Insights**
@@ -110,14 +130,7 @@ async def generate_insights(
     ```
     """
     try:
-        # API key validation (same pattern as existing endpoints)
-        api_key = http_request.headers.get("X-API-Key")
-        if api_key != "hosa_flutter_app_2024":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or missing API key"
-            )
-
+        # API key already validated by dependency injection
         # Get services
         data_service = await get_data_aggregation_service()
         insights_service = await get_insights_generation_service()
@@ -178,8 +191,7 @@ async def generate_insights(
 async def get_latest_insights(
     user_id: str,
     limit: int = 10,
-    category: Optional[str] = None,
-    http_request: Request = None
+    category: Optional[str] = None
 ):
     """
     **Get Latest Generated Insights**
@@ -192,15 +204,7 @@ async def get_latest_insights(
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
-    # API key validation
-    if http_request:
-        api_key = http_request.headers.get("X-API-Key")
-        if api_key != "hosa_flutter_app_2024":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or missing API key"
-            )
-
+    # API key already validated by dependency injection
     # TODO: Implement retrieval from Supabase
     return {
         "status": "not_implemented",
@@ -210,7 +214,7 @@ async def get_latest_insights(
 
 
 @router.patch("/{insight_id}/acknowledge")
-async def acknowledge_insight(insight_id: str, http_request: Request):
+async def acknowledge_insight(insight_id: str):
     """
     **Mark Insight as Acknowledged**
 
@@ -218,15 +222,7 @@ async def acknowledge_insight(insight_id: str, http_request: Request):
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
-    # API key validation
-    if http_request:
-        api_key = http_request.headers.get("X-API-Key")
-        if api_key != "hosa_flutter_app_2024":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or missing API key"
-            )
-
+    # API key already validated by dependency injection
     # TODO: Implement acknowledgment in Supabase
     return {
         "status": "not_implemented",
@@ -238,8 +234,7 @@ async def acknowledge_insight(insight_id: str, http_request: Request):
 @router.post("/{insight_id}/feedback")
 async def submit_feedback(
     insight_id: str,
-    feedback: InsightsFeedbackRequest,
-    http_request: Request
+    feedback: InsightsFeedbackRequest
 ):
     """
     **Submit User Feedback on Insight**
@@ -249,15 +244,7 @@ async def submit_feedback(
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
-    # API key validation
-    if http_request:
-        api_key = http_request.headers.get("X-API-Key")
-        if api_key != "hosa_flutter_app_2024":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or missing API key"
-            )
-
+    # API key already validated by dependency injection
     # TODO: Implement feedback storage in Supabase
     return {
         "status": "not_implemented",
