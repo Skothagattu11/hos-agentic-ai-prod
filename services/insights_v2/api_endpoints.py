@@ -141,20 +141,29 @@ async def generate_insights(
         # TODO: Store insights in Supabase (Phase 1, Sprint 1.3)
         # await insights_storage_service.store_insights(result.insights, user_id)
 
-        # Format response
-        return InsightsResponse(
-            status="success",
-            user_id=user_id,
-            insights=[insight.to_dict() for insight in result.insights],
-            generated_at=datetime.now().isoformat(),
-            metadata={
-                "insights_count": len(result.insights),
-                "generation_time_ms": result.generation_time_ms,
-                "model_used": result.model_used,
-                "timeframe_days": request.timeframe_days,
-                "archetype": request.archetype
-            }
-        )
+        # Format response to match Flutter app expectations
+        # Flutter expects: {success, insights, source, count}
+        formatted_insights = []
+        for insight in result.insights:
+            insight_dict = insight.to_dict()
+            # Map backend fields to Flutter expected fields
+            formatted_insights.append({
+                "id": insight_dict["insight_id"],
+                "title": insight_dict["title"],
+                "content": insight_dict["content"],
+                "type": insight_dict["category"],  # Flutter expects 'type' not 'category'
+                "priority": 1 if insight_dict["priority"] == "high" else 2 if insight_dict["priority"] == "medium" else 3,
+                "actionability_score": insight_dict["actionability_score"],
+                "created_at": insight_dict["generated_at"]
+            })
+
+        # Return format matching Flutter InsightsResponse model
+        return {
+            "success": True,
+            "insights": formatted_insights,
+            "source": "generated",
+            "count": len(formatted_insights)
+        }
 
     except HTTPException:
         raise
@@ -169,7 +178,8 @@ async def generate_insights(
 async def get_latest_insights(
     user_id: str,
     limit: int = 10,
-    category: Optional[str] = None
+    category: Optional[str] = None,
+    http_request: Request = None
 ):
     """
     **Get Latest Generated Insights**
@@ -182,6 +192,15 @@ async def get_latest_insights(
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
+    # API key validation
+    if http_request:
+        api_key = http_request.headers.get("X-API-Key")
+        if api_key != "hosa_flutter_app_2024":
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or missing API key"
+            )
+
     # TODO: Implement retrieval from Supabase
     return {
         "status": "not_implemented",
@@ -191,7 +210,7 @@ async def get_latest_insights(
 
 
 @router.patch("/{insight_id}/acknowledge")
-async def acknowledge_insight(insight_id: str):
+async def acknowledge_insight(insight_id: str, http_request: Request):
     """
     **Mark Insight as Acknowledged**
 
@@ -199,6 +218,15 @@ async def acknowledge_insight(insight_id: str):
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
+    # API key validation
+    if http_request:
+        api_key = http_request.headers.get("X-API-Key")
+        if api_key != "hosa_flutter_app_2024":
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or missing API key"
+            )
+
     # TODO: Implement acknowledgment in Supabase
     return {
         "status": "not_implemented",
@@ -210,7 +238,8 @@ async def acknowledge_insight(insight_id: str):
 @router.post("/{insight_id}/feedback")
 async def submit_feedback(
     insight_id: str,
-    feedback: InsightsFeedbackRequest
+    feedback: InsightsFeedbackRequest,
+    http_request: Request
 ):
     """
     **Submit User Feedback on Insight**
@@ -220,6 +249,15 @@ async def submit_feedback(
 
     **Status:** Phase 1, Sprint 1.3 - Not yet implemented
     """
+    # API key validation
+    if http_request:
+        api_key = http_request.headers.get("X-API-Key")
+        if api_key != "hosa_flutter_app_2024":
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or missing API key"
+            )
+
     # TODO: Implement feedback storage in Supabase
     return {
         "status": "not_implemented",
