@@ -19,5 +19,6 @@ secure-smtplib==0.1.1
 requests
 python-dateutil
 tzdata
+apscheduler==3.10.4
 
 

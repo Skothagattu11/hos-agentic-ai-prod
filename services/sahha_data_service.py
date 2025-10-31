@@ -1,10 +1,14 @@
 """
-Sahha Data Service - Integrates direct Sahha fetch with existing flow
-MVP-style: Simple wrapper, non-breaking integration
+Sahha Data Service - Always-Live Fetch with Database Fallback
+
+Strategy:
+- ALWAYS fetch live from Sahha API (prioritizes freshness)
+- Falls back to database cache if Sahha API fails
+- Background scheduler keeps database cache warm
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 import asyncio
 
@@ -17,17 +21,114 @@ logger = logging.getLogger(__name__)
 
 class SahhaDataService:
     """
-    Wraps Sahha client for seamless integration with existing analysis flow
+    Always-live Sahha data fetching with database fallback
 
     Features:
-    - Fetches directly from Sahha (with watermark for incremental)
-    - Converts to UserHealthContext format
-    - Submits background archival job
-    - Fallback to Supabase on error
+    - ALWAYS fetches fresh data from Sahha API
+    - Falls back to database if Sahha API fails
+    - Archives data in background for redundancy
     """
 
     def __init__(self):
         self.sahha_client = get_sahha_client()
+
+    async def get_sahha_data_live(
+        self,
+        user_id: str,
+        days: int = 7
+    ) -> UserHealthContext:
+        """
+        ALWAYS fetch LIVE data from Sahha API
+
+        Prioritizes data freshness. Falls back to database if Sahha fails.
+
+        Args:
+            user_id: User identifier
+            days: Days to fetch
+
+        Returns:
+            UserHealthContext with Sahha data
+        """
+        logger.info(f"[SAHHA_LIVE] Fetching LIVE from Sahha API for {user_id[:8]}...")
+
+        try:
+            # Fetch directly from Sahha API
+            sahha_data = await self.sahha_client.fetch_health_data(
+                external_id=user_id,
+                since_timestamp=None,
+                days=days
+            )
+
+            if not sahha_data.get("biomarkers") and not sahha_data.get("scores"):
+                logger.warning(f"[SAHHA_LIVE] Sahha returned no data, trying database...")
+                raise Exception("No data from Sahha")
+
+            logger.info(
+                f"[SAHHA_LIVE] ✅ Fresh: "
+                f"{len(sahha_data['biomarkers'])} biomarkers + "
+                f"{len(sahha_data['scores'])} scores"
+            )
+
+            # Convert to UserHealthContext
+            context = self._convert_to_health_context(user_id, sahha_data, days)
+
+            # Archive in background (non-blocking)
+            asyncio.create_task(self._submit_archival_job(
+                user_id=user_id,
+                archetype="unknown",
+                analysis_type="live_fetch",
+                sahha_data=sahha_data
+            ))
+
+            return context
+
+        except Exception as e:
+            logger.error(f"[SAHHA_LIVE] Sahha failed: {e}")
+            logger.info(f"[SAHHA_LIVE] ⚠️  Falling back to database...")
+
+            # Fallback: Load from database
+            try:
+                from shared_libs.supabase_client.adapter import get_db_adapter
+                db = get_db_adapter()
+
+                # Fetch from database
+                scores_query = """
+                    SELECT * FROM scores
+                    WHERE profile_id = $1
+                      AND created_at >= NOW() - INTERVAL '{} days'
+                    ORDER BY created_at DESC
+                """.format(days)
+
+                biomarkers_query = """
+                    SELECT * FROM biomarkers
+                    WHERE profile_id = $1
+                      AND created_at >= NOW() - INTERVAL '{} days'
+                    ORDER BY created_at DESC
+                """.format(days)
+
+                scores = await db.fetch(scores_query, user_id)
+                biomarkers = await db.fetch(biomarkers_query, user_id)
+
+                if scores or biomarkers:
+                    logger.info(
+                        f"[SAHHA_LIVE] ✅ Using database: "
+                        f"{len(scores)} scores + {len(biomarkers)} biomarkers"
+                    )
+
+                    return create_health_context_from_raw_data(
+                        user_id=user_id,
+                        raw_scores=[dict(s) for s in scores],
+                        raw_biomarkers=[dict(b) for b in biomarkers],
+                        raw_archetypes=[],
+                        days=days
+                    )
+                else:
+                    logger.error(f"[SAHHA_LIVE] No data in database either!")
+                    return self._create_empty_context(user_id, days)
+
+            except Exception as db_error:
+                logger.error(f"[SAHHA_LIVE] Database fallback failed: {db_error}")
+                return self._create_empty_context(user_id, days)
 
     async def fetch_health_data_for_analysis(
         self,

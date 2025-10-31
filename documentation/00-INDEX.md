@@ -28,14 +28,19 @@ Project completion reports, integration summaries, and test results.
 - **Phase Completions**: Multi-phase milestone completion reports
 - **Integration Summaries**: Integration completion and status updates
 - **Test Results**: Testing outcomes and validation reports
+- **7DAY_TEST_ANALYSIS.md**: Phase 5.0 friction-reduction test results (9.2/10 rating)
 
 ### [05 - Setup Guides](./05-setup-guides/)
 Development setup, deployment, and operational documentation.
 
 - **Operations**: Deployment runbooks and incident response playbooks
+- **DEPLOYMENT_CHECKLIST.md**: Sahha live fetch + background scheduler deployment guide
+- **PRE_DEPLOYMENT_CHECKLIST.md**: Phase 5.0 pre-deployment verification
 
 ### [06 - Reference](./06-reference/)
 Technical specifications, API references, and system documentation.
+
+- **SAHHA_FINAL_STRATEGY.md**: Always-live Sahha fetch with database fallback (current implementation)
 
 ---
 
@@ -93,10 +98,11 @@ Check these locations for latest changes:
 - **Phase 2**: Integration (Real user data, engagement tracking)
 - **Phase 3**: Enhancement (Memory systems, insights generation)
 - **Phase 4**: Production (Infrastructure, error handling, optimization)
-- **Phase 4.5**: Dynamic Circadian (Personalized timing, AI extraction) ✅ **Current**
+- **Phase 4.5**: Dynamic Circadian (Personalized timing, AI extraction)
+- **Phase 5.0**: Friction-Reduction + Preferences System ✅ **Current**
 
 ---
 
-**Last Updated**: 2025-10-20
-**Documentation Version**: 2.0
-**System Status**: Production Ready
+**Last Updated**: 2025-10-31
+**Documentation Version**: 2.1
+**System Status**: Production Ready (Phase 5.0 Complete)

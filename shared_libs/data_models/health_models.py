@@ -48,9 +48,15 @@ class BiomarkerData(BaseModel):
     data: Dict[str, Any] = Field(default_factory=dict)
     start_date_time: datetime
     end_date_time: Optional[datetime] = None
-    created_at: datetime
-    updated_at: datetime
-    
+    created_at: Optional[datetime] = None  # Optional - Sahha sometimes returns null
+    updated_at: Optional[datetime] = None  # Optional - Sahha sometimes returns null
+
+    @validator('created_at', 'updated_at', pre=True, always=True)
+    def set_timestamps_if_none(cls, v):
+        """Set timestamp to current time if None (Sahha API sometimes returns null)"""
+        from datetime import datetime, timezone
+        return v if v is not None else datetime.now(timezone.utc)
+
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()

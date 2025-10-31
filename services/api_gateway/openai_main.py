@@ -572,6 +572,16 @@ async def initialize_agents():
             logger.error(f"[STARTUP] Failed to start background worker: {e}")
             # Non-critical - continue without background archival
 
+        # NEW: Initialize background scheduler for automated Sahha data refresh
+        try:
+            from services.background.scheduler_service import get_scheduler
+            scheduler = get_scheduler()
+            await scheduler.start()
+            logger.info("[STARTUP] Background scheduler started successfully")
+        except Exception as e:
+            logger.error(f"[STARTUP] Failed to start background scheduler: {e}")
+            # Non-critical - system works without scheduler (just no proactive refresh)
+
         # REMOVED: Automatic background scheduler - now using on-demand analysis
         # Behavior analysis will be triggered only when routine/nutrition plans are requested
         # # Production: Verbose print removed  # Commented to reduce noise
@@ -635,6 +645,15 @@ async def shutdown_agents():
             logger.info("[SHUTDOWN] Background worker stopped")
         except Exception as e:
             logger.error(f"[SHUTDOWN] Failed to stop background worker: {e}")
+
+        # NEW: Stop background scheduler
+        try:
+            from services.background.scheduler_service import get_scheduler
+            scheduler = get_scheduler()
+            await scheduler.stop()
+            logger.info("[SHUTDOWN] Background scheduler stopped")
+        except Exception as e:
+            logger.error(f"[SHUTDOWN] Failed to stop background scheduler: {e}")
 
         # Stop behavior analysis scheduler
         from services.scheduler.behavior_analysis_scheduler import stop_behavior_analysis_scheduler
