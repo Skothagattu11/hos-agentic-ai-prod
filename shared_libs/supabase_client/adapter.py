@@ -1023,14 +1023,20 @@ class SupabaseAsyncPGAdapter:
         try:
             # Use Supabase's count functionality
             supabase_query = self.client.table(parsed_query['table']).select('*', count='exact', head=True)
-            
+
             # Apply WHERE conditions
             if parsed_query.get('where_conditions'):
                 for condition in parsed_query['where_conditions']:
                     column = condition['column']
                     operator = condition['operator']
-                    value = condition['value']
-                    
+                    param_index = condition.get('param_index')
+
+                    # Use raw arg value if parameter placeholder was used
+                    if param_index is not None and param_index < len(args):
+                        value = args[param_index]
+                    else:
+                        value = condition['value']
+
                     if operator == 'eq':
                         supabase_query = supabase_query.eq(column, value)
                     elif operator == 'gte':
@@ -1040,8 +1046,11 @@ class SupabaseAsyncPGAdapter:
             
             # Execute query
             result = supabase_query.execute()
+
+            # Debug: Log the response details
             count_value = result.count if result.count is not None else 0
-            
+            print(f"🔍 [ADAPTER_DEBUG] Count query response: count={count_value}, has_data={len(result.data) if result.data else 0}")
+
             # Return in format expected by fetchval
             return [{"count": count_value}]
             

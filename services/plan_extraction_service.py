@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 EXTRACTION_METHOD = os.getenv('PLAN_EXTRACTION_METHOD', 'regex')  # 'regex' or 'ai' - Default: regex (instant)
 
 # Log the extraction method being used
-logger.info(f"🔧 Plan Extraction Method: {EXTRACTION_METHOD} (from env var: {os.getenv('PLAN_EXTRACTION_METHOD', 'NOT SET')})")
+logger.info(f"[CONFIG] Plan Extraction Method: {EXTRACTION_METHOD} (from env var: {os.getenv('PLAN_EXTRACTION_METHOD', 'NOT SET')})")
 
 # Production logging control - only errors and warnings in production
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
@@ -50,7 +50,7 @@ class TimeBlockContext:
     parent_routine_id: Optional[str] = None
     archetype: Optional[str] = None
 
-@dataclass 
+@dataclass
 class ExtractedTask:
     """Represents a single actionable task within a time block"""
     task_id: str
@@ -63,6 +63,7 @@ class ExtractedTask:
     priority_level: str
     task_order_in_block: int
     time_block_id: str  # Reference to parent time block
+    category: Optional[str] = None  # Task category (nutrition, exercise, recovery, etc.)
     parent_routine_id: Optional[str] = None
 
 @dataclass
@@ -95,15 +96,16 @@ class PlanExtractionService:
         
         self.supabase = create_client(supabase_url, supabase_key)
         
-    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str, override_plan_date: str = None) -> List[Dict[str, Any]]:
+    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str, override_plan_date: str = None, preselected_tasks: dict = None) -> List[Dict[str, Any]]:
         """
         Extract trackable tasks and time blocks from a plan and store them in normalized structure
-        
+
         Args:
             analysis_result_id: ID from holistic_analysis_results table
             profile_id: User's profile ID
             override_plan_date: Optional date to override the plan_date (YYYY-MM-DD format). If not provided, uses analysis_date from holistic_analysis_results.
-            
+            preselected_tasks: Optional dict from TaskPreseeder with pre-selected library tasks for Option B source tracking
+
         Returns:
             List of extracted and stored plan items with time block relationships
         """
@@ -149,7 +151,7 @@ class PlanExtractionService:
 
             if not extracted_plan or not extracted_plan.time_blocks or not extracted_plan.tasks:
                 # Fallback to old extraction method if parsers fail
-                logger.warning("⚠️ Auto-parsers failed, falling back to legacy extraction")
+                logger.warning("[WARNING] Auto-parsers failed, falling back to legacy extraction")
                 extracted_plan = await self._extract_plan_with_normalized_structure(plan_content, analysis_result, profile_id)
 
             extraction_time = time.time() - extraction_start
@@ -186,12 +188,13 @@ class PlanExtractionService:
                 profile_id,
                 extracted_plan.tasks,
                 time_block_id_map,
-                override_plan_date
+                override_plan_date,
+                preselected_tasks  # Pass through for Option B source tracking
             )
             store_items_time = time.time() - store_items_start
 
             total_time = time.time() - total_start
-            logger.info(f"✅ Successfully stored {len(stored_time_blocks)} time blocks and {len(stored_items)} plan items in {total_time:.2f}s total")
+            logger.info(f"[SUCCESS] Successfully stored {len(stored_time_blocks)} time blocks and {len(stored_items)} plan items in {total_time:.2f}s total")
             logger.info(f"   Breakdown: extraction={extraction_time:.2f}s, store_blocks={store_blocks_time:.2f}s, store_items={store_items_time:.2f}s")
             return stored_items
             
@@ -850,10 +853,10 @@ class PlanExtractionService:
                     pass  # Production: Remove verbose pattern logging
                     break
                 else:
-                    logger.debug(f"❌ Pattern {i+1} found 0 matches")
+                    logger.debug(f"[ERROR] Pattern {i+1} found 0 matches")
             
             if not time_block_matches:
-                logger.warning("❌ No time blocks found with structured patterns - trying emergency fallback")
+                logger.warning("[ERROR] No time blocks found with structured patterns - trying emergency fallback")
                 # BULLETPROOF FALLBACK: Extract anything that looks like a time block
                 return self._emergency_extraction_fallback(content, analysis_result, user_id, date, archetype)
 
@@ -1008,10 +1011,10 @@ class PlanExtractionService:
                             matches = list(re.finditer(task_pattern, tasks_content, re.DOTALL | re.IGNORECASE))
                             if matches:
                                 task_matches = matches
-                                logger.debug(f"✅ Found {len(matches)} tasks using task pattern {i+1}")
+                                logger.debug(f"[SUCCESS] Found {len(matches)} tasks using task pattern {i+1}")
                                 break
                             else:
-                                logger.debug(f"❌ Task pattern {i+1} found 0 matches")
+                                logger.debug(f"[ERROR] Task pattern {i+1} found 0 matches")
 
                         for task_match in task_matches:
                             # Handle different task pattern formats
@@ -1079,10 +1082,10 @@ class PlanExtractionService:
                             all_tasks.append(task)
                             global_task_order += 1
 
-                            logger.info(f"  ✓ Extracted task: {task_name} ({time_info})")
+                            logger.info(f"  [OK] Extracted task: {task_name} ({time_info})")
                             logger.debug(f"    Task details - Name: '{task_name}', Time: '{time_info}', Description: '{task_description[:50]}...'")
                 else:
-                    logger.warning(f"❌ No tasks section found in block: {block_title}")
+                    logger.warning(f"[ERROR] No tasks section found in block: {block_title}")
                     logger.debug(f"Block content preview (500 chars): {block_content[:500]}...")
             
             # Create the complete extracted plan
@@ -1129,7 +1132,7 @@ class PlanExtractionService:
         all_tasks = []
         
         try:
-            logger.info("🚨 EMERGENCY EXTRACTION: Using aggressive fallback patterns")
+            logger.info("[EMERGENCY] EMERGENCY EXTRACTION: Using aggressive fallback patterns")
             
             # STEP 1: Find ANYTHING that looks like a time block (very loose patterns)
             emergency_patterns = [
@@ -1181,7 +1184,7 @@ class PlanExtractionService:
             
             # STEP 2: If still no blocks, create one big block from the entire content
             if not time_blocks:
-                logger.info("🚨 CREATING SINGLE MEGA-BLOCK from entire content")
+                logger.info("[EMERGENCY] CREATING SINGLE MEGA-BLOCK from entire content")
                 time_block = TimeBlockContext(
                     block_id="mega_block_1",
                     title="Complete Plan Content",
@@ -1197,14 +1200,14 @@ class PlanExtractionService:
             
             # STEP 3: Ensure we have at least SOMETHING
             if not all_tasks:
-                logger.info("🚨 NO TASKS FOUND - Creating placeholder tasks")
+                logger.info("[EMERGENCY] NO TASKS FOUND - Creating placeholder tasks")
                 # Create placeholder tasks from any bullet points or lines with keywords
                 placeholder_tasks = self._create_placeholder_tasks(content, time_blocks[0].block_id if time_blocks else "fallback_block")
                 all_tasks.extend(placeholder_tasks)
             
             # STEP 4: If we STILL have nothing, create absolute minimum
             if not time_blocks and not all_tasks:
-                logger.warning("🚨 ABSOLUTE FALLBACK - Creating minimal structure")
+                logger.warning("[EMERGENCY] ABSOLUTE FALLBACK - Creating minimal structure")
                 time_blocks = [TimeBlockContext(
                     block_id="absolute_fallback",
                     title="Plan Content (Structure not detected)",
@@ -1244,7 +1247,7 @@ class PlanExtractionService:
             )
             
         except Exception as e:
-            logger.error(f"🚨 EMERGENCY EXTRACTION FAILED: {e}")
+            logger.error(f"[EMERGENCY] EMERGENCY EXTRACTION FAILED: {e}")
             # ABSOLUTE LAST RESORT
             return ExtractedPlan(
                 plan_id=analysis_result.get('id', 'error'),
@@ -1283,7 +1286,7 @@ class PlanExtractionService:
             # Any line with ** and containing time info
             r'[-*]\s*\*\*([^*]*?(?:\d{1,2}:\d{2}[^*]*?)?)\*\*[:\s]*([^\n]*)',
             # Any bullet point
-            r'[-*•]\s*([^\n]{10,})',
+            r'[-*-]\s*([^\n]{10,})',
             # Any line containing time patterns
             r'([^\n]*\d{1,2}:\d{2}[^\n]*)',
             # Just capture anything after **
@@ -1424,12 +1427,12 @@ class PlanExtractionService:
 
                     # Check if AI extraction returned empty results (indication of failure)
                     if not extracted_plan.time_blocks or not extracted_plan.tasks:
-                        logger.warning("⚠️ AI extraction returned empty results, falling back to regex")
+                        logger.warning("[WARNING] AI extraction returned empty results, falling back to regex")
                         raise Exception("Empty AI extraction result")
 
                 except Exception as ai_error:
-                    logger.error(f"❌ AI extraction failed: {ai_error}")
-                    logger.info("🔄 Falling back to regex extraction...")
+                    logger.error(f"[ERROR] AI extraction failed: {ai_error}")
+                    logger.info("[PROCESS] Falling back to regex extraction...")
                     extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
             else:
                 extracted_plan = self.extract_plan_with_time_blocks(content, analysis_result)
@@ -1502,7 +1505,7 @@ class PlanExtractionService:
             for tb in time_blocks:
                 # Check for duplicates
                 if tb.title in block_titles_seen:
-                    logger.warning(f"⚠️ Duplicate block_title detected: {tb.title}")
+                    logger.warning(f"[WARNING] Duplicate block_title detected: {tb.title}")
                 block_titles_seen.add(tb.title)
 
                 block_data = {
@@ -1535,10 +1538,35 @@ class PlanExtractionService:
             logger.error(f"Error storing time blocks: {str(e)}")
             raise HolisticOSException(f"Failed to store time blocks: {str(e)}")
     
-    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None) -> List[Dict[str, Any]]:
-        """Store plan items with time block relationships"""
+    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None, preselected_tasks: dict = None) -> List[Dict[str, Any]]:
+        """
+        Store plan items with time block relationships and Option B source tracking
+
+        Args:
+            analysis_result_id: Analysis result ID
+            profile_id: User profile ID
+            tasks: List of extracted tasks
+            time_block_id_map: Mapping of time block keys to IDs
+            override_plan_date: Optional plan date override
+            preselected_tasks: Optional dict from TaskPreseeder for source tracking
+        """
         if not tasks:
             return []
+
+        # === OPTION B: Build library task lookup for matching ===
+        library_task_map = {}
+        if preselected_tasks and preselected_tasks.get('has_sufficient_feedback'):
+            for lib_task in preselected_tasks.get('preselected_tasks', []):
+                # Use lowercase title for fuzzy matching
+                task_key = lib_task.get('name', '').lower().strip()
+                library_task_map[task_key] = {
+                    'task_library_id': lib_task.get('id'),
+                    'category': lib_task.get('category'),
+                    'subcategory': lib_task.get('subcategory'),
+                    'variation_group': lib_task.get('variation_group'),
+                    'source': 'library'
+                }
+            logger.info(f"📚 [OPTION_B] Loaded {len(library_task_map)} library tasks for matching")
         
         try:
             # Use override_plan_date if provided, otherwise get from holistic_analysis_results
@@ -1558,30 +1586,59 @@ class PlanExtractionService:
             
             # Prepare data for insertion
             insert_data = []
+            library_match_count = 0
+            ai_task_count = 0
+
             for task in tasks:
                 # Find the time block ID - improved matching logic
                 time_block_id = None
                 task_block_key = task.time_block_id
-                
+
                 # Direct exact match (should always work with AI extraction)
                 if task_block_key in time_block_id_map:
                     time_block_id = time_block_id_map[task_block_key]
-                    logger.debug(f"✅ Direct match: '{task.title}' -> '{task_block_key}'")
+                    logger.debug(f"[SUCCESS] Direct match: '{task.title}' -> '{task_block_key}'")
                 else:
                     # If direct match fails, log warning and use first available block
-                    logger.warning(f"❌ No direct match for task '{task.title}' with time_block_id '{task_block_key}'")
+                    logger.warning(f"[ERROR] No direct match for task '{task.title}' with time_block_id '{task_block_key}'")
                     logger.warning(f"Available keys: {list(time_block_id_map.keys())[:5]}")
                     # Fallback: use first block if available
                     if time_block_id_map:
                         time_block_id = list(time_block_id_map.values())[0]
                         logger.warning(f"Using fallback block: {time_block_id}")
-                
+
                 # Log the mapping for debugging
                 if time_block_id:
                     logger.debug(f"Mapped task '{task.title}' to time block ID: {time_block_id}")
                 else:
                     logger.warning(f"Could not map task '{task.title}' with time_block_id '{task.time_block_id}' to any time block")
-                
+
+                # === OPTION B: Match task to library tasks for source tracking ===
+                task_source = 'ai'  # Default to AI-generated
+                task_library_id = None
+                task_category = task.category  # Use category from AI response (if provided)
+                task_subcategory = None
+                task_variation_group = None
+
+                if library_task_map:
+                    # Try exact match first (case-insensitive)
+                    task_key = task.title.lower().strip()
+
+                    if task_key in library_task_map:
+                        # Exact match found
+                        lib_data = library_task_map[task_key]
+                        task_source = lib_data['source']
+                        task_library_id = lib_data['task_library_id']
+                        task_category = lib_data['category']  # Library category overrides AI category
+                        task_subcategory = lib_data.get('subcategory')
+                        task_variation_group = lib_data.get('variation_group')
+                        library_match_count += 1
+                        logger.debug(f"[SUCCESS] [OPTION_B] Library match: '{task.title}' -> {task_library_id}")
+                    else:
+                        # No match - AI-generated task (use category from AI response)
+                        ai_task_count += 1
+                        logger.debug(f"🤖 [OPTION_B] AI-generated task: '{task.title}' (category: {task_category})")
+
                 item_data = {
                     'analysis_result_id': analysis_result_id,
                     'profile_id': profile_id,
@@ -1598,9 +1655,19 @@ class PlanExtractionService:
                     'task_order_in_block': task.task_order_in_block,
                     'is_trackable': True,
                     'priority_level': task.priority_level,
-                    'plan_date': plan_date  # Add the plan date from analysis
+                    'plan_date': plan_date,  # Add the plan date from analysis
+                    # === OPTION B: New columns for source tracking ===
+                    'source': task_source,
+                    'task_library_id': task_library_id,
+                    'category': task_category,
+                    'subcategory': task_subcategory,
+                    'variation_group': task_variation_group
                 }
                 insert_data.append(item_data)
+
+            # Log Option B statistics
+            if library_task_map:
+                logger.info(f"[DATA] [OPTION_B] Task distribution: {library_match_count} library, {ai_task_count} AI-generated")
             
             # Insert into database (use upsert to handle duplicates)
             result = self.supabase.table("plan_items")\

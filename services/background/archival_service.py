@@ -263,15 +263,15 @@ class ArchivalService:
             }
 
             # Update the most recent analysis for this user + archetype + analysis_type
+            # Note: Supabase Python client doesn't support .order() on update queries
+            # We'll update all matching records (should only be one recent record anyway)
             result = supabase.table("archetype_analysis_tracking").update(update_data).eq(
                 "user_id", user_id
             ).eq(
                 "archetype", archetype
             ).eq(
                 "analysis_type", analysis_type
-            ).order(
-                "analysis_timestamp", desc=True
-            ).limit(1).execute()
+            ).execute()
 
             if result.data:
                 logger.debug(f"[ARCHIVAL] Updated sync status for {user_id[:8]}... ({archetype})")

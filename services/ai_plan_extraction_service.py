@@ -84,7 +84,7 @@ class AIPlanExtractionService:
 
 {{
   "time_blocks": [{{"title": "Zone (time): purpose", "time_range": "HH:MM-HH:MM AM/PM", "purpose": "text", "block_order": 1}}],
-  "tasks": [{{"title": "task", "description": "desc", "time_block_order": 1, "scheduled_time": "HH:MM", "scheduled_end_time": "HH:MM", "estimated_duration_minutes": 30, "task_type": "wellness", "priority_level": "medium"}}]
+  "tasks": [{{"title": "task", "description": "desc", "time_block_order": 1, "scheduled_time": "HH:MM", "scheduled_end_time": "HH:MM", "estimated_duration_minutes": 30, "task_type": "wellness", "category": "exercise", "priority_level": "medium"}}]
 }}
 
 Rules:
@@ -93,6 +93,7 @@ Rules:
 3. Link tasks to blocks via time_block_order (1=first block, 2=second, etc)
 4. Only extract explicit times, don't infer
 5. Types: wellness/exercise/nutrition/productivity/recovery
+6. Categories: nutrition/exercise/hydration/recovery/movement/mindfulness/sleep/social
 
 Content:
 {content[:3000]}
@@ -163,6 +164,7 @@ Return JSON only."""
                     scheduled_end_time=scheduled_end_time,
                     estimated_duration_minutes=task_data.get('estimated_duration_minutes'),
                     task_type=task_data.get('task_type', 'general'),
+                    category=task_data.get('category'),  # Extract category from AI response
                     priority_level=task_data.get('priority_level', 'medium'),
                     task_order_in_block=global_task_order,
                     parent_routine_id=analysis_id

@@ -131,6 +131,7 @@ class JsonPlanParser(BasePlanParser):
                         scheduled_end_time=scheduled_end_time,
                         estimated_duration_minutes=duration,
                         task_type=task_data.get('task_type', 'general'),
+                        category=task_data.get('category'),  # Extract category from AI response
                         priority_level=task_data.get('priority', task_data.get('priority_level', 'medium')),
                         task_order_in_block=len(all_tasks) + 1,
                         parent_routine_id=analysis_id
@@ -168,6 +169,7 @@ class JsonPlanParser(BasePlanParser):
                         scheduled_end_time=scheduled_end_time,
                         estimated_duration_minutes=item_data.get('estimated_duration_minutes'),
                         task_type=item_data.get('task_type', 'general'),
+                        category=item_data.get('category'),  # Extract category from AI response
                         priority_level=item_data.get('priority_level', 'medium'),
                         task_order_in_block=len(all_tasks) + 1,
                         parent_routine_id=analysis_id

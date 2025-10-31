@@ -49,7 +49,7 @@ class UserDataService:
         # Configuration
         self.default_days = 7
         self.max_records = 1000  # Prevent runaway queries
-        self.use_api_first = True  # API-first approach like health-agent-main
+        self.use_api_first = True  # API-first approach - but now using direct Sahha via SahhaDataService
         
         # Phase 4.0 MVP: Simple sync tracking - replace with bounded cache
         self.sync_cache = cache_manager.create_cache(

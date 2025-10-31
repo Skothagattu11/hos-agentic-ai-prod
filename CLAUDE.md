@@ -4,13 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current System Status
 
-**Phase 4.5 Complete**: HolisticOS with production-ready infrastructure, dynamic circadian timing, and bulletproof AI extraction services.
+**Phase 5.0 - In Progress**: HolisticOS with Friction-Reduction Feedback System and Atomic Habits Integration
 
-### 🚨 SIGNAL: PRODUCTION_DEPLOYMENT_READY
+### 🚨 SIGNAL: FRICTION_REDUCTION_DEBUGGING
 
-**ALL CRITICAL TASKS COMPLETE**: System is production-ready with comprehensive error handling and clean logging.
+**CURRENT STATUS**: Core friction-reduction logic implemented, debugging data flow to ensure AI receives and acts on friction analysis.
 
-#### Latest Accomplishments (Phase 4.5)
+#### Latest Work Session (Phase 5.0 - Debugging Data Flow)
+
+**🔍 Issue Discovered**
+- ✅ **Friction Detection Logic**: FeedbackService correctly calculates friction scores
+- ✅ **AI Prompt Instructions**: Comprehensive Atomic Habits constraints in place
+- ✅ **Motivational Messages**: Task descriptions enhanced with encouragement
+- ❌ **Data Flow Gap**: Plans generated with `"feedback_count": 0` despite check-ins existing
+- 🔧 **Root Cause**: Friction analysis not reaching AI prompt - need to trace data pipeline
+
+**🛠️ Debug Infrastructure Added (Just Now)**
+- ✅ **FeedbackService Debug Logs** (`services/feedback_service.py` lines 255-259)
+  - Logs friction categorization: `[FRICTION-DEBUG] Low/Medium/High friction categories`
+  - Logs detailed analysis: friction scores, completion rates, satisfaction
+- ✅ **TaskPreseeder Debug Logs** (`services/dynamic_personalization/task_preseeder.py` lines 179-184)
+  - Logs friction data received from FeedbackService
+  - Logs what's being passed to selection_stats
+- ✅ **AI Prompt Debug Logs** (`services/api_gateway/openai_main.py` lines 5080-5088)
+  - Logs friction data received by AI prompt builder
+  - Logs whether high-friction constraints are present in prompt
+  - Confirms what high-friction categories are sent to AI
+
+**🎯 Next Steps (Immediate)**
+1. Run `python run_feedback_test.py` with new debug logging active
+2. Check logs for `[FRICTION-DEBUG]`, `[PRESEED-DEBUG]`, `[AI-PROMPT-DEBUG]` output
+3. Identify exact point where friction data is lost or not propagated
+4. Fix the broken link in: check-ins → FeedbackService → TaskPreseeder → AI prompt
+
+**📋 Philosophy Established (Implementation In Progress)**
+- ❌ **OLD**: "User hates nutrition → Remove nutrition tasks" (exclusion-based)
+- ✅ **NEW**: "User struggles with nutrition → Simplify nutrition tasks" (friction-reduction)
+- **Goal**: Optimize HOW tasks are delivered (compliance), not WHAT tasks are included (preference)
+- **Principle**: Balanced lifestyle requires all health categories - make difficult things easier, not optional
+
+**🧠 Behavioral Science Integration (Atomic Habits)**
+- ✅ **Friction Detection**: FeedbackService detects low/medium/high friction categories (not like/dislike)
+- ✅ **Adaptation Strategy**: High-friction categories are SIMPLIFIED, not excluded
+- ✅ **Atomic Habits Principles**: AI prompt uses 4 laws (Obvious, Easy, Attractive, Satisfying)
+- ✅ **Balanced Health**: All essential health categories remain in every plan
+- ✅ **Habit Stacking**: Low-friction categories used as anchors for high-friction tasks
+
+**🔄 Feedback Loop Architecture (Under Verification)**
+- ✅ **Logic Implemented**: task_checkins → FeedbackService → friction_analysis → AI prompt → simplified tasks
+- ⚠️ **Data Flow Issue**: `feedback_count: 0` in generated plans suggests pipeline break
+- ✅ **Friction Scoring**: Weighted algorithm (60% experience, 40% continuation)
+  - Experience friction: `(5 - rating) / 4.0`
+  - Continuation friction: `(no_rate × 0.8) + (maybe_rate × 0.4)`
+- ✅ **Strategy Matrix**:
+  - Low friction (≤0.3): Leverage as anchors
+  - Medium friction (0.3-0.6): Maintain current approach
+  - High friction (>0.6): Simplify with micro-habits
+- ✅ **User Insights**: Friction-based messaging shows adaptation strategies
+
+#### Previous Accomplishments (Phase 4.5)
 
 **🎯 Dynamic Circadian Integration (Phase 1)**
 - ✅ **Circadian Timing**: Dynamic time blocks replace hardcoded schedules (6-8 AM → personalized timing)
@@ -43,6 +95,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Event-driven agents**: All agents inherit from BaseAgent and communicate asynchronously
 - **Memory persistence**: PostgreSQL via asyncpg with UPSERT conflict resolution
 - **Connection Pooling**: Database pool with 2-8 connections for optimal resource usage
+- **Friction-Reduction Philosophy**: SIMPLIFY difficult tasks, never exclude essential health categories
+- **Atomic Habits Integration**: Apply behavioral science principles for sustainable habit formation
 
 
 ## Project Overview
@@ -90,6 +144,7 @@ python testing/test_fixes.py                   # Validate production fixes
 python testing/test_memory_management.py       # Test 4-layer memory system
 python testing/test_user_journey_simple.py     # End-to-end user workflow
 python testing/test_rate_limiting.py           # Test rate limiting system
+python run_feedback_test.py                    # Test friction-reduction feedback system (Phase 5.0)
 
 # Unit and integration tests
 pytest tests/unit/                             # Unit tests
@@ -351,5 +406,293 @@ The HolisticOS system now has enterprise-grade stability:
 **Status**: Foundation infrastructure complete. Other agents can now proceed with full confidence in system stability.
 
 **Testing**: All components tested independently and under load conditions.
+
+---
+
+## Friction-Reduction Feedback System (Phase 5.0)
+
+### Overview
+
+The friction-reduction system applies behavioral science principles from "Atomic Habits" to personalize health plans based on user feedback. Instead of removing difficult categories, the system simplifies them using micro-habits and habit stacking.
+
+### Core Components
+
+#### 1. FeedbackService (`services/feedback_service.py`)
+
+**Purpose**: Analyzes user check-in feedback to detect friction patterns
+
+**Key Method**: `_aggregate_feedback()`
+- **Input**: List of task check-ins with continue_preference, enjoyed, satisfaction_rating
+- **Output**: Friction analysis with categories grouped by friction level
+
+**Friction Scoring Algorithm**:
+```python
+friction_score = (rejection_rate × 0.4) + (unenjoyment_rate × 0.3) + (dissatisfaction_rate × 0.3)
+```
+
+**Friction Categorization**:
+- **Low friction (≤0.3)**: User excels → Use as anchor for habit stacking
+- **Medium friction (0.3-0.6)**: Manageable → Maintain current approach
+- **High friction (>0.6)**: User struggles → Simplify with micro-habits
+
+**Output Format**:
+```python
+{
+    'low_friction_categories': ['movement', 'hydration'],
+    'high_friction_categories': ['nutrition', 'stress_management'],
+    'friction_analysis': {
+        'nutrition': {
+            'friction_score': 0.75,
+            'strategy': 'simplify_approach',
+            'completion_rate': 0.25,
+            'enjoyment_rate': 0.20,
+            'avg_satisfaction': 2.1
+        }
+    }
+}
+```
+
+#### 2. AI Prompt Integration (`services/api_gateway/openai_main.py`)
+
+**Location**: Lines 4876-4987 (routine generation prompt)
+
+**Integration Point**: Feedback constraints section in AI prompt
+
+**Atomic Habits 4 Laws Applied**:
+
+1. **Make it Obvious (Cue)**
+   - Example: "Place protein shake ingredients on counter night before"
+   - Links tasks to environmental cues
+
+2. **Make it Easy (Reduce Friction)**
+   - Example: "Track macros" → "Take photo of 3 meals"
+   - Reduces time: 30min → 5min
+   - Uses micro-habits: "Drink water" → "Take one sip when phone buzzes"
+
+3. **Make it Attractive (Temptation Bundling)**
+   - Example: "Protein shake after workout" (links to low-friction exercise)
+   - Pairs difficult tasks with enjoyable activities
+
+4. **Make it Satisfying (Immediate Gratification)**
+   - Example: "Check off each meal logged"
+   - Progress visualization: "3-day streak of vegetable servings"
+
+**Critical Constraint**:
+```
+⚠️ CRITICAL: DO NOT exclude high-friction categories - they're essential for balanced health!
+```
+
+#### 3. InsightsService (`services/insights_service.py`)
+
+**Purpose**: Generate user-facing insights that reflect adaptation strategies
+
+**Key Method**: `_extract_feedback_insight()`
+
+**Insight Examples**:
+- High friction: "Simplified nutrition tasks to reduce friction - focus on micro-habits to build momentum"
+- Low friction: "Leveraging your movement success - using habit stacking to strengthen other areas"
+- Balanced: "Plan optimized from 7 days of feedback - adapting difficulty, not content"
+
+#### 4. Testing Infrastructure (`testing/test_feedback_interactive.py`)
+
+**Purpose**: Validate friction-reduction system end-to-end
+
+**Test Flow**:
+1. Generate Plan 1 (cold start) OR use existing plan
+2. Create positive feedback (movement/hydration = low friction)
+3. Generate Plan 2 (should leverage low-friction categories)
+4. Create high-friction feedback (nutrition/stress = high friction)
+5. Generate Plan 3 (should SIMPLIFY high-friction, not exclude)
+6. Compare plans to validate all categories present
+
+**Success Criteria**:
+- ✅ All health categories present in all plans
+- ✅ High-friction categories have simplified tasks (micro-habits)
+- ✅ Low-friction categories used as anchors
+- ✅ Insights mention friction-reduction strategies
+
+**Run Test**:
+```bash
+python run_feedback_test.py
+```
+
+### Database Schema
+
+**Tables Used**:
+
+1. **task_checkins**: User feedback on completed tasks
+   - `continue_preference`: 'yes', 'no', 'maybe'
+   - `enjoyed`: boolean
+   - `satisfaction_rating`: 1-5 scale
+   - `timing_feedback`: 'early', 'perfect', 'late'
+
+2. **plan_items**: Generated tasks from plans
+   - `category`: Task category (nutrition, movement, etc.)
+   - `title`: Task description
+   - `scheduled_time`: When task is scheduled
+
+3. **holistic_analysis_results**: Plan metadata
+   - `analysis_id`: Unique plan identifier
+   - `archetype`: User archetype
+   - `created_at`: Plan generation timestamp
+
+### Key Design Decisions
+
+#### Why Friction-Reduction Instead of Exclusion?
+
+**Problem with Exclusion**:
+- User hates nutrition → Remove nutrition → Unbalanced health
+- Short-term preference optimization → Long-term health degradation
+- User never builds essential habits
+
+**Solution with Friction-Reduction**:
+- User struggles with nutrition → Simplify nutrition tasks
+- Maintain balanced health categories
+- Build sustainable habits through small wins
+- Use successful areas to motivate difficult areas
+
+#### Atomic Habits Alignment
+
+**Core Principle**: Make habits easy to start, hard to stop
+
+**Implementation**:
+- **2-minute rule**: High-friction tasks become 1-2 minute micro-habits
+- **Habit stacking**: Link new habits to established routines
+- **Identity-based**: "I'm someone who eats vegetables" vs "I need to diet"
+- **Environmental design**: Make cues visible, friction invisible
+
+### Testing & Validation
+
+**Manual Testing**:
+```bash
+python run_feedback_test.py
+```
+
+**Validation Checklist**:
+- [ ] FeedbackService detects friction correctly
+- [ ] AI prompt receives friction analysis
+- [ ] High-friction tasks are simplified (not excluded)
+- [ ] Low-friction tasks used as anchors
+- [ ] All health categories present in Plan 3
+- [ ] Insights mention adaptation strategies
+
+**Expected Results**:
+```
+Plan 1 (Cold Start): 3 nutrition tasks (normal difficulty)
+Plan 2 (After positive feedback): 3 nutrition tasks (normal difficulty)
+Plan 3 (After high friction): 2-3 nutrition tasks (SIMPLIFIED - micro-habits)
+```
+
+### Troubleshooting
+
+**Issue**: High-friction categories missing from Plan 3
+- **Cause**: AI prompt excluding instead of simplifying
+- **Fix**: Verify feedback constraints in openai_main.py lines 4876-4987
+
+**Issue**: Friction scores always 0
+- **Cause**: No check-in data or wrong date range
+- **Fix**: Verify task_checkins table has data within last 7 days
+
+**Issue**: Insights show exclusion messaging
+- **Cause**: Old insights logic still active
+- **Fix**: Verify InsightsService._extract_feedback_insight() updated
+
+### Quick Reference: Files Modified in Phase 5.0
+
+| File | Purpose | Key Changes |
+|------|---------|-------------|
+| `services/feedback_service.py` | Feedback analysis | Changed `_aggregate_feedback()` to detect friction levels instead of like/dislike |
+| `services/api_gateway/openai_main.py` | AI prompt | Lines 4876-4987: Added Atomic Habits 4 laws, friction-reduction constraints |
+| `services/insights_service.py` | User insights | Updated `_extract_feedback_insight()` with friction-based messaging |
+| `testing/test_feedback_interactive.py` | Validation test | Updated expectations to validate simplification (not exclusion) |
+| `CLAUDE.md` | Documentation | Added Phase 5.0 documentation |
+
+### Implementation Summary (What We Did Today)
+
+**Problem Identified**:
+- System was excluding categories users disliked (nutrition, stress_management)
+- Plans became imbalanced (only easy, enjoyable tasks)
+- Users never built essential habits
+
+**Solution Implemented**:
+- Rewrote FeedbackService to detect friction patterns (not preferences)
+- Updated AI prompt to use Atomic Habits principles
+- Changed InsightsService to show adaptation strategies
+- Updated test to validate all categories remain present
+
+**Key Insight**:
+> "For a balanced lifestyle, everything has to be done. Our motive with feedback is to make sure user follows the full plan efficiently, not to give more of what they liked."
+
+**Philosophy**:
+- OLD: Optimize WHAT tasks (preference-based)
+- NEW: Optimize HOW tasks are delivered (compliance-based)
+
+### Latest Debugging Session (October 30, 2025)
+
+**Issue Found**: Plans generated with `feedback_count: 0` despite check-ins existing in database.
+
+**Debug Logging Added**:
+
+1. **FeedbackService** (`services/feedback_service.py:255-259`)
+   ```
+   [FRICTION-DEBUG] Low friction categories (≤0.3): ['hydration', 'movement']
+   [FRICTION-DEBUG] Medium friction categories (0.3-0.6): []
+   [FRICTION-DEBUG] High friction categories (>0.6): ['nutrition', 'stress_management']
+   [FRICTION-DEBUG] Detailed analysis: {friction_score, completion_rate, etc.}
+   ```
+
+2. **TaskPreseeder** (`services/dynamic_personalization/task_preseeder.py:179-184`)
+   ```
+   [PRESEED-DEBUG] Friction data received from FeedbackService:
+   [PRESEED-DEBUG]   Low friction: ['hydration', 'movement']
+   [PRESEED-DEBUG]   Medium friction: []
+   [PRESEED-DEBUG]   High friction: ['nutrition', 'stress_management']
+   [PRESEED-DEBUG]   Friction analysis: {...}
+   ```
+
+3. **AI Prompt Builder** (`services/api_gateway/openai_main.py:5080-5088`)
+   ```
+   [AI-PROMPT-DEBUG] Friction data received from TaskPreseeder:
+   [AI-PROMPT-DEBUG]   Low friction: ['hydration', 'movement']
+   [AI-PROMPT-DEBUG]   High friction: ['nutrition', 'stress_management']
+   [AI-PROMPT-DEBUG]   Friction analysis: {...}
+   [AI-PROMPT-DEBUG]   Feedback count: 11
+   [AI-PROMPT-DEBUG]   🚨 HIGH-FRICTION CATEGORIES SENT TO AI: ['nutrition', 'stress_management']
+   [AI-PROMPT-DEBUG]   🚨 AI INSTRUCTION: SIMPLIFY (not exclude) these categories
+   ```
+
+**Expected Data Flow**:
+```
+task_checkins (11 rows)
+    ↓
+FeedbackService.get_latest_checkin_feedback()
+    ↓ [FRICTION-DEBUG logs here]
+friction_analysis = {nutrition: {friction_score: 0.93, ...}}
+    ↓
+TaskPreseeder.preseed_library_tasks()
+    ↓ [PRESEED-DEBUG logs here]
+selection_stats = {high_friction_categories: ['nutrition'], ...}
+    ↓
+openai_main.py - routine generation
+    ↓ [AI-PROMPT-DEBUG logs here]
+AI prompt with "SIMPLIFY nutrition (never exclude!)"
+    ↓
+Generated plan with simplified nutrition tasks
+```
+
+**How to Verify Fix**:
+```bash
+cd /Users/kothagattu/Desktop/OG/hos-agentic-ai-prod
+python run_feedback_test.py
+
+# Then check logs for debug output
+grep -E "\[FRICTION-DEBUG\]|\[PRESEED-DEBUG\]|\[AI-PROMPT-DEBUG\]" logs/server_*.log | tail -50
+```
+
+**Success Criteria**:
+- All 3 debug log groups appear in sequence
+- `feedback_count > 0` in generated plans
+- High-friction categories present in Plan 3 with SIMPLIFIED tasks (not excluded)
+- Task descriptions show micro-habits: "Just take a photo" instead of "Track comprehensive macros"
 
 ---

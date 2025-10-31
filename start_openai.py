@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 HolisticOS OpenAI-Based Startup Script
 Uses OpenAI API directly with HolisticOS system prompts - avoids TensorFlow issues
@@ -10,6 +11,13 @@ import sys
 import subprocess
 import logging
 from pathlib import Path
+
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 # ============================================
 # ULTRA-QUIET MODE CONFIGURATION
@@ -59,18 +67,18 @@ for logger_name in [
 logging.getLogger().setLevel(logging.ERROR)
 
 def main():
-    print("🤫 Starting HolisticOS in ULTRA-QUIET mode (errors only)...")
+    print("[STARTUP] Starting HolisticOS in ULTRA-QUIET mode (errors only)...")
     print("=" * 60)
-    
+
     # Get project root and setup
     project_root = Path(__file__).parent
     os.chdir(project_root)
     os.environ["PYTHONPATH"] = str(project_root)
-    
+
     # Check environment
     env_file = project_root / ".env"
     if not env_file.exists():
-        print("❌ No .env file found")
+        print("[ERROR] No .env file found")
         return False
     
     # Load environment and check OpenAI key
@@ -79,23 +87,23 @@ def main():
         load_dotenv()
         openai_key = os.getenv("OPENAI_API_KEY")
         if not openai_key:
-            print("❌ OPENAI_API_KEY not found")
+            print("[ERROR] OPENAI_API_KEY not found")
             return False
     except ImportError:
         if not os.getenv("OPENAI_API_KEY"):
-            print("❌ OPENAI_API_KEY not found")
+            print("[ERROR] OPENAI_API_KEY not found")
             return False
-    
+
     # Test system prompts
     try:
         sys.path.insert(0, str(project_root))
         from shared_libs.utils.system_prompts import get_system_prompt
         get_system_prompt("behavior_analysis")
     except Exception as e:
-        print(f"❌ System Prompts error: {e}")
+        print(f"[ERROR] System Prompts error: {e}")
         return False
-    
-    print("✅ Environment ready - Starting server on http://localhost:8002")
+
+    print("[SUCCESS] Environment ready - Starting server on http://localhost:8002")
     print("   Docs: http://localhost:8002/docs")
     print("   Health: http://localhost:8002/api/health")
     print("=" * 50)
@@ -115,10 +123,10 @@ def main():
         return result.returncode == 0
         
     except KeyboardInterrupt:
-        print("\n🛑 Shutting down...")
+        print("\n[SHUTDOWN] Shutting down...")
         return True
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"[ERROR] Error starting server: {e}")
         return False
 
 if __name__ == "__main__":
