@@ -1099,6 +1099,99 @@ async def get_engagement_context(
             }
         }
 
+# =====================================================
+# Friction Analysis Endpoint (Phase 5.0)
+# =====================================================
+
+@router.get("/friction-analysis/{profile_id}")
+async def get_friction_analysis(
+    profile_id: str,
+    days_back: int = Query(7, ge=1, le=30, description="Number of days to analyze (1-30)")
+):
+    """
+    Get friction analysis for conversational AI context.
+
+    This endpoint provides privacy-safe aggregated friction data based on
+    user's task check-ins. Used by HolisticAI for personalized coaching.
+
+    Args:
+        profile_id: User's profile identifier
+        days_back: Number of days to look back (default: 7)
+
+    Returns:
+        {
+            'has_feedback': bool,
+            'low_friction_categories': List[str],     # User excels (use as anchors)
+            'medium_friction_categories': List[str],  # Maintain approach
+            'high_friction_categories': List[str],    # Simplify with micro-habits
+            'friction_analysis': {
+                'category_name': {
+                    'friction_score': float (0.0-1.0),
+                    'success_score': float (0.0-1.0),
+                    'strategy': str ('leverage_as_anchor'|'maintain'|'simplify_approach'),
+                    'avg_experience_rating': float (1.0-5.0),
+                    'continue_yes_rate': float (0.0-1.0),
+                    'continue_maybe_rate': float (0.0-1.0),
+                    'continue_no_rate': float (0.0-1.0),
+                    'total_attempts': int
+                }
+            },
+            'category_scores': Dict[str, float],  # Success scores per category
+            'feedback_count': int,
+            'date_range': {'start': str, 'end': str}
+        }
+    """
+    try:
+        logger.info(f"[FrictionAnalysis] Fetching friction analysis for {profile_id}, days_back={days_back}")
+
+        # Import FeedbackService
+        from services.feedback_service import FeedbackService
+
+        # Initialize service
+        feedback_service = FeedbackService()
+        await feedback_service.initialize()
+
+        try:
+            # Get friction analysis
+            feedback_data = await feedback_service.get_latest_checkin_feedback(
+                user_id=profile_id,
+                days_back=days_back
+            )
+
+            if not feedback_data['has_feedback']:
+                logger.info(f"[FrictionAnalysis] No check-in data available for {profile_id}")
+                return {
+                    'has_feedback': False,
+                    'message': 'No check-in data available yet. Complete some tasks and check back!'
+                }
+
+            logger.info(f"[FrictionAnalysis] Successfully retrieved friction analysis for {profile_id}")
+            logger.info(f"[FrictionAnalysis] Low friction: {feedback_data.get('low_friction_categories', [])}")
+            logger.info(f"[FrictionAnalysis] High friction: {feedback_data.get('high_friction_categories', [])}")
+
+            # Return privacy-safe summary (no raw check-ins)
+            return {
+                'has_feedback': True,
+                'low_friction_categories': feedback_data.get('low_friction_categories', []),
+                'medium_friction_categories': feedback_data.get('medium_friction_categories', []),
+                'high_friction_categories': feedback_data.get('high_friction_categories', []),
+                'friction_analysis': feedback_data.get('friction_analysis', {}),
+                'category_scores': feedback_data.get('category_scores', {}),
+                'feedback_count': feedback_data.get('feedback_count', 0),
+                'date_range': feedback_data.get('date_range', {})
+            }
+
+        finally:
+            # Always close the service
+            await feedback_service.close()
+
+    except Exception as e:
+        logger.error(f"[FrictionAnalysis] Error fetching friction analysis for {profile_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch friction analysis: {str(e)}"
+        )
+
 # Health check endpoint
 @router.get("/health")
 async def engagement_health_check():

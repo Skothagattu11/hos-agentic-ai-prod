@@ -415,6 +415,84 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
             for score in health_context.scores
         ]
 
+    def _assign_zone_color_and_label(self, energy_level: int, zone: str) -> tuple:
+        """
+        Assign explicit color and label based on energy level and zone
+
+        Zone thresholds:
+        - Green (High Energy): energy_level >= 75 OR zone == "peak"
+        - Orange (Moderate Energy): energy_level >= 50 OR zone == "maintenance"
+        - Red (Low Energy): energy_level < 50 OR zone == "recovery"
+
+        Returns: (zone_color, zone_label)
+        """
+        if energy_level >= 75 or zone == "peak":
+            return ("green", "High Energy")
+        elif energy_level >= 50 or zone == "maintenance":
+            return ("orange", "Moderate Energy")
+        else:
+            return ("red", "Low Energy")
+
+    def _get_motivation_message(self, zone_color: str, slot_index: int) -> str:
+        """
+        Generate motivating message based on zone color and time of day
+
+        Args:
+            zone_color: "green", "orange", or "red"
+            slot_index: 0-95 (used to determine time of day context)
+
+        Returns: Motivating message string
+        """
+        import random
+
+        # Determine time of day
+        hour = (slot_index * 15) // 60
+
+        if zone_color == "green":
+            messages = [
+                "🎯 Perfect time for your most important tasks!",
+                "🚀 Peak performance window - tackle tough challenges!",
+                "💪 You're at your best - crush your goals!",
+                "🏆 Elite focus mode - time to excel!",
+                "⚡ Maximum energy - make it count!",
+                "🔥 High-energy zone - go for it!"
+            ]
+            # Time-specific messages for green zones
+            if 6 <= hour < 10:
+                messages.append("🌅 Morning peak - perfect for deep work!")
+            elif 14 <= hour < 17:
+                messages.append("☀️ Afternoon surge - capitalize on this energy!")
+
+        elif zone_color == "orange":
+            messages = [
+                "📋 Great for routine tasks and meetings",
+                "🤝 Good energy for collaboration",
+                "📊 Solid time for productive work",
+                "✨ Steady energy - get things done",
+                "💼 Perfect for regular activities",
+                "🔄 Maintain momentum with consistent effort"
+            ]
+            # Time-specific messages for orange zones
+            if 12 <= hour < 14:
+                messages.append("🍽️ Post-meal energy - handle steady tasks")
+
+        else:  # red
+            messages = [
+                "🛌 Time to rest and recharge",
+                "🌙 Wind down and prepare for sleep",
+                "😴 Your body needs restoration now",
+                "🧘 Focus on relaxation and recovery",
+                "🌟 Gentle activities and self-care time",
+                "💤 Low-intensity mode - honor your body's needs"
+            ]
+            # Time-specific messages for red zones
+            if hour >= 22 or hour < 6:
+                messages.append("🌃 Sleep zone - prioritize rest for tomorrow")
+            elif 13 <= hour < 15:
+                messages.append("🍃 Afternoon dip - take it easy or nap")
+
+        return random.choice(messages)
+
     def _generate_energy_timeline_from_analysis(self, ai_analysis: Dict[str, Any]) -> list:
         """
         **FIX #1 (P0): Generate 96-slot energy timeline with 15-minute granularity**
@@ -430,11 +508,17 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
             for i in range(96):
                 hour = (i * 15) // 60
                 minute = (i * 15) % 60
+                # Default: moderate energy (maintenance/orange zone) - must be >= 50 for orange
+                zone_color, zone_label = self._assign_zone_color_and_label(50, "maintenance")
+                motivation_message = self._get_motivation_message(zone_color, i)
                 timeline.append({
                     "time": f"{hour:02d}:{minute:02d}",
-                    "energy_level": 40,  # Default baseline energy
+                    "energy_level": 50,  # Default baseline energy (minimum for orange zone)
                     "slot_index": i,
-                    "zone": "maintenance"
+                    "zone": "maintenance",
+                    "zone_color": zone_color,
+                    "zone_label": zone_label,
+                    "motivation_message": motivation_message
                 })
 
             # Extract energy windows from AI response
@@ -455,7 +539,25 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
                     self._apply_energy_window(timeline, time_range, energy_level, zone_name)
 
             # **FIX #2 (P0): Validate minimum peak energy zones**
-            timeline = self._validate_and_fix_peak_zones(timeline)
+            # Extract wake time from AI analysis for personalization
+            wake_time = None
+            try:
+                schedule_recs = ai_analysis.get("schedule_recommendations", {})
+                optimal_structure = schedule_recs.get("optimal_daily_structure", {})
+                wake_window = optimal_structure.get("wake_window", {})
+                if wake_window and "ideal_time" in wake_window:
+                    from datetime import time as dt_time
+                    wake_time_str = wake_window["ideal_time"]
+                    parts = wake_time_str.split(":")
+                    wake_time = dt_time(int(parts[0]), int(parts[1]))
+                    logger.info(f"[CIRCADIAN] Detected wake time: {wake_time}")
+            except Exception as e:
+                logger.warning(f"[CIRCADIAN] Could not extract wake time: {e}")
+
+            timeline = self._validate_and_fix_peak_zones(timeline, wake_time)
+
+            # **FIX #3 (P0): Ensure motivating distribution of zones**
+            timeline = self._ensure_motivating_distribution(timeline)
 
             # Smooth transitions between zones (linear interpolation)
             timeline = self._smooth_energy_transitions(timeline)
@@ -493,6 +595,12 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
             for i in range(start_slot, min(end_slot + 1, 96)):
                 timeline[i]["energy_level"] = energy_level
                 timeline[i]["zone"] = zone
+                # Update color, label, and motivation message based on new energy level
+                zone_color, zone_label = self._assign_zone_color_and_label(energy_level, zone)
+                motivation_message = self._get_motivation_message(zone_color, i)
+                timeline[i]["zone_color"] = zone_color
+                timeline[i]["zone_label"] = zone_label
+                timeline[i]["motivation_message"] = motivation_message
 
         except Exception as e:
             logger.warning(f"Could not parse time range '{time_range}': {e}")
@@ -515,11 +623,16 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
             logger.warning(f"Could not convert time '{time_str}' to slot: {e}")
             return None
 
-    def _validate_and_fix_peak_zones(self, timeline: list) -> list:
+    def _validate_and_fix_peak_zones(self, timeline: list, wake_time: Optional[Any] = None) -> list:
         """
         **FIX #2 (P0): Ensure minimum peak energy zones are assigned**
 
-        Analysis shows 0% peak zones - this fixes it by ensuring minimum coverage.
+        Personalizes peak zones based on user's wake time.
+        Peak typically occurs 1-3 hours after waking.
+
+        Args:
+            timeline: 96-slot energy timeline
+            wake_time: User's actual wake time (from AI analysis)
         """
         MIN_PEAK_SLOTS = 8  # Minimum 2 hours of peak energy (8 x 15min slots)
 
@@ -531,29 +644,152 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
 
         logger.info(f"[CIRCADIAN_FIX] Only {peak_count} peak slots found, enforcing minimum {MIN_PEAK_SLOTS}")
 
-        # Force assign peak zones during typical high-energy hours (9 AM - 12 PM)
-        # Slot indices: 9 AM = 36, 12 PM = 48
-        target_start = 36  # 9:00 AM
+        # Determine personalized peak window
+        if wake_time:
+            # Peak typically occurs 1-3 hours after waking
+            wake_slot = self._time_to_slot_index(wake_time.strftime("%H:%M"))
+            if wake_slot is not None:
+                target_start = wake_slot + 4  # 1 hour after wake (4 x 15min slots)
+                logger.info(f"[CIRCADIAN_FIX] Personalized peak start: slot {target_start} ({timeline[target_start]['time']}) based on wake time {wake_time}")
+            else:
+                target_start = 36  # 9:00 AM default fallback
+                logger.warning(f"[CIRCADIAN_FIX] Could not calculate wake slot, using default")
+        else:
+            # Fallback to reasonable default (9 AM)
+            target_start = 36  # 9:00 AM
+            logger.info(f"[CIRCADIAN_FIX] No wake time provided, using default 9 AM start")
+
         slots_needed = MIN_PEAK_SLOTS - peak_count
 
-        for i in range(target_start, min(target_start + slots_needed, 48)):
+        # Calculate reasonable end boundary (within waking hours, max 6 hours after start)
+        max_peak_end = min(target_start + slots_needed + 16, 96)  # +16 = 4 hours buffer
+
+        for i in range(target_start, min(target_start + slots_needed, max_peak_end)):
             if timeline[i]["zone"] != "peak":
                 timeline[i]["zone"] = "peak"
                 timeline[i]["energy_level"] = max(timeline[i]["energy_level"], 75)
+                # Update color, label, and motivation for new peak zone
+                timeline[i]["zone_color"] = "green"
+                timeline[i]["zone_label"] = "High Energy"
+                timeline[i]["motivation_message"] = self._get_motivation_message("green", i)
+
+        return timeline
+
+    def _ensure_motivating_distribution(self, timeline: list) -> list:
+        """
+        **FIX #3 (P0): Ensure timeline has motivating distribution of zones**
+
+        Ensures:
+        - At least 20% green (peak) zones - motivates users
+        - Maximum 40% red (recovery) zones - prevents discouragement
+        - Fills rest with orange (maintenance) zones
+        """
+        total_slots = 96
+
+        # Count current distribution
+        green_count = sum(1 for slot in timeline if slot["zone_color"] == "green")
+        red_count = sum(1 for slot in timeline if slot["zone_color"] == "red")
+        orange_count = total_slots - green_count - red_count
+
+        # Minimum thresholds for motivation
+        # Use ceiling for green zones to ensure we meet 20% threshold
+        MIN_GREEN_SLOTS = 20  # 20 slots = 20.8% = 5 hours (exceeds 20% target)
+        MAX_RED_SLOTS = int(total_slots * 0.40)    # 40% = ~38 slots = 9.5 hours
+
+        logger.info(f"[MOTIVATION] Current distribution: Green={green_count} ({green_count/total_slots*100:.1f}%), Orange={orange_count} ({orange_count/total_slots*100:.1f}%), Red={red_count} ({red_count/total_slots*100:.1f}%)")
+
+        # Fix green deficiency (upgrade orange zones to green)
+        if green_count < MIN_GREEN_SLOTS:
+            logger.info(f"[MOTIVATION] Boosting green zones from {green_count} to {MIN_GREEN_SLOTS}")
+
+            # Find orange zones sorted by energy level (highest first)
+            orange_slots = [
+                (i, slot) for i, slot in enumerate(timeline)
+                if slot["zone_color"] == "orange"
+            ]
+            # Sort by energy level descending
+            orange_slots.sort(key=lambda x: x[1]["energy_level"], reverse=True)
+
+            slots_to_upgrade = MIN_GREEN_SLOTS - green_count
+            for i, (slot_idx, slot) in enumerate(orange_slots[:slots_to_upgrade]):
+                timeline[slot_idx]["zone"] = "peak"
+                timeline[slot_idx]["energy_level"] = max(timeline[slot_idx]["energy_level"], 75)
+                timeline[slot_idx]["zone_color"] = "green"
+                timeline[slot_idx]["zone_label"] = "High Energy"
+                timeline[slot_idx]["motivation_message"] = self._get_motivation_message("green", slot_idx)
+
+            green_count = sum(1 for slot in timeline if slot["zone_color"] == "green")
+            logger.info(f"[MOTIVATION] After upgrade: Green={green_count} slots")
+
+        # Fix red excess (upgrade red zones to orange)
+        if red_count > MAX_RED_SLOTS:
+            logger.info(f"[MOTIVATION] Reducing red zones from {red_count} to {MAX_RED_SLOTS}")
+
+            # Find red zones sorted by energy level (highest first)
+            red_slots = [
+                (i, slot) for i, slot in enumerate(timeline)
+                if slot["zone_color"] == "red"
+            ]
+            # Sort by energy level descending (upgrade highest energy red zones)
+            red_slots.sort(key=lambda x: x[1]["energy_level"], reverse=True)
+
+            slots_to_upgrade = red_count - MAX_RED_SLOTS
+            for i, (slot_idx, slot) in enumerate(red_slots[:slots_to_upgrade]):
+                timeline[slot_idx]["zone"] = "maintenance"
+                timeline[slot_idx]["energy_level"] = max(timeline[slot_idx]["energy_level"], 50)
+                timeline[slot_idx]["zone_color"] = "orange"
+                timeline[slot_idx]["zone_label"] = "Moderate Energy"
+                timeline[slot_idx]["motivation_message"] = self._get_motivation_message("orange", slot_idx)
+
+            red_count = sum(1 for slot in timeline if slot["zone_color"] == "red")
+            logger.info(f"[MOTIVATION] After reduction: Red={red_count} slots")
+
+        # Log final distribution
+        final_green = sum(1 for slot in timeline if slot["zone_color"] == "green")
+        final_orange = sum(1 for slot in timeline if slot["zone_color"] == "orange")
+        final_red = sum(1 for slot in timeline if slot["zone_color"] == "red")
+        logger.info(f"[MOTIVATION] Final distribution: Green={final_green} ({final_green/total_slots*100:.1f}%), Orange={final_orange} ({final_orange/total_slots*100:.1f}%), Red={final_red} ({final_red/total_slots*100:.1f}%)")
 
         return timeline
 
     def _smooth_energy_transitions(self, timeline: list) -> list:
-        """Apply linear interpolation to smooth energy transitions between zones"""
+        """
+        **FIX #4 (P0): Smart smoothing that preserves green (peak) zones**
+
+        Applies smoothing to transitions while ensuring:
+        - Green zones maintain energy >= 75
+        - Orange zones maintain energy >= 50
+        - Red zones stay < 50
+        - Zone boundaries are preserved
+        """
         for i in range(1, len(timeline) - 1):
             prev_energy = timeline[i-1]["energy_level"]
             curr_energy = timeline[i]["energy_level"]
             next_energy = timeline[i+1]["energy_level"]
+            curr_zone_color = timeline[i]["zone_color"]
 
-            # If current slot is very different from neighbors, smooth it
+            # SKIP smoothing if current slot is a green (peak) zone
+            # This preserves motivating high-energy periods
+            if curr_zone_color == "green" and curr_energy >= 75:
+                continue  # Preserve peak energy
+
+            # Only smooth sharp transitions (>30 point difference)
             if abs(curr_energy - prev_energy) > 30 or abs(curr_energy - next_energy) > 30:
-                # Average with neighbors for smooth transition
-                timeline[i]["energy_level"] = int((prev_energy + curr_energy + next_energy) / 3)
+                # Average, but ensure we don't cross zone boundaries
+                smoothed = int((prev_energy + curr_energy + next_energy) / 3)
+
+                # Enforce zone boundary constraints
+                if curr_zone_color == "green":
+                    # Green zones must stay >= 75
+                    smoothed = max(smoothed, 75)
+                elif curr_zone_color == "orange":
+                    # Orange zones must stay >= 50 and < 75
+                    smoothed = max(50, min(smoothed, 74))
+                elif curr_zone_color == "red":
+                    # Red zones must stay < 50
+                    smoothed = min(smoothed, 49)
+
+                timeline[i]["energy_level"] = smoothed
 
         return timeline
 
@@ -587,12 +823,22 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
                 energy = 30
                 zone = "recovery"
 
+            # Assign color, label, and motivation message
+            zone_color, zone_label = self._assign_zone_color_and_label(energy, zone)
+            motivation_message = self._get_motivation_message(zone_color, i)
+
             timeline.append({
                 "time": f"{hour:02d}:{minute:02d}",
                 "energy_level": energy,
                 "slot_index": i,
-                "zone": zone
+                "zone": zone,
+                "zone_color": zone_color,
+                "zone_label": zone_label,
+                "motivation_message": motivation_message
             })
+
+        # Ensure motivating distribution before returning
+        timeline = self._ensure_motivating_distribution(timeline)
 
         return timeline
 
