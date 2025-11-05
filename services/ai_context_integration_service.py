@@ -510,20 +510,41 @@ Focus on building upon proven patterns and avoiding consistently failed strategi
                     result = "UPDATE 1" if existing_result.data else "INSERT 1"
             else:
                 # For behavior_analysis and circadian_analysis, always insert
-                insert_query = """
-                    INSERT INTO holistic_analysis_results (user_id, analysis_type, archetype, analysis_result, input_summary, agent_id, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                """
-                result = await db.execute(
-                    insert_query,
-                    user_id,
-                    analysis_type,
-                    archetype or 'unknown',
-                    analysis_result_data,
-                    input_summary_json,
-                    'memory_service',
-                    datetime.now(timezone.utc).isoformat()
-                )
+                if use_pool:
+                    # Production: Use PostgreSQL connection pool
+                    insert_query = """
+                        INSERT INTO holistic_analysis_results (user_id, analysis_type, archetype, analysis_result, input_summary, agent_id, created_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    """
+                    result = await db.execute(
+                        insert_query,
+                        user_id,
+                        analysis_type,
+                        archetype or 'unknown',
+                        analysis_result_data,
+                        input_summary_json,
+                        'memory_service',
+                        datetime.now(timezone.utc).isoformat()
+                    )
+                else:
+                    # Development: Use Supabase REST API
+                    from supabase import create_client
+                    supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+
+                    insert_data = {
+                        'user_id': user_id,
+                        'analysis_type': analysis_type,
+                        'archetype': archetype or 'unknown',
+                        'analysis_result': analysis_result_data,
+                        'input_summary': input_summary_json,
+                        'agent_id': 'memory_service',
+                        'created_at': datetime.now(timezone.utc).isoformat()
+                    }
+                    result = supabase.table('holistic_analysis_results')\
+                        .insert(insert_data)\
+                        .execute()
+
+                    result = "INSERT 1" if result.data else None
 
             if result:
                 logger.info(f"[AI_CONTEXT_INTEGRATION] ✅ Stored {analysis_type} analysis for {user_id[:8]}...")

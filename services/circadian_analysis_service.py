@@ -450,46 +450,46 @@ Base your analysis on the actual biomarker patterns you observe. If data is limi
 
         if zone_color == "green":
             messages = [
-                "🎯 Perfect time for your most important tasks!",
-                "🚀 Peak performance window - tackle tough challenges!",
-                "💪 You're at your best - crush your goals!",
-                "🏆 Elite focus mode - time to excel!",
-                "⚡ Maximum energy - make it count!",
-                "🔥 High-energy zone - go for it!"
+                "Perfect time for your most important tasks",
+                "Peak performance window - tackle tough challenges",
+                "You're at your best - crush your goals",
+                "Elite focus mode - time to excel",
+                "Maximum energy - make it count",
+                "High-energy zone - go for it"
             ]
             # Time-specific messages for green zones
             if 6 <= hour < 10:
-                messages.append("🌅 Morning peak - perfect for deep work!")
+                messages.append("Morning peak - perfect for deep work")
             elif 14 <= hour < 17:
-                messages.append("☀️ Afternoon surge - capitalize on this energy!")
+                messages.append("Afternoon surge - capitalize on this energy")
 
         elif zone_color == "orange":
             messages = [
-                "📋 Great for routine tasks and meetings",
-                "🤝 Good energy for collaboration",
-                "📊 Solid time for productive work",
-                "✨ Steady energy - get things done",
-                "💼 Perfect for regular activities",
-                "🔄 Maintain momentum with consistent effort"
+                "Great for routine tasks and meetings",
+                "Good energy for collaboration",
+                "Solid time for productive work",
+                "Steady energy - get things done",
+                "Perfect for regular activities",
+                "Maintain momentum with consistent effort"
             ]
             # Time-specific messages for orange zones
             if 12 <= hour < 14:
-                messages.append("🍽️ Post-meal energy - handle steady tasks")
+                messages.append("Post-meal energy - handle steady tasks")
 
         else:  # red
             messages = [
-                "🛌 Time to rest and recharge",
-                "🌙 Wind down and prepare for sleep",
-                "😴 Your body needs restoration now",
-                "🧘 Focus on relaxation and recovery",
-                "🌟 Gentle activities and self-care time",
-                "💤 Low-intensity mode - honor your body's needs"
+                "Time to rest and recharge",
+                "Wind down and prepare for sleep",
+                "Your body needs restoration now",
+                "Focus on relaxation and recovery",
+                "Gentle activities and self-care time",
+                "Low-intensity mode - honor your body's needs"
             ]
             # Time-specific messages for red zones
             if hour >= 22 or hour < 6:
-                messages.append("🌃 Sleep zone - prioritize rest for tomorrow")
+                messages.append("Sleep zone - prioritize rest for tomorrow")
             elif 13 <= hour < 15:
-                messages.append("🍃 Afternoon dip - take it easy or nap")
+                messages.append("Afternoon dip - take it easy or nap")
 
         return random.choice(messages)
 
