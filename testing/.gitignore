@@ -1,0 +1,14 @@
+# Test session files (contains access tokens)
+.test_session.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
