@@ -39,7 +39,12 @@ class MockCalendarGenerator:
             "corporate_parent_sarah": self._generate_corporate_parent,
             "hybrid_athlete_peak": self._generate_hybrid_athlete,
             "empty_calendar": self._generate_empty_calendar,
-            "overscheduled": self._generate_overscheduled
+            "overscheduled": self._generate_overscheduled,
+            # New scenario profiles for calendar testing
+            "busy_professional": self._generate_busy_professional,
+            "parent_schedule": self._generate_parent_schedule,
+            "long_commuter": self._generate_long_commuter,
+            "flexible_remote": self._generate_flexible_remote
         }
 
     def generate_profile(
@@ -460,6 +465,319 @@ class MockCalendarGenerator:
             )
         ]
 
+        return events
+
+    # ========================================================================
+    # Scenario Testing Profiles (Phase 4 - Calendar Integration Testing)
+    # ========================================================================
+
+    def _generate_busy_professional(self, target_date: date) -> List[CalendarEvent]:
+        """
+        Busy Professional - Back-to-back meetings all day
+
+        Schedule:
+        - 09:00-09:30: Morning Team Standup (30 min)
+        - 09:30-10:30: Client Presentation Prep (60 min)
+        - 10:30-12:00: Executive Leadership Meeting (90 min)
+        - 12:00-13:00: Working Lunch with Stakeholders (60 min)
+        - 13:00-14:30: Client Presentation (90 min)
+        - 14:30-15:30: Project Review Meeting (60 min)
+        - 15:30-17:00: Budget Planning Session (90 min)
+        - 17:00-17:30: Team Debrief (30 min)
+
+        Challenge: Very few gaps - algorithm must maximize limited availability
+        """
+        events = [
+            self._create_event(
+                event_id="busy_prof_1",
+                title="Morning Team Standup",
+                target_date=target_date,
+                start_time=time(9, 0),
+                end_time=time(9, 30),
+                description="Daily standup"
+            ),
+            self._create_event(
+                event_id="busy_prof_2",
+                title="Client Presentation Prep",
+                target_date=target_date,
+                start_time=time(9, 30),
+                end_time=time(10, 30),
+                description="Prepare for client meeting"
+            ),
+            self._create_event(
+                event_id="busy_prof_3",
+                title="Executive Leadership Meeting",
+                target_date=target_date,
+                start_time=time(10, 30),
+                end_time=time(12, 0),
+                description="Weekly leadership sync"
+            ),
+            self._create_event(
+                event_id="busy_prof_4",
+                title="Working Lunch with Stakeholders",
+                target_date=target_date,
+                start_time=time(12, 0),
+                end_time=time(13, 0),
+                description="Lunch meeting"
+            ),
+            self._create_event(
+                event_id="busy_prof_5",
+                title="Client Presentation",
+                target_date=target_date,
+                start_time=time(13, 0),
+                end_time=time(14, 30),
+                description="Major client presentation"
+            ),
+            self._create_event(
+                event_id="busy_prof_6",
+                title="Project Review Meeting",
+                target_date=target_date,
+                start_time=time(14, 30),
+                end_time=time(15, 30),
+                description="Quarterly project review"
+            ),
+            self._create_event(
+                event_id="busy_prof_7",
+                title="Budget Planning Session",
+                target_date=target_date,
+                start_time=time(15, 30),
+                end_time=time(17, 0),
+                description="Annual budget planning"
+            ),
+            self._create_event(
+                event_id="busy_prof_8",
+                title="Team Debrief",
+                target_date=target_date,
+                start_time=time(17, 0),
+                end_time=time(17, 30),
+                description="End of day sync"
+            ),
+        ]
+        return events
+
+    def _generate_parent_schedule(self, target_date: date) -> List[CalendarEvent]:
+        """
+        Parent Schedule - Kids' activities and school runs
+
+        Schedule:
+        - 06:30-07:30: Wake Kids & Breakfast (60 min)
+        - 07:30-08:15: School Drop-off (45 min)
+        - 09:00-10:30: Work Meeting (90 min)
+        - 11:00-12:00: Grocery Shopping (60 min)
+        - 14:45-15:15: School Pick-up (30 min)
+        - 15:30-16:30: Kids Soccer Practice (60 min)
+        - 17:00-18:00: Prepare Dinner (60 min)
+        - 18:00-18:45: Family Dinner (45 min)
+        - 20:00-20:45: Kids Bedtime Routine (45 min)
+
+        Challenge: Fragmented schedule with unpredictable gaps
+        """
+        events = [
+            self._create_event(
+                event_id="parent_1",
+                title="Wake Kids & Breakfast",
+                target_date=target_date,
+                start_time=time(6, 30),
+                end_time=time(7, 30),
+                description="Morning routine with kids"
+            ),
+            self._create_event(
+                event_id="parent_2",
+                title="School Drop-off",
+                target_date=target_date,
+                start_time=time(7, 30),
+                end_time=time(8, 15),
+                description="Drive kids to school"
+            ),
+            self._create_event(
+                event_id="parent_3",
+                title="Work Meeting",
+                target_date=target_date,
+                start_time=time(9, 0),
+                end_time=time(10, 30),
+                description="Team meeting"
+            ),
+            self._create_event(
+                event_id="parent_4",
+                title="Grocery Shopping",
+                target_date=target_date,
+                start_time=time(11, 0),
+                end_time=time(12, 0),
+                description="Weekly grocery run"
+            ),
+            self._create_event(
+                event_id="parent_5",
+                title="School Pick-up",
+                target_date=target_date,
+                start_time=time(14, 45),
+                end_time=time(15, 15),
+                description="Pick up kids from school"
+            ),
+            self._create_event(
+                event_id="parent_6",
+                title="Kids Soccer Practice",
+                target_date=target_date,
+                start_time=time(15, 30),
+                end_time=time(16, 30),
+                description="Take kids to soccer"
+            ),
+            self._create_event(
+                event_id="parent_7",
+                title="Prepare Dinner",
+                target_date=target_date,
+                start_time=time(17, 0),
+                end_time=time(18, 0),
+                description="Cook dinner"
+            ),
+            self._create_event(
+                event_id="parent_8",
+                title="Family Dinner",
+                target_date=target_date,
+                start_time=time(18, 0),
+                end_time=time(18, 45),
+                description="Dinner with family"
+            ),
+            self._create_event(
+                event_id="parent_9",
+                title="Kids Bedtime Routine",
+                target_date=target_date,
+                start_time=time(20, 0),
+                end_time=time(20, 45),
+                description="Bath, stories, bedtime"
+            ),
+        ]
+        return events
+
+    def _generate_long_commuter(self, target_date: date) -> List[CalendarEvent]:
+        """
+        Long Commuter - 90-minute commutes bookend the day
+
+        Schedule:
+        - 07:00-08:30: Morning Commute (90 min)
+        - 09:00-10:30: Desk Work (90 min)
+        - 11:00-12:00: Team Meeting (60 min)
+        - 12:30-13:15: Lunch Break (45 min)
+        - 14:00-15:00: Client Call (60 min)
+        - 15:30-17:00: Project Work (90 min)
+        - 17:30-19:00: Evening Commute (90 min)
+        - 19:30-20:15: Dinner (45 min)
+
+        Challenge: Large unavailable blocks + limited evening availability
+        """
+        events = [
+            self._create_event(
+                event_id="commuter_1",
+                title="Morning Commute",
+                target_date=target_date,
+                start_time=time(7, 0),
+                end_time=time(8, 30),
+                description="Train to office"
+            ),
+            self._create_event(
+                event_id="commuter_2",
+                title="Desk Work",
+                target_date=target_date,
+                start_time=time(9, 0),
+                end_time=time(10, 30),
+                description="Focus work"
+            ),
+            self._create_event(
+                event_id="commuter_3",
+                title="Team Meeting",
+                target_date=target_date,
+                start_time=time(11, 0),
+                end_time=time(12, 0),
+                description="Weekly team sync"
+            ),
+            self._create_event(
+                event_id="commuter_4",
+                title="Lunch Break",
+                target_date=target_date,
+                start_time=time(12, 30),
+                end_time=time(13, 15),
+                description="Lunch"
+            ),
+            self._create_event(
+                event_id="commuter_5",
+                title="Client Call",
+                target_date=target_date,
+                start_time=time(14, 0),
+                end_time=time(15, 0),
+                description="Client check-in"
+            ),
+            self._create_event(
+                event_id="commuter_6",
+                title="Project Work",
+                target_date=target_date,
+                start_time=time(15, 30),
+                end_time=time(17, 0),
+                description="Project development"
+            ),
+            self._create_event(
+                event_id="commuter_7",
+                title="Evening Commute",
+                target_date=target_date,
+                start_time=time(17, 30),
+                end_time=time(19, 0),
+                description="Train home"
+            ),
+            self._create_event(
+                event_id="commuter_8",
+                title="Dinner",
+                target_date=target_date,
+                start_time=time(19, 30),
+                end_time=time(20, 15),
+                description="Evening meal"
+            ),
+        ]
+        return events
+
+    def _generate_flexible_remote(self, target_date: date) -> List[CalendarEvent]:
+        """
+        Flexible Remote Worker - Few fixed events, lots of gaps
+
+        Schedule:
+        - 09:30-10:00: Morning Standup (Video) (30 min)
+        - 11:00-12:30: Focus Block (90 min)
+        - 13:00-14:00: Lunch Break (60 min)
+        - 15:00-16:00: Client Video Call (60 min)
+
+        Challenge: High flexibility but potential for procrastination
+        """
+        events = [
+            self._create_event(
+                event_id="remote_1",
+                title="Morning Standup (Video)",
+                target_date=target_date,
+                start_time=time(9, 30),
+                end_time=time(10, 0),
+                description="Remote standup"
+            ),
+            self._create_event(
+                event_id="remote_2",
+                title="Focus Block",
+                target_date=target_date,
+                start_time=time(11, 0),
+                end_time=time(12, 30),
+                description="Deep work session"
+            ),
+            self._create_event(
+                event_id="remote_3",
+                title="Lunch Break",
+                target_date=target_date,
+                start_time=time(13, 0),
+                end_time=time(14, 0),
+                description="Lunch"
+            ),
+            self._create_event(
+                event_id="remote_4",
+                title="Client Video Call",
+                target_date=target_date,
+                start_time=time(15, 0),
+                end_time=time(16, 0),
+                description="Client meeting"
+            ),
+        ]
         return events
 
     # ========================================================================

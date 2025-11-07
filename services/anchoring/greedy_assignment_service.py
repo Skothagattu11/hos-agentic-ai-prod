@@ -236,8 +236,13 @@ class GreedyAssignmentService:
         anchored_datetime_full = datetime.combine(datetime.today(), anchored_time)
         time_diff = (anchored_datetime_full - original_datetime).total_seconds() / 60
 
-        # Normalize confidence score (0-15 points → 0-1.0 scale)
-        confidence = score.total_score / 15.0
+        # Normalize confidence score dynamically based on max possible score
+        # Hybrid scoring uses 48.0 as max, basic scoring uses 15.0
+        max_score = 15.0  # Default for basic scoring
+        if hasattr(score, 'scoring_breakdown') and isinstance(score.scoring_breakdown, dict):
+            max_score = score.scoring_breakdown.get('max_possible_score', 15.0)
+
+        confidence = score.total_score / max_score if max_score > 0 else 0.0
 
         return TaskAssignment(
             task_id=task.id,

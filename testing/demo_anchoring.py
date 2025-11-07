@@ -253,7 +253,13 @@ def create_sample_tasks() -> List[TaskToAnchor]:
     return tasks
 
 
-async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calendar: bool = True, use_ai_scoring: bool = False):
+async def demo_anchoring(
+    analysis_result_id: str,
+    user_id: str,
+    use_mock_calendar: bool = True,
+    use_ai_scoring: bool = False,
+    mock_profile: str = "realistic_day"
+):
     """
     Main demo function - shows complete anchoring workflow
 
@@ -262,6 +268,7 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
         user_id: User's profile ID
         use_mock_calendar: Whether to use mock calendar (True) or real Google Calendar (False)
         use_ai_scoring: Whether to use AI-enhanced scoring (hybrid mode)
+        mock_profile: Mock calendar profile to use (busy_professional, parent_schedule, etc.)
     """
     print_header("CALENDAR ANCHORING ALGORITHM DEMO")
 
@@ -289,7 +296,7 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
             user_id=user_id,
             target_date=target_date,
             use_mock_data=True,
-            mock_profile="realistic_day"
+            mock_profile=mock_profile
         )
     else:
         print("🔄 Fetching Google Calendar events...")
@@ -358,7 +365,7 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
         tasks=tasks,
         target_date=target_date,
         use_mock_calendar=use_mock_calendar,
-        mock_profile="realistic_day",
+        mock_profile=mock_profile,
         min_gap_minutes=15
     )
 
@@ -416,9 +423,27 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
             print(f"      Fallback: {assignment.scoring_breakdown['reason']}")
         else:
             breakdown = assignment.scoring_breakdown
-            print(f"      Duration Fit: {breakdown.get('duration_fit', {}).get('score', 0):.1f}/2.0")
-            print(f"      Time Window Match: {breakdown.get('time_window', {}).get('score', 0):.1f}/10.0")
-            print(f"      Priority Alignment: {breakdown.get('priority', {}).get('score', 0):.1f}/3.0")
+
+            # Handle hybrid scoring structure (has "algorithmic" and "ai" keys)
+            if "algorithmic" in breakdown:
+                algo = breakdown["algorithmic"]
+                print(f"      Duration Fit: {algo.get('duration_fit', 0):.1f}/{algo.get('max', 15.0):.0f}")
+                print(f"      Time Window Match: {algo.get('time_window_match', 0):.1f}/10.0")
+                print(f"      Priority Alignment: {algo.get('priority_alignment', 0):.1f}/3.0")
+
+                # Show AI scoring if present
+                if breakdown.get("ai"):
+                    ai = breakdown["ai"]
+                    # AI scores are nested under "scoring_breakdown" key
+                    ai_scores = ai.get('scoring_breakdown', {}) if isinstance(ai, dict) else {}
+                    print(f"      AI Context Score: {ai_scores.get('task_context', 0):.1f}/12.0")
+                    print(f"      AI Flow Score: {ai_scores.get('dependency_flow', 0):.1f}/11.0")
+                    print(f"      AI Energy Score: {ai_scores.get('energy_focus', 0):.1f}/10.0")
+            else:
+                # Fallback to old format
+                print(f"      Duration Fit: {breakdown.get('duration_fit', {}).get('score', 0):.1f}/2.0")
+                print(f"      Time Window Match: {breakdown.get('time_window', {}).get('score', 0):.1f}/10.0")
+                print(f"      Priority Alignment: {breakdown.get('priority', {}).get('score', 0):.1f}/3.0")
 
         print()
 
@@ -538,6 +563,7 @@ if __name__ == "__main__":
     user_id = sys.argv[2]
     use_mock_calendar = True if len(sys.argv) < 4 else sys.argv[3].lower() == "true"
     use_ai_scoring = False if len(sys.argv) < 5 else sys.argv[4].lower() == "true"
+    mock_profile = "realistic_day" if len(sys.argv) < 6 else sys.argv[5]
 
     # Run demo
-    asyncio.run(demo_anchoring(analysis_result_id, user_id, use_mock_calendar, use_ai_scoring))
+    asyncio.run(demo_anchoring(analysis_result_id, user_id, use_mock_calendar, use_ai_scoring, mock_profile))

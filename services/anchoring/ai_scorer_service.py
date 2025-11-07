@@ -220,6 +220,216 @@ class AIScorerService:
         print(f"   ✅ AI Scoring complete! Scored {len(scores)} combinations.")
         return scores
 
+    async def score_batch(
+        self,
+        combinations: List[tuple[TaskToAnchor, AvailableSlot]],
+        calendar_context: Optional[List[CalendarEvent]] = None
+    ) -> List[AITaskSlotScore]:
+        """
+        Score multiple task-slot combinations in a SINGLE batch API call
+
+        This is Option 2: Batch API approach - significantly faster than sequential scoring
+
+        Args:
+            combinations: List of (task, slot) tuples to score
+            calendar_context: Optional calendar events for context
+
+        Returns:
+            List of AITaskSlotScore objects
+
+        Performance:
+            - 24 combinations: ~3-5 seconds (vs 60 seconds sequential)
+            - 1 API call (vs 24 API calls)
+            - Lower cost (1 × base cost vs 24 × base cost)
+        """
+        if not combinations:
+            return []
+
+        logger.info(f"[AI-SCORER] Batch scoring {len(combinations)} combinations in SINGLE API call")
+        print(f"   [BATCH] AI Scoring: {len(combinations)} combinations in one call...")
+
+        try:
+            # Build batch prompt
+            from datetime import datetime
+            start_prompt = datetime.now()
+            prompt = self._build_batch_scoring_prompt(combinations, calendar_context)
+            end_prompt = datetime.now()
+            prompt_time = (end_prompt - start_prompt).total_seconds()
+            print(f"   [TIMING] Prompt building: {prompt_time:.2f}s")
+            logger.info(f"[AI-SCORER] Prompt built in {prompt_time:.2f}s, length: {len(prompt)} chars")
+
+            # Single API call for all combinations
+            print(f"   [API] Calling OpenAI API ({self.model})...")
+            start_api = datetime.now()
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at calendar optimization and task scheduling. Score task-slot combinations based on semantic understanding, dependencies, and energy alignment. Return results as a JSON array."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=self.temperature,
+                response_format={"type": "json_object"}
+            )
+            end_api = datetime.now()
+            api_time = (end_api - start_api).total_seconds()
+            print(f"   [TIMING] API call: {api_time:.2f}s")
+            logger.info(f"[AI-SCORER] API call completed in {api_time:.2f}s")
+
+            # Parse batch response
+            print(f"   [PARSE] Parsing {len(combinations)} scores from response...")
+            start_parse = datetime.now()
+            result = json.loads(response.choices[0].message.content)
+            scores_data = result.get("scores", [])
+            end_parse = datetime.now()
+            parse_time = (end_parse - start_parse).total_seconds()
+            print(f"   [TIMING] Response parsing: {parse_time:.2f}s")
+            logger.info(f"[AI-SCORER] Parsed response in {parse_time:.2f}s, got {len(scores_data)} scores")
+
+            # Convert to AITaskSlotScore objects
+            scores = []
+            for score_data in scores_data:
+                try:
+                    score = AITaskSlotScore(
+                        task_id=score_data.get("task_id", ""),
+                        slot_id=score_data.get("slot_id", ""),
+                        total_score=float(score_data.get("total_score", 16.5)),
+                        task_context_score=float(score_data.get("task_context_score", 6.0)),
+                        dependency_score=float(score_data.get("dependency_score", 5.5)),
+                        energy_score=float(score_data.get("energy_score", 5.0)),
+                        reasoning=score_data.get("reasoning", ""),
+                        model_used=self.model
+                    )
+                    scores.append(score)
+                except Exception as e:
+                    logger.warning(f"[AI-SCORER] Failed to parse score entry: {str(e)}")
+                    continue
+
+            # Calculate total time
+            end_total = datetime.now()
+            total_time = (end_total - start_prompt).total_seconds()
+
+            print(f"   [OK] Batch scoring complete! Scored {len(scores)} combinations in single call.")
+            print(f"\n   [TIMING SUMMARY]")
+            print(f"   • Prompt building: {prompt_time:.2f}s ({prompt_time/total_time*100:.1f}%)")
+            print(f"   • API call:        {api_time:.2f}s ({api_time/total_time*100:.1f}%)")
+            print(f"   • Response parse:  {parse_time:.2f}s ({parse_time/total_time*100:.1f}%)")
+            print(f"   • TOTAL:           {total_time:.2f}s")
+            logger.info(f"[AI-SCORER] Batch scoring successful: {len(scores)} scores returned in {total_time:.2f}s")
+
+            return scores
+
+        except Exception as e:
+            logger.error(f"[AI-SCORER] Batch scoring failed: {str(e)}")
+            print(f"   [WARN] Batch scoring failed, falling back to individual scoring...")
+
+            # Fallback to individual scoring if batch fails
+            scores = []
+            for idx, (task, slot) in enumerate(combinations, 1):
+                print(f"   [FALLBACK] [{idx}/{len(combinations)}] Scoring '{task.title[:30]}...'", flush=True)
+                score = await self.score_task_slot(task, slot, calendar_context)
+                scores.append(score)
+
+            return scores
+
+    def _build_batch_scoring_prompt(
+        self,
+        combinations: List[tuple[TaskToAnchor, AvailableSlot]],
+        calendar_context: Optional[List[CalendarEvent]] = None
+    ) -> str:
+        """
+        Build batch prompt for scoring multiple combinations at once
+
+        Args:
+            combinations: List of (task, slot) tuples
+            calendar_context: Optional calendar events
+
+        Returns:
+            Formatted batch prompt
+        """
+        # Build calendar context section (shared for all)
+        context_info = ""
+        if calendar_context:
+            context_info = "\nShared Calendar Context (for all combinations):\n"
+            for event in calendar_context[:5]:
+                context_info += f"- {event.title}: {event.start_time.strftime('%I:%M %p')} - {event.end_time.strftime('%I:%M %p')}\n"
+
+        # Build combinations list
+        combinations_text = ""
+        for idx, (task, slot) in enumerate(combinations, 1):
+            combinations_text += f"""
+Combination {idx}:
+  task_id: "{task.id}"
+  slot_id: "{slot.slot_id}"
+  Task: {task.title}
+  Description: {task.description or "No description"}
+  Category: {task.category}
+  Priority: {task.priority_level}
+  Duration: {task.estimated_duration_minutes} minutes
+  Time Block Preference: {task.time_block or "Any"}
+  Energy Zone: {task.energy_zone_preference or "Any"}
+
+  Slot: {slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}
+  Slot Duration: {slot.duration_minutes} minutes
+  Gap Type: {slot.gap_type.value}
+  Gap Size: {slot.gap_size.value}
+  Before Event: {slot.before_event_title if slot.before_event_title else "None"}
+  After Event: {slot.after_event_title if slot.after_event_title else "None"}
+
+"""
+
+        # Build complete prompt
+        prompt = f"""
+Score {len(combinations)} task-slot combinations and return results as a JSON array.
+
+{context_info}
+
+COMBINATIONS TO SCORE:
+{combinations_text}
+
+For EACH combination, score these aspects:
+
+1. Task Context (0-12 points):
+   - Does the task semantically match this time of day?
+   - Is this the right energy level for this specific task?
+   - Does the task need uninterrupted time? Is this slot suitable?
+
+2. Dependency & Flow (0-11 points):
+   - Does this task naturally follow the previous calendar events?
+   - Is there helpful mental context from prior tasks?
+   - Does this create good momentum and logical flow?
+
+3. Energy & Focus (0-10 points):
+   - Does the user's typical energy level match task demands?
+   - Is this peak/maintenance/recovery time appropriate?
+   - Will the user be fresh or fatigued at this time?
+
+Return ONLY valid JSON with this EXACT structure:
+{{
+  "scores": [
+    {{
+      "task_id": "<task_id from combination>",
+      "slot_id": "<slot_id from combination>",
+      "total_score": <sum of three scores, 0-33>,
+      "task_context_score": <0-12>,
+      "dependency_score": <0-11>,
+      "energy_score": <0-10>,
+      "reasoning": "<brief 1-2 sentence explanation>"
+    }},
+    ... (repeat for all {len(combinations)} combinations)
+  ]
+}}
+
+CRITICAL: Return exactly {len(combinations)} score objects in the array. Each must have all fields.
+"""
+
+        return prompt
+
     def _build_scoring_prompt(
         self,
         task: TaskToAnchor,
