@@ -9,6 +9,7 @@ structlog
 pytest
 pytest-asyncio
 openai
+google-generativeai
 typing-extensions
 aiohttp
 tenacity==8.2.3
@@ -20,5 +21,7 @@ requests
 python-dateutil
 tzdata
 apscheduler==3.10.4
+httpx
+websockets>=13.0
 
 

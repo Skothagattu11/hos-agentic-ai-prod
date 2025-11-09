@@ -2299,49 +2299,6 @@ async def analyze_circadian_rhythm(user_id: str, request: CircadianAnalysisReque
         raise HTTPException(status_code=500, detail=f"Failed to analyze circadian rhythm: {str(e)}")
 
 
-
-# ============================================================================
-# ANCHORING ENDPOINT
-# ============================================================================
-
-@app.post("/api/v1/anchor/generate")
-async def generate_anchors(request: Request):
-    """
-    Generate anchored tasks by matching plan items to saved schedule events
-
-    Uses Supabase REST API for database access (no database adapters needed)
-
-    Request body:
-        {
-            "user_id": "user-uuid",
-            "date": "2025-11-09",
-            "schedule_id": "schedule-uuid" (optional - if null, returns standalone tasks),
-            "include_google_calendar": false,
-            "confidence_threshold": 0.7
-        }
-
-    Response:
-        {
-            "anchored_tasks": [...],
-            "standalone_tasks": [...],
-            "message": "Success message"
-        }
-    """
-    try:
-        body = await request.json()
-
-        # Use REST API implementation (simpler, no database adapters required)
-        from services.api_gateway.anchor_endpoint_rest import generate_anchors_via_rest_api
-        result = await generate_anchors_via_rest_api(body)
-        return result
-
-    except Exception as e:
-        print(f"❌ [ANCHORING] Error: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Anchoring failed: {str(e)}")
-
-
 async def run_complete_health_analysis(user_id: str, archetype: str) -> dict:
     """
     Complete health analysis with automatic insights generation - Phase 4.2 Sprint 3
