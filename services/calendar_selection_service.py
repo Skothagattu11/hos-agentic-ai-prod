@@ -149,7 +149,7 @@ class CalendarSelectionService:
                         estimated_duration_minutes,
                         task_type,
                         priority_level,
-                        time_blocks!fk_plan_items_time_block_id (
+                        time_blocks:time_block_id (
                             id,
                             block_title,
                             time_range,

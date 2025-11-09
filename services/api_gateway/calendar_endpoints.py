@@ -155,11 +155,12 @@ async def get_available_plan_items(
         supabase = create_client(supabase_url, supabase_key)
         filter_date = date or datetime.now().strftime('%Y-%m-%d')
 
-        # Enhanced query with time_blocks (removed archetype_name as it doesn't exist)
+        # Enhanced query with time_blocks using correct join syntax
+        # Note: Using time_block_id column to join with time_blocks table
         query = supabase.table("plan_items")\
             .select("""
                 *,
-                time_blocks!fk_plan_items_time_block_id (
+                time_blocks:time_block_id (
                     id,
                     analysis_result_id,
                     block_title,
