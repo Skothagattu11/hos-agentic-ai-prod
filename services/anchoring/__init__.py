@@ -11,12 +11,22 @@ Architecture:
 - PatternAnalyzerService: Analyzes task_checkins for completion patterns
 - AnchoringCoordinator: Orchestrates the entire anchoring flow
 
-Phase 1 (Foundation - Week 1):
-- CalendarIntegrationService ✅
-- MockCalendarGenerator ✅
-- CalendarGapFinder ✅
-- TaskLoaderService ✅
-- Database migration ✅
+Anchoring Modes:
+1. AI-Only (RECOMMENDED): AIAnchoringAgent with holistic context-aware reasoning
+2. Hybrid (Legacy): AI scoring + optimization algorithm
+3. Algorithmic (Fast): Rule-based scoring, no AI
+
+Phase 1 (Foundation): ✅
+- CalendarIntegrationService, MockCalendarGenerator, CalendarGapFinder, TaskLoaderService
+
+Phase 2 (Algorithmic Anchoring): ✅
+- BasicScorerService, GreedyAssignmentService, AnchoringCoordinator
+
+Phase 4 (AI-Enhanced Scoring): ✅
+- AIScorerService, HybridScorerService
+
+Phase 5 (AI-Only Holistic): ✅
+- AIAnchoringAgent (single-agent holistic reasoning)
 """
 
 __version__ = "1.0.0"
@@ -81,6 +91,12 @@ from .hybrid_scorer_service import (
     get_hybrid_scorer_service,
 )
 
+# Phase 5 exports (AI-Only Holistic Anchoring - Complete)
+from .ai_anchoring_agent import (
+    AIAnchoringAgent,
+    get_ai_anchoring_agent,
+)
+
 __all__ = [
     # Calendar Integration
     "CalendarIntegrationService",
@@ -122,4 +138,7 @@ __all__ = [
     "HybridScorerService",
     "HybridTaskSlotScore",
     "get_hybrid_scorer_service",
+    # AI-Only Holistic Anchoring
+    "AIAnchoringAgent",
+    "get_ai_anchoring_agent",
 ]

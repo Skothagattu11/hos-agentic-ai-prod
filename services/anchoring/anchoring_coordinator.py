@@ -33,6 +33,7 @@ from .greedy_assignment_service import (
     get_greedy_assignment_service,
     AssignmentResult
 )
+from .ai_anchoring_agent import get_ai_anchoring_agent
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,13 @@ class AnchoringCoordinator:
     """
     Coordinates the complete calendar anchoring workflow
 
-    This service ties together all anchoring components and provides
-    a simple interface for anchoring tasks to calendar slots.
+    This service provides three anchoring modes:
+    1. AI-Only (RECOMMENDED): Holistic AI reasoning with full context awareness
+    2. Hybrid: AI scoring + optimization algorithm
+    3. Algorithmic: Fast rule-based scoring
 
-    Usage:
-        coordinator = AnchoringCoordinator()
+    Usage (AI-Only - Recommended):
+        coordinator = AnchoringCoordinator(use_ai_only=True)
         result = await coordinator.anchor_tasks(
             user_id="user_123",
             tasks=task_list,
@@ -58,23 +61,36 @@ class AnchoringCoordinator:
         )
     """
 
-    def __init__(self, use_ai_scoring: bool = False):
+    def __init__(self, use_ai_only: bool = False, use_ai_scoring: bool = False):
         """
         Initialize coordinator with all required services
 
         Args:
-            use_ai_scoring: Whether to use AI-enhanced scoring (default: False for speed)
+            use_ai_only: Whether to use AI-only holistic anchoring (RECOMMENDED for N≤15 tasks)
+            use_ai_scoring: Whether to use hybrid AI scoring + optimization (legacy)
         """
-        self.calendar_service = get_calendar_integration_service()
-        self.gap_finder = get_gap_finder()
+        self.use_ai_only = use_ai_only
         self.use_ai_scoring = use_ai_scoring
 
-        # Choose scorer based on AI flag
-        if use_ai_scoring:
+        # AI-Only Mode: Single holistic AI agent (Gemini)
+        if use_ai_only:
+            self.ai_agent = get_ai_anchoring_agent()
+            self.calendar_service = get_calendar_integration_service()
+            self.gap_finder = get_gap_finder()
+            logger.info("[ANCHORING-COORDINATOR] ✅ Initialized with AI-Only holistic anchoring (Gemini)")
+
+        # Hybrid Mode: AI scoring + optimization algorithm
+        elif use_ai_scoring:
+            self.calendar_service = get_calendar_integration_service()
+            self.gap_finder = get_gap_finder()
             self.scorer = get_hybrid_scorer_service(use_ai=True)
             self.assigner = get_greedy_assignment_service()
-            logger.info("[ANCHORING-COORDINATOR] Initialized with AI-enhanced scoring")
+            logger.info("[ANCHORING-COORDINATOR] Initialized with hybrid AI scoring + optimization")
+
+        # Algorithmic Mode: Fast rule-based scoring
         else:
+            self.calendar_service = get_calendar_integration_service()
+            self.gap_finder = get_gap_finder()
             self.basic_scorer = get_basic_scorer_service()
             self.assigner = get_greedy_assignment_service()
             logger.info("[ANCHORING-COORDINATOR] Initialized with algorithmic-only scoring")
@@ -87,10 +103,11 @@ class AnchoringCoordinator:
         supabase_token: Optional[str] = None,
         use_mock_calendar: bool = False,
         mock_profile: str = "realistic_day",
-        min_gap_minutes: int = 15
+        min_gap_minutes: int = 15,
+        user_profile: Optional[dict] = None
     ) -> AssignmentResult:
         """
-        Anchor tasks to calendar gaps
+        Anchor tasks to calendar gaps using selected mode
 
         Args:
             user_id: User's profile ID
@@ -100,13 +117,14 @@ class AnchoringCoordinator:
             use_mock_calendar: Whether to use mock calendar data
             mock_profile: Mock calendar profile to use
             min_gap_minutes: Minimum gap size to consider
+            user_profile: Optional user profile data (chronotype, preferences, etc.)
 
         Returns:
-            AssignmentResult with all anchored tasks
+            AssignmentResult with all anchored tasks (same format for all modes)
         """
         logger.info(
             f"[ANCHORING-COORDINATOR] Starting anchoring for {len(tasks)} tasks "
-            f"on {target_date}"
+            f"on {target_date} (Mode: {'AI-Only' if self.use_ai_only else 'Hybrid' if self.use_ai_scoring else 'Algorithmic'})"
         )
 
         # Step 1: Fetch calendar events
@@ -144,6 +162,32 @@ class AnchoringCoordinator:
             f"[ANCHORING-COORDINATOR] Found {len(gaps)} available time gaps "
             f"({sum(g.duration_minutes for g in gaps)} total minutes)"
         )
+
+        # ========================================================================
+        # AI-ONLY MODE: Single holistic AI agent handles everything
+        # ========================================================================
+        if self.use_ai_only:
+            logger.info("[ANCHORING-COORDINATOR] Using AI-Only holistic anchoring")
+            result = await self.ai_agent.anchor_tasks(
+                tasks=tasks,
+                slots=gaps,
+                calendar_events=calendar_events,
+                user_profile=user_profile,
+                target_date=target_date
+            )
+
+            logger.info(
+                f"[ANCHORING-COORDINATOR] ✅ AI-Only anchoring complete: "
+                f"{result.tasks_anchored} tasks anchored, "
+                f"{result.tasks_rescheduled} rescheduled, "
+                f"average confidence: {result.average_confidence:.2f}"
+            )
+
+            return result
+
+        # ========================================================================
+        # HYBRID/ALGORITHMIC MODES: Multi-step scoring + assignment
+        # ========================================================================
 
         # Step 3: Score all task-slot combinations
         logger.info(f"[ANCHORING-COORDINATOR] Step 3: Scoring task-slot combinations "
@@ -185,19 +229,33 @@ class AnchoringCoordinator:
 _coordinator_instance: Optional[AnchoringCoordinator] = None
 
 
-def get_anchoring_coordinator(use_ai_scoring: bool = False) -> AnchoringCoordinator:
+def get_anchoring_coordinator(use_ai_only: bool = False, use_ai_scoring: bool = False) -> AnchoringCoordinator:
     """
     Get singleton instance of AnchoringCoordinator
 
     Args:
-        use_ai_scoring: Whether to use AI-enhanced scoring
+        use_ai_only: Whether to use AI-only holistic anchoring (RECOMMENDED)
+        use_ai_scoring: Whether to use hybrid AI scoring + optimization (legacy)
 
     Returns:
         AnchoringCoordinator instance
+
+    Example:
+        # AI-Only mode (recommended for N≤15 tasks)
+        coordinator = get_anchoring_coordinator(use_ai_only=True)
+
+        # Hybrid mode (AI scoring + optimization)
+        coordinator = get_anchoring_coordinator(use_ai_scoring=True)
+
+        # Algorithmic mode (fast, no AI)
+        coordinator = get_anchoring_coordinator()
     """
     global _coordinator_instance
 
     if _coordinator_instance is None:
-        _coordinator_instance = AnchoringCoordinator(use_ai_scoring=use_ai_scoring)
+        _coordinator_instance = AnchoringCoordinator(
+            use_ai_only=use_ai_only,
+            use_ai_scoring=use_ai_scoring
+        )
 
     return _coordinator_instance

@@ -18,8 +18,9 @@ Example:
 import asyncio
 import sys
 import os
+import httpx
 from datetime import date, time, datetime, timedelta
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 
 # Add parent directory to path
@@ -31,6 +32,7 @@ from services.anchoring import (
     get_anchoring_coordinator,
     get_calendar_integration_service,
     get_task_loader_service,
+    CalendarEvent,
 )
 from services.anchoring.basic_scorer_service import TaskToAnchor
 
@@ -125,21 +127,118 @@ async def fetch_plan_tasks(analysis_result_id: str) -> List[TaskToAnchor]:
                 time_block_name = 'afternoon'
                 energy_zone = 'maintenance'
 
+        # Handle None values for scheduled_time
+        scheduled_time = item.scheduled_time if item.scheduled_time else time(8, 0)
+
+        # Calculate end time if not provided
+        if item.scheduled_end_time:
+            scheduled_end_time = item.scheduled_end_time
+        else:
+            duration = item.estimated_duration_minutes or 15
+            total_minutes = scheduled_time.hour * 60 + scheduled_time.minute + duration
+            end_hour = (total_minutes // 60) % 24
+            end_minute = total_minutes % 60
+            scheduled_end_time = time(end_hour, end_minute)
+
         task = TaskToAnchor(
             id=item.id,
             title=item.title,
             description=item.description,
             category=item.category or "general",
             priority_level=item.priority_level or "medium",
-            scheduled_time=item.scheduled_time,
-            scheduled_end_time=item.scheduled_end_time,
-            estimated_duration_minutes=item.estimated_duration_minutes,
+            scheduled_time=scheduled_time,
+            scheduled_end_time=scheduled_end_time,
+            estimated_duration_minutes=item.estimated_duration_minutes or 15,
             time_block=time_block_name,
             energy_zone_preference=energy_zone
         )
         tasks.append(task)
 
     return tasks
+
+
+async def fetch_saved_schedule(user_id: str, target_date: date, schedule_id: Optional[str] = None) -> List[CalendarEvent]:
+    """
+    Fetch saved schedule tasks from SUPABASE_CAL_URL database
+
+    Args:
+        user_id: User's profile ID
+        target_date: Date to fetch schedule for
+        schedule_id: Optional specific schedule ID, otherwise uses most recent
+
+    Returns:
+        List of CalendarEvent objects from saved schedule
+    """
+    supabase_cal_url = os.getenv("SUPABASE_CAL_URL")
+    supabase_cal_key = os.getenv("SUPABASE_CAL_SERVICE_KEY")
+
+    if not supabase_cal_url or not supabase_cal_key:
+        print("⚠️  [SAVED-SCHEDULE] SUPABASE_CAL_URL or SUPABASE_CAL_SERVICE_KEY not configured")
+        return []
+
+    headers = {
+        "apikey": supabase_cal_key,
+        "Authorization": f"Bearer {supabase_cal_key}",
+        "Content-Type": "application/json"
+    }
+
+    calendar_events = []
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # If no schedule_id provided, get the most recent one for this user
+        if not schedule_id:
+            print(f"📅 [SAVED-SCHEDULE] Finding most recent schedule for user {user_id[:8]}...")
+            response = await client.get(
+                f"{supabase_cal_url}/rest/v1/saved_schedules"
+                f"?user_id=eq.{user_id}"
+                f"&order=created_at.desc"
+                f"&limit=1",
+                headers=headers
+            )
+
+            if response.status_code == 200 and response.json():
+                schedule_id = response.json()[0]['id']
+                schedule_name = response.json()[0].get('schedule_name', 'Unnamed')
+                print(f"✅ [SAVED-SCHEDULE] Found schedule: {schedule_name} ({schedule_id[:8]}...)")
+            else:
+                print("⚠️  [SAVED-SCHEDULE] No saved schedules found for this user")
+                return []
+
+        # Fetch scheduled_tasks for this schedule
+        print(f"📋 [SAVED-SCHEDULE] Fetching tasks for schedule {schedule_id[:8]}...")
+        response = await client.get(
+            f"{supabase_cal_url}/rest/v1/scheduled_tasks"
+            f"?schedule_id=eq.{schedule_id}"
+            f"&order=start_time.asc",
+            headers=headers
+        )
+
+        if response.status_code != 200:
+            print(f"❌ [SAVED-SCHEDULE] Failed to fetch scheduled tasks: {response.status_code}")
+            return []
+
+        tasks = response.json()
+
+        for task in tasks:
+            # Parse time strings (format: "HH:MM:SS")
+            start_time_str = task['start_time']
+            end_time_str = task['end_time']
+
+            start_parts = start_time_str.split(':')
+            end_parts = end_time_str.split(':')
+            start_time = time(int(start_parts[0]), int(start_parts[1]))
+            end_time = time(int(end_parts[0]), int(end_parts[1]))
+
+            calendar_events.append(CalendarEvent(
+                id=task['id'],
+                title=task['task_name'],
+                start_time=datetime.combine(target_date, start_time),
+                end_time=datetime.combine(target_date, end_time)
+            ))
+
+        print(f"✅ [SAVED-SCHEDULE] Loaded {len(calendar_events)} calendar events from saved schedule")
+
+    return calendar_events
 
 
 def create_sample_tasks() -> List[TaskToAnchor]:
@@ -253,15 +352,17 @@ def create_sample_tasks() -> List[TaskToAnchor]:
     return tasks
 
 
-async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calendar: bool = True, use_ai_scoring: bool = False):
+async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calendar: bool = True, use_ai_scoring: bool = False, use_ai_only: bool = False, schedule_id: Optional[str] = None):
     """
     Main demo function - shows complete anchoring workflow
 
     Args:
         analysis_result_id: ID of the plan to anchor
         user_id: User's profile ID
-        use_mock_calendar: Whether to use mock calendar (True) or real Google Calendar (False)
+        use_mock_calendar: Whether to use mock calendar (True) or saved schedule (False)
         use_ai_scoring: Whether to use AI-enhanced scoring (hybrid mode)
+        use_ai_only: Whether to use AI-only holistic anchoring (RECOMMENDED)
+        schedule_id: Optional saved schedule ID (fetches from SUPABASE_CAL_URL)
     """
     print_header("CALENDAR ANCHORING ALGORITHM DEMO")
 
@@ -271,40 +372,55 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
     # Configuration
     target_date = date.today()
 
+    # Determine mode
+    if use_ai_only:
+        mode_str = "AI-Only Holistic (GPT-4o with full context)"
+    elif use_ai_scoring:
+        mode_str = "Hybrid AI-Enhanced (48 points)"
+    else:
+        mode_str = "Algorithmic Only (15 points)"
+
+    # Determine calendar source
+    if use_mock_calendar:
+        calendar_source = "Mock Data"
+    else:
+        calendar_source = f"Saved Schedule {schedule_id[:8] if schedule_id else '(auto-detect)'}"
+
     print(f"🗓️  Target Date: {target_date.strftime('%A, %B %d, %Y')}")
     print(f"👤 User ID: {user_id[:8]}...")
     print(f" Plan ID: {analysis_result_id[:8]}...")
-    print(f" Calendar: {'Mock Data' if use_mock_calendar else 'Real Google Calendar'}")
-    print(f" Scoring Mode: {'AI-Enhanced (48 points)' if use_ai_scoring else 'Algorithmic Only (15 points)'}")
+    print(f" Calendar: {calendar_source}")
+    print(f" Anchoring Mode: {mode_str}")
 
     # Step 1: Load calendar
-    calendar_type = "Mock Calendar" if use_mock_calendar else "Google Calendar"
-    print_section(f"Step 1: Loading {calendar_type} Events")
+    if use_mock_calendar:
+        calendar_type = "Mock Calendar"
+    else:
+        calendar_type = "Saved Schedule"
 
-    calendar_service = get_calendar_integration_service()
+    print_section(f"Step 1: Loading {calendar_type} Events")
 
     if use_mock_calendar:
         print("🔄 Fetching realistic_day calendar profile...")
+        calendar_service = get_calendar_integration_service()
         calendar_result = await calendar_service.fetch_calendar_events(
             user_id=user_id,
             target_date=target_date,
             use_mock_data=True,
             mock_profile="realistic_day"
         )
+        calendar_events = calendar_result.events
     else:
-        print("🔄 Fetching Google Calendar events...")
-        print("   (Requires Google Calendar connection via well-planned-api)")
-        calendar_result = await calendar_service.fetch_calendar_events(
-            user_id=user_id,
-            target_date=target_date,
-            use_mock_data=False
-        )
+        # Fetch from saved_schedules database
+        calendar_events = await fetch_saved_schedule(user_id, target_date, schedule_id)
 
-    print(f"\n Loaded {calendar_result.total_events} calendar events:")
-    print(f"   Calendar Type: {calendar_result.connection_status.value}")
+    if not calendar_events:
+        print("\n⚠️  Warning: No calendar events loaded - tasks will use original times")
+
+    print(f"\n Loaded {len(calendar_events)} calendar events:")
     print(f"   Events:")
 
-    for i, event in enumerate(calendar_result.events, 1):
+    for i, event in enumerate(calendar_events, 1):
         print_timeline_slot(
             event.start_time.time(),
             event.end_time.time(),
@@ -349,9 +465,13 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
 
     print("\n🔄 Anchoring coordinator workflow:")
     print("   1️⃣  Fetching calendar events... DONE")
-    print("   2️⃣  Finding available time gaps...")
 
-    coordinator = get_anchoring_coordinator(use_ai_scoring=use_ai_scoring)
+    if use_ai_only:
+        print("   2️⃣  Using AI-Only holistic anchoring (GPT-4o)...")
+    else:
+        print("   2️⃣  Finding available time gaps...")
+
+    coordinator = get_anchoring_coordinator(use_ai_only=use_ai_only, use_ai_scoring=use_ai_scoring)
 
     result = await coordinator.anchor_tasks(
         user_id=user_id,
@@ -362,8 +482,11 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
         min_gap_minutes=15
     )
 
-    print("   3️⃣  Scoring task-slot combinations... DONE")
-    print("   4️⃣  Assigning tasks to optimal slots... DONE")
+    if use_ai_only:
+        print("   AI reasoning complete... DONE")
+    else:
+        print("   3️⃣  Scoring task-slot combinations... DONE")
+        print("   4️⃣  Assigning tasks to optimal slots... DONE")
 
     # Step 4: Display results
     print_section("Step 4: Anchoring Results")
@@ -431,7 +554,7 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
     # Combine calendar events and anchored tasks, sort by time
     timeline_items = []
 
-    for event in calendar_result.events:
+    for event in calendar_events:
         timeline_items.append({
             "start": event.start_time.time(),
             "end": event.end_time.time(),
@@ -490,7 +613,7 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
     print(f"      • No tasks left unassigned")
 
     print(f"\n   4. Calendar Integration:")
-    print(f"      • Tasks fit around {calendar_result.total_events} existing calendar events")
+    print(f"      • Tasks fit around {len(calendar_events)} existing calendar events")
     print(f"      • Respects time block preferences (morning/peak/afternoon/evening)")
     print(f"      • Prioritizes high-priority tasks in peak energy slots")
 
@@ -520,24 +643,40 @@ if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("\n Error: Missing required arguments")
         print("\nUsage:")
-        print("   python testing/demo_anchoring.py <analysis_result_id> <user_id> [use_mock_calendar] [use_ai_scoring]")
-        print("\nExample:")
-        print("   python testing/demo_anchoring.py d8fe057d-fe02-4547-b7f2-f4884e424544 a57f70b4-d0a4-4aef-b721-a4b526f64869 true false")
-        print("   python testing/demo_anchoring.py d8fe057d-fe02-4547-b7f2-f4884e424544 a57f70b4-d0a4-4aef-b721-a4b526f64869 true true  # AI-enhanced")
+        print("   python testing/demo_anchoring_no_emoji.py <analysis_result_id> <user_id> [use_mock_calendar] [use_ai_scoring] [use_ai_only] [schedule_id]")
+        print("\nExamples:")
+        print("   # AI-Only with mock calendar (RECOMMENDED for testing)")
+        print("   python testing/demo_anchoring_no_emoji.py <plan-id> <user-id> true false true")
+        print("\n   # AI-Only with saved schedule from database")
+        print("   python testing/demo_anchoring_no_emoji.py <plan-id> <user-id> false false true <schedule-id>")
+        print("\n   # Algorithmic only (fast)")
+        print("   python testing/demo_anchoring_no_emoji.py <plan-id> <user-id> true false false")
         print("\nArguments:")
         print("   analysis_result_id : UUID of the plan to anchor (from holistic_analysis_results table)")
         print("   user_id            : User's profile ID")
-        print("   use_mock_calendar  : 'true' for mock data, 'false' for Google Calendar (default: true)")
-        print("   use_ai_scoring     : 'true' for AI-enhanced (48pt), 'false' for algorithmic (15pt) (default: false)")
+        print("   use_mock_calendar  : 'true' for mock data, 'false' for saved schedule (default: true)")
+        print("   use_ai_scoring     : 'true' for hybrid AI-enhanced, 'false' for algorithmic (default: false)")
+        print("   use_ai_only        : 'true' for AI-only holistic (RECOMMENDED), 'false' otherwise (default: false)")
+        print("   schedule_id        : UUID of saved schedule (optional, auto-detects if not provided)")
+        print("\nModes:")
+        print("   1. Algorithmic:       use_ai_scoring=false, use_ai_only=false  (fast, rule-based)")
+        print("   2. Hybrid AI:         use_ai_scoring=true,  use_ai_only=false  (AI scoring + optimization)")
+        print("   3. AI-Only (BEST):    use_ai_scoring=false, use_ai_only=true   (holistic AI reasoning)")
+        print("\nCalendar Sources:")
+        print("   - use_mock_calendar=true  : Uses mock calendar data (realistic_day profile)")
+        print("   - use_mock_calendar=false : Fetches from saved_schedules database (SUPABASE_CAL_URL)")
         print("\nNote:")
         print("   The script will fetch plan_items for today's date.")
         print("   Make sure your plan has items with plan_date = today.")
+        print("   To use saved schedules, ensure SUPABASE_CAL_URL and SUPABASE_CAL_SERVICE_KEY are set in .env")
         sys.exit(1)
 
     analysis_result_id = sys.argv[1]
     user_id = sys.argv[2]
     use_mock_calendar = True if len(sys.argv) < 4 else sys.argv[3].lower() == "true"
     use_ai_scoring = False if len(sys.argv) < 5 else sys.argv[4].lower() == "true"
+    use_ai_only = False if len(sys.argv) < 6 else sys.argv[5].lower() == "true"
+    schedule_id = None if len(sys.argv) < 7 else sys.argv[6]
 
     # Run demo
-    asyncio.run(demo_anchoring(analysis_result_id, user_id, use_mock_calendar, use_ai_scoring))
+    asyncio.run(demo_anchoring(analysis_result_id, user_id, use_mock_calendar, use_ai_scoring, use_ai_only, schedule_id))

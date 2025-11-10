@@ -5333,13 +5333,18 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
 🚨 YOU MUST OUTPUT ONLY VALID JSON - NO MARKDOWN, NO EXTRA TEXT, JUST JSON.
 """
 
+        # === SAFETY GUARDRAILS: Add safe prompt guidelines ===
+        from services.safety_validator import get_safety_validator
+        safety_validator = get_safety_validator()
+        safety_guidelines = safety_validator.get_safe_prompt_guidelines()
+
         response = await client.chat.completions.create(
             model="gpt-4o",
             response_format={"type": "json_object"},  # Force structured JSON output
             messages=[
                 {
                     "role": "system",
-                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks.\n\nYou MUST respond with ONLY valid JSON in this exact structure:\n{{\n  \"time_blocks\": [\n    {{\n      \"block_name\": \"Morning Block\",\n      \"start_time\": \"06:00 AM\",\n      \"end_time\": \"09:00 AM\",\n      \"zone_type\": \"maintenance\",\n      \"purpose\": \"Gentle activation and preparation for the day\",\n      \"tasks\": [\n        {{\n          \"start_time\": \"06:00 AM\",\n          \"end_time\": \"06:30 AM\",\n          \"title\": \"Wake-up and hydration\",\n          \"description\": \"Start with a glass of water and light stretching\",\n          \"task_type\": \"general\",\n          \"category\": \"hydration\",\n          \"priority\": \"high\"\n        }}\n      ]\n    }}\n  ]\n}}"
+                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks.\n\n{safety_guidelines}\n\nYou MUST respond with ONLY valid JSON in this exact structure:\n{{\n  \"time_blocks\": [\n    {{\n      \"block_name\": \"Morning Block\",\n      \"start_time\": \"06:00 AM\",\n      \"end_time\": \"09:00 AM\",\n      \"zone_type\": \"maintenance\",\n      \"purpose\": \"Gentle activation and preparation for the day\",\n      \"tasks\": [\n        {{\n          \"start_time\": \"06:00 AM\",\n          \"end_time\": \"06:30 AM\",\n          \"title\": \"Morning hydration\",\n          \"description\": \"Start with a glass of water and light stretching\",\n          \"task_type\": \"wellness\",\n          \"category\": \"hydration\",\n          \"priority\": \"high\"\n        }}\n      ]\n    }}\n  ]\n}}"
                 },
                 {
                     "role": "user",
@@ -5359,6 +5364,23 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
             # Fallback to text content
             structured_data = {"content": content}
 
+        # === SAFETY VALIDATION: Check generated plan for prohibited content ===
+        user_id_for_logging = user_context.get('user_id', 'unknown') if isinstance(user_context, dict) else 'unknown'
+        is_safe, violations = safety_validator.validate_plan(structured_data, user_id_for_logging)
+
+        if not is_safe:
+            logger.warning(f"[SAFETY] [{user_id_for_logging[:8]}] Plan contains {len(violations)} safety violation(s)")
+
+            # Log violations for monitoring
+            for violation in violations:
+                logger.warning(f"[SAFETY]   - {violation.category}: {violation.location}")
+
+            # If BLOCK_UNSAFE_PLANS is true, sanitize the plan
+            if safety_validator.block_unsafe:
+                logger.info(f"[SAFETY] Sanitizing plan to remove violations...")
+                structured_data = safety_validator.sanitize_plan(structured_data, violations)
+                logger.info(f"[SAFETY] Plan sanitized successfully")
+
         from shared_libs.utils.timezone_helper import get_user_local_date
 
         return {
@@ -5367,6 +5389,8 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
             "content": json.dumps(structured_data),  # Store as JSON string
             "model_used": "gpt-4o",
             "plan_type": "comprehensive_routine",
+            "safety_validated": is_safe,  # NEW: Track validation status
+            "safety_violations": len(violations) if violations else 0,  # NEW: Track violation count
             "system": "HolisticOS",
             "readiness_mode": readiness_level,
             "structured_format": True  # Flag indicating this uses new format

@@ -29,7 +29,8 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
             "schedule_id": str (optional),
             "include_google_calendar": bool,
             "confidence_threshold": float,
-            "use_ai_scoring": bool (optional, default True)
+            "use_ai_scoring": bool (optional, default False) - Hybrid AI scoring
+            "use_ai_only": bool (optional, default True) - AI-only holistic (RECOMMENDED)
         }
 
     Returns:
@@ -43,7 +44,8 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
     date_str = body.get("date")
     schedule_id = body.get("schedule_id")
     confidence_threshold = body.get("confidence_threshold", 0.7)
-    use_ai_scoring = body.get("use_ai_scoring", True)  # Use AI by default
+    use_ai_scoring = body.get("use_ai_scoring", False)  # Hybrid mode (legacy)
+    use_ai_only = body.get("use_ai_only", True)  # AI-only mode (RECOMMENDED - default)
 
     # Use TWO databases:
     # 1. SUPABASE_CAL_URL for saved_schedules (calendar database)
@@ -67,7 +69,8 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
         "Content-Type": "application/json"
     }
 
-    print(f"🎯 [ANCHORING-REST] Request: user={user_id}, date={date_str}, schedule={schedule_id}, ai={use_ai_scoring}")
+    mode_str = "AI-Only" if use_ai_only else ("Hybrid-AI" if use_ai_scoring else "Algorithmic")
+    print(f"🎯 [ANCHORING-REST] Request: user={user_id}, date={date_str}, schedule={schedule_id}, mode={mode_str}")
 
     # Import anchoring services
     from services.anchoring import (
@@ -200,10 +203,13 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
         # STEP 4: Use AnchoringCoordinator (WITH AI if requested)
         # ===================================================================
         if schedule_id and calendar_events and tasks_to_anchor:
-            print(f"🤖 [ANCHORING-REST] Running AnchoringCoordinator (AI={use_ai_scoring})")
+            print(f"🤖 [ANCHORING-REST] Running AnchoringCoordinator (mode={mode_str})")
 
-            # Initialize coordinator
-            coordinator = AnchoringCoordinator(use_ai_scoring=use_ai_scoring)
+            # Initialize coordinator with selected mode
+            coordinator = AnchoringCoordinator(
+                use_ai_only=use_ai_only,
+                use_ai_scoring=use_ai_scoring
+            )
 
             # Create custom calendar provider with our saved schedule events
             from services.anchoring.calendar_integration_service import CalendarFetchResult, CalendarConnectionStatus
@@ -302,7 +308,7 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
                 return {
                     "anchored_tasks": anchored_tasks,
                     "standalone_tasks": standalone_tasks,
-                    "message": f"Successfully anchored {len(anchored_tasks)} tasks using {'AI-enhanced' if use_ai_scoring else 'algorithmic'} scoring"
+                    "message": f"Successfully anchored {len(anchored_tasks)} tasks using {mode_str} anchoring"
                 }
 
             finally:
