@@ -174,8 +174,8 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
             else:
                 scheduled_time = time_type(8, 0)
 
-            # Calculate end time based on duration
-            duration_minutes = item.get('estimated_duration_minutes', 15)
+            # Calculate end time based on duration (handle None values from database)
+            duration_minutes = item.get('estimated_duration_minutes') or 15
             total_minutes = scheduled_time.hour * 60 + scheduled_time.minute + duration_minutes
             end_hour = (total_minutes // 60) % 24
             end_minute = total_minutes % 60
