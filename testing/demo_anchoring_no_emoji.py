@@ -473,14 +473,145 @@ async def demo_anchoring(analysis_result_id: str, user_id: str, use_mock_calenda
 
     coordinator = get_anchoring_coordinator(use_ai_only=use_ai_only, use_ai_scoring=use_ai_scoring)
 
-    result = await coordinator.anchor_tasks(
-        user_id=user_id,
-        tasks=tasks,
-        target_date=target_date,
-        use_mock_calendar=use_mock_calendar,
-        mock_profile="realistic_day",
-        min_gap_minutes=15
-    )
+    # ========================================================================
+    # IMPORTANT: Inject saved schedule into coordinator
+    # ========================================================================
+    # If we fetched a saved schedule, we need to inject it into the coordinator
+    # so it uses our events instead of trying to fetch from Supabase (which fails)
+    original_calendar_service = None
+    if not use_mock_calendar and calendar_events:
+        print("\n🔧 [DEMO] Injecting saved schedule events into coordinator...")
+        print(f"   Injecting {len(calendar_events)} events from saved schedule")
+
+        # Import CalendarFetchResult
+        from services.anchoring.calendar_integration_service import CalendarFetchResult, CalendarConnectionStatus
+
+        # Create a fake calendar service that returns our saved schedule
+        class SavedScheduleCalendarService:
+            async def fetch_calendar_events(
+                self,
+                user_id: str,
+                target_date: date,
+                supabase_token: str = None,
+                use_mock_data: bool = False,
+                mock_profile: str = None
+            ):
+                """Return saved schedule events"""
+                return CalendarFetchResult(
+                    success=True,
+                    events=calendar_events,  # ← Use the saved schedule we fetched!
+                    connection_status=CalendarConnectionStatus.CONNECTED,
+                    total_events=len(calendar_events),
+                    date=target_date,
+                    is_mock_data=False
+                )
+
+        # Save original and replace with our fake service
+        original_calendar_service = coordinator.calendar_service
+        coordinator.calendar_service = SavedScheduleCalendarService()
+        print("   ✅ Calendar service replaced with saved schedule provider")
+
+    try:
+        result = await coordinator.anchor_tasks(
+            user_id=user_id,
+            tasks=tasks,
+            target_date=target_date,
+            use_mock_calendar=False,  # Always False now - we control the events
+            mock_profile="realistic_day",
+            min_gap_minutes=15
+        )
+    finally:
+        # Restore original calendar service
+        if original_calendar_service is not None:
+            coordinator.calendar_service = original_calendar_service
+            print("   🔄 [DEMO] Restored original calendar service")
+
+    # ========================================================================
+    # DIAGNOSTIC: Show detailed response structure
+    # ========================================================================
+    print("\n" + "=" * 80)
+    print(" DIAGNOSTIC: ANCHORING RESPONSE DETAILS")
+    print("=" * 80)
+
+    print(f"\n📊 Response Object Type: {type(result)}")
+    print(f"📊 Total Tasks Input: {len(tasks)}")
+    print(f"📊 Result.total_tasks: {result.total_tasks}")
+    print(f"📊 Result.tasks_anchored: {result.tasks_anchored}")
+    print(f"📊 Result.tasks_rescheduled: {result.tasks_rescheduled}")
+    print(f"📊 Result.tasks_kept_original_time: {result.tasks_kept_original_time}")
+    print(f"📊 Result.average_confidence: {result.average_confidence:.2%}")
+
+    print(f"\n📋 Assignments Count: {len(result.assignments)}")
+    print(f"📋 Unassigned Tasks Count: {len(result.unassigned_tasks)}")
+
+    if len(result.assignments) > 0:
+        print(f"\n🔍 DETAILED ASSIGNMENTS (ALL {len(result.assignments)} TASKS):")
+        print("-" * 80)
+        for i, assignment in enumerate(result.assignments, 1):
+            print(f"\n  [{i}] {assignment.task_title}")
+            print(f"      Task ID: {assignment.task_id}")
+            print(f"      Anchored Time: {assignment.anchored_time}")
+            print(f"      Original Time: {assignment.original_time}")
+            print(f"      Duration: {assignment.duration_minutes} min")
+            print(f"      Confidence: {assignment.confidence_score:.2%}")
+            print(f"      Slot ID: {getattr(assignment, 'slot_id', 'N/A')}")
+
+            # DIAGNOSTIC: Show which calendar event this was anchored to
+            # OPTION A: Gap Association Strategy (same as REST API)
+            if not use_mock_calendar and calendar_events:
+                # 1. First, try to find event CONTAINING this time
+                matching_event = next(
+                    (e for e in calendar_events if
+                     e.start_time.time() <= assignment.anchored_time <= e.end_time.time()),
+                    None
+                )
+
+                # 2. If task is in a GAP (no containing event), associate with event BEFORE
+                match_type = "WITHIN"
+                if matching_event is None:
+                    # Find all events that END before this task's time
+                    events_before = [
+                        e for e in calendar_events
+                        if e.end_time.time() <= assignment.anchored_time
+                    ]
+                    if events_before:
+                        # Associate with the event immediately before (max end_time)
+                        matching_event = max(events_before, key=lambda e: e.end_time)
+                        match_type = "GAP-AFTER"
+                    else:
+                        # Task is before all events - associate with first event
+                        matching_event = min(calendar_events, key=lambda e: e.start_time)
+                        match_type = "GAP-BEFORE"
+
+                if matching_event:
+                    print(f"      📌 Anchored To: '{matching_event.title}' (ID: {matching_event.id}) [{match_type}]")
+                    print(f"         Event Time: {matching_event.start_time.time()} - {matching_event.end_time.time()}")
+                else:
+                    # Should never happen now
+                    print(f"      ⚠️  No matching calendar event found for time {assignment.anchored_time}")
+
+            if hasattr(assignment, 'scoring_breakdown'):
+                reasoning = assignment.scoring_breakdown.get('reasoning', 'N/A')
+                print(f"      Reasoning: {reasoning[:80]}...")
+    else:
+        print("\n⚠️  WARNING: No assignments in result!")
+
+    if len(result.unassigned_tasks) > 0:
+        print(f"\n❌ UNASSIGNED TASKS ({len(result.unassigned_tasks)} tasks couldn't be anchored):")
+        print("-" * 80)
+        for task_id in result.unassigned_tasks:
+            # Find task details
+            task = next((t for t in tasks if t.id == task_id), None)
+            if task:
+                print(f"  • {task.title} (ID: {task_id[:8]}...)")
+                print(f"    Original Time: {task.scheduled_time}")
+                print(f"    Duration: {task.estimated_duration_minutes} min")
+    else:
+        print(f"\n✅ All tasks were successfully anchored (no unassigned tasks)")
+
+    print("\n" + "=" * 80)
+    print(" END DIAGNOSTIC")
+    print("=" * 80 + "\n")
 
     if use_ai_only:
         print("   AI reasoning complete... DONE")

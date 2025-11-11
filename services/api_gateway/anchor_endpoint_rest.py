@@ -251,20 +251,65 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
 
                 print(f"✅ [ANCHORING-REST] Anchoring complete: {len(result.assignments)} anchored, {len(result.unassigned_tasks)} standalone")
 
+                # DIAGNOSTIC: Log ALL assignments before filtering
+                print(f"🔍 [DEBUG] Total assignments from AI: {len(result.assignments)}")
+                print(f"🔍 [DEBUG] Confidence threshold: {confidence_threshold}")
+                for assignment in result.assignments:
+                    print(f"🔍 [DEBUG] Task '{assignment.task_title}' - confidence: {assignment.confidence_score:.2f}, time: {assignment.anchored_time}")
+
                 # Create task mapping for quick lookup
                 task_map = {task.id: task for task in tasks_to_anchor}
 
+                # ===================================================================
+                # COMPLETE REPLACEMENT STRATEGY:
+                # Each anchoring run produces a COMPLETE dataset that replaces all
+                # previous anchoring. The Flutter UI stores this response in
+                # SharedPreferences, completely replacing the previous state.
+                # No incremental updates - always full replacement.
+                # ===================================================================
+
                 # Format response
                 anchored_tasks = []
+                filtered_count = 0
                 for assignment in result.assignments:
                     # Only include if confidence meets threshold
                     if assignment.confidence_score >= confidence_threshold:
                         # Find the calendar event this was anchored to
-                        # Use anchored_time to find the event
+                        # OPTION A: Gap Association Strategy
+                        # 1. First, try to find event CONTAINING this time
                         anchored_event = next(
                             (e for e in calendar_events if e.start_time.time() <= assignment.anchored_time <= e.end_time.time()),
                             None
                         )
+
+                        # 2. If task is in a GAP (no containing event), associate with event BEFORE
+                        if anchored_event is None and calendar_events:
+                            # Find all events that END before this task's time
+                            events_before = [
+                                e for e in calendar_events
+                                if e.end_time.time() <= assignment.anchored_time
+                            ]
+                            if events_before:
+                                # Associate with the event immediately before (max end_time)
+                                anchored_event = max(events_before, key=lambda e: e.end_time)
+                                print(f"🔗 [DEBUG] Task '{assignment.task_title}' at {assignment.anchored_time} anchored to GAP after '{anchored_event.title}'")
+                            else:
+                                # Task is before all events - associate with first event
+                                anchored_event = min(calendar_events, key=lambda e: e.start_time)
+                                print(f"🔗 [DEBUG] Task '{assignment.task_title}' at {assignment.anchored_time} anchored to GAP before '{anchored_event.title}'")
+
+                        # DIAGNOSTIC: Log event matching
+                        if anchored_event:
+                            # Check if task is WITHIN event or in GAP after/before
+                            is_within = (anchored_event.start_time.time() <= assignment.anchored_time <= anchored_event.end_time.time())
+                            match_type = "WITHIN" if is_within else "GAP-AFTER" if anchored_event.end_time.time() <= assignment.anchored_time else "GAP-BEFORE"
+                            print(f"✅ [DEBUG] Task '{assignment.task_title}' matched to event '{anchored_event.title}' (ID: {anchored_event.id}) [{match_type}]")
+                        else:
+                            # Should never happen now - but keep as safety fallback
+                            print(f"⚠️ [DEBUG] Task '{assignment.task_title}' at {assignment.anchored_time} - NO EVENT MATCH (using schedule_id as fallback)!")
+                            print(f"⚠️ [DEBUG] Available calendar events:")
+                            for e in calendar_events:
+                                print(f"   - {e.title}: {e.start_time.time()} to {e.end_time.time()}")
 
                         # Get the original task object
                         task = task_map.get(assignment.task_id)
@@ -281,13 +326,24 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
                             "health_tag": task.category if task else "general",
                             "reasoning": assignment.scoring_breakdown.get('reasoning', 'Algorithmically matched')
                         })
+                    else:
+                        # Task filtered due to low confidence
+                        filtered_count += 1
+                        print(f"❌ [DEBUG] Task '{assignment.task_title}' FILTERED (confidence {assignment.confidence_score:.2f} < {confidence_threshold})")
+
+                print(f"🔍 [DEBUG] After filtering: {len(anchored_tasks)} included, {filtered_count} filtered out")
 
                 # Format standalone tasks (use unassigned_tasks, not unanchored_tasks)
                 standalone_tasks = []
                 unassigned_task_ids = result.unassigned_tasks if hasattr(result, 'unassigned_tasks') else []
 
+                print(f"🔍 [DEBUG] Unassigned task IDs: {unassigned_task_ids}")
+                print(f"🔍 [DEBUG] Total tasks to anchor: {len(tasks_to_anchor)}")
+
                 # Find the actual task objects for unassigned IDs
                 unassigned_task_objects = [t for t in tasks_to_anchor if t.id in unassigned_task_ids]
+
+                print(f"🔍 [DEBUG] Unassigned task objects found: {len(unassigned_task_objects)}")
 
                 for task in unassigned_task_objects:
                     # Find original plan item to get time
@@ -305,11 +361,19 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
                             "duration_minutes": duration
                         })
 
-                return {
+                response_data = {
                     "anchored_tasks": anchored_tasks,
                     "standalone_tasks": standalone_tasks,
                     "message": f"Successfully anchored {len(anchored_tasks)} tasks using {mode_str} anchoring"
                 }
+
+                # DIAGNOSTIC: Log final response
+                print(f"📤 [DEBUG] FINAL RESPONSE:")
+                print(f"   Anchored tasks: {len(anchored_tasks)}")
+                print(f"   Standalone tasks: {len(standalone_tasks)}")
+                print(f"   Message: {response_data['message']}")
+
+                return response_data
 
             finally:
                 # Restore original calendar service
