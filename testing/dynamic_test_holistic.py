@@ -150,6 +150,8 @@ def test_routine_generation(name: str, user_id: str, archetype: str, log_filenam
             # Count tasks
             total_tasks = 0
             task_distribution = {}
+            missing_times_count = 0
+            tasks_with_complete_times = 0
 
             for block in time_blocks:
                 block_name = block.get('block_name', 'Unknown')
@@ -158,11 +160,27 @@ def test_routine_generation(name: str, user_id: str, archetype: str, log_filenam
                 total_tasks += task_count
                 task_distribution[block_name] = task_count
 
+                # Check time data for each task
+                for task in tasks:
+                    has_start = bool(task.get('start_time') or task.get('scheduled_time'))
+                    has_end = bool(task.get('end_time') or task.get('scheduled_end_time'))
+                    has_duration = bool(task.get('estimated_duration_minutes'))
+
+                    if has_start and has_end and has_duration:
+                        tasks_with_complete_times += 1
+                    else:
+                        missing_times_count += 1
+
             # Store analysis in result
             test_result["analysis"] = {
                 "total_tasks": total_tasks,
                 "task_distribution": task_distribution,
-                "block_count": len(time_blocks)
+                "block_count": len(time_blocks),
+                "time_validation": {
+                    "tasks_with_complete_times": tasks_with_complete_times,
+                    "tasks_missing_times": missing_times_count,
+                    "percentage_complete": round((tasks_with_complete_times / total_tasks * 100) if total_tasks > 0 else 0, 1)
+                }
             }
 
             print(f"\n✓ SUCCESS - Routine Generated")
@@ -173,6 +191,17 @@ def test_routine_generation(name: str, user_id: str, archetype: str, log_filenam
             for block_name, count in task_distribution.items():
                 emoji = "✅" if count <= 2 else "⚠️"
                 print(f"     {emoji} {block_name}: {count} tasks")
+
+            # Display time validation results
+            time_val = test_result["analysis"]["time_validation"]
+            print(f"\n⏰ Time Data Validation:")
+            print(f"   Tasks with complete times: {time_val['tasks_with_complete_times']}/{total_tasks}")
+            print(f"   Tasks missing times: {time_val['tasks_missing_times']}")
+            print(f"   Completion rate: {time_val['percentage_complete']}%")
+            if time_val['percentage_complete'] == 100:
+                print(f"   Status: ✅ ALL TASKS HAVE TIME DATA")
+            else:
+                print(f"   Status: ⚠️ SOME TASKS MISSING TIME DATA")
 
             # Check optimization for adaptive mode
             if adaptive_mode:

@@ -1537,7 +1537,174 @@ class PlanExtractionService:
         except Exception as e:
             logger.error(f"Error storing time blocks: {str(e)}")
             raise HolisticOSException(f"Failed to store time blocks: {str(e)}")
-    
+
+    def _parse_time_range(self, time_range_str: str) -> Tuple[Optional[time], Optional[time]]:
+        """
+        Parse time range string into start and end time objects
+
+        Supports formats:
+        - "09:00-17:15"
+        - "09:00 - 17:15"
+        - "9:00 AM - 5:15 PM"
+        - "09:00 AM - 5:15 PM"
+
+        Args:
+            time_range_str: Time range string from time_block
+
+        Returns:
+            Tuple of (start_time, end_time) or (None, None) if parsing fails
+        """
+        if not time_range_str:
+            return None, None
+
+        try:
+            # Pattern for time range with optional AM/PM
+            # Matches: "09:00-17:15", "9:00 AM - 5:15 PM", "09:00 AM - 05:15 PM"
+            pattern = r'(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?'
+            match = re.search(pattern, time_range_str, re.IGNORECASE)
+
+            if not match:
+                logger.warning(f"Could not parse time range: {time_range_str}")
+                return None, None
+
+            start_hour = int(match.group(1))
+            start_minute = int(match.group(2))
+            start_period = match.group(3).upper() if match.group(3) else None
+
+            end_hour = int(match.group(4))
+            end_minute = int(match.group(5))
+            end_period = match.group(6).upper() if match.group(6) else None
+
+            # Convert to 24-hour format if AM/PM is present
+            if start_period:
+                if start_period == 'PM' and start_hour != 12:
+                    start_hour += 12
+                elif start_period == 'AM' and start_hour == 12:
+                    start_hour = 0
+
+            if end_period:
+                if end_period == 'PM' and end_hour != 12:
+                    end_hour += 12
+                elif end_period == 'AM' and end_hour == 12:
+                    end_hour = 0
+            # If no end_period but start has period, assume same period for end
+            elif start_period and end_hour < start_hour:
+                # Likely crossed noon/midnight boundary
+                if start_period == 'AM':
+                    end_hour += 12  # End is PM
+
+            start_time_obj = time(start_hour, start_minute)
+            end_time_obj = time(end_hour, end_minute)
+
+            return start_time_obj, end_time_obj
+
+        except Exception as e:
+            logger.error(f"Error parsing time range '{time_range_str}': {str(e)}")
+            return None, None
+
+    async def _infer_task_times_from_time_blocks(self, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], analysis_result_id: str) -> List[ExtractedTask]:
+        """
+        Infer task times from parent time_block ranges when tasks don't have explicit times
+
+        This handles the case where AI generates time_blocks with overall time ranges
+        but doesn't assign specific times to individual tasks within those blocks.
+
+        Args:
+            tasks: List of ExtractedTask objects (some may have None for scheduled_time)
+            time_block_id_map: Mapping of time block keys to database IDs
+            analysis_result_id: Analysis result ID to fetch time block data
+
+        Returns:
+            List of ExtractedTask objects with inferred times where needed
+        """
+        try:
+            # Fetch time block data from database (we need time_range info)
+            time_blocks_result = self.supabase.table("time_blocks")\
+                .select("id, block_title, time_range")\
+                .eq("analysis_result_id", analysis_result_id)\
+                .execute()
+
+            if not time_blocks_result.data:
+                logger.warning(f"No time blocks found for analysis {analysis_result_id}")
+                return tasks
+
+            # Create mapping: time_block_id (UUID) -> time_range
+            time_block_ranges = {}
+            for tb in time_blocks_result.data:
+                time_block_ranges[tb['id']] = tb['time_range']
+
+            # Group tasks by their time_block_id
+            tasks_by_block = {}
+            for task in tasks:
+                # Get the database ID for this task's time block
+                block_key = task.time_block_id
+                block_db_id = time_block_id_map.get(block_key)
+
+                if block_db_id:
+                    if block_db_id not in tasks_by_block:
+                        tasks_by_block[block_db_id] = []
+                    tasks_by_block[block_db_id].append(task)
+
+            # Process each time block's tasks
+            for block_db_id, block_tasks in tasks_by_block.items():
+                # Get time range for this block
+                time_range_str = time_block_ranges.get(block_db_id)
+                if not time_range_str:
+                    logger.warning(f"No time range found for block {block_db_id}")
+                    continue
+
+                # Parse time range
+                start_time, end_time = self._parse_time_range(time_range_str)
+                if not start_time or not end_time:
+                    logger.warning(f"Could not parse time range for block {block_db_id}: {time_range_str}")
+                    continue
+
+                # Count tasks without times
+                tasks_without_times = [t for t in block_tasks if t.scheduled_time is None]
+
+                if not tasks_without_times:
+                    continue  # All tasks already have times
+
+                # Calculate time distribution
+                start_minutes = start_time.hour * 60 + start_time.minute
+                end_minutes = end_time.hour * 60 + end_time.minute
+
+                # Handle cases where end_time < start_time (crosses midnight)
+                if end_minutes <= start_minutes:
+                    end_minutes += 24 * 60  # Add 24 hours
+
+                total_duration = end_minutes - start_minutes
+
+                # Distribute tasks evenly within the block
+                num_tasks = len(tasks_without_times)
+                task_duration = total_duration // num_tasks if num_tasks > 0 else 0
+
+                for i, task in enumerate(tasks_without_times):
+                    # Calculate start time for this task
+                    task_start_minutes = start_minutes + (i * task_duration)
+                    task_end_minutes = task_start_minutes + task_duration
+
+                    # Convert back to time objects (handle overflow past midnight)
+                    task_start_hour = (task_start_minutes // 60) % 24
+                    task_start_min = task_start_minutes % 60
+
+                    task_end_hour = (task_end_minutes // 60) % 24
+                    task_end_min = task_end_minutes % 60
+
+                    # Update task with inferred times
+                    task.scheduled_time = time(task_start_hour, task_start_min)
+                    task.scheduled_end_time = time(task_end_hour, task_end_min)
+                    task.estimated_duration_minutes = task_duration
+
+                    logger.debug(f"[TIME-INFERENCE] '{task.title}' -> {task.scheduled_time}-{task.scheduled_end_time} ({task_duration}min)")
+
+            return tasks
+
+        except Exception as e:
+            logger.error(f"Error inferring task times: {str(e)}")
+            # Return original tasks if inference fails
+            return tasks
+
     async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None, preselected_tasks: dict = None) -> List[Dict[str, Any]]:
         """
         Store plan items with time block relationships and Option B source tracking
@@ -1581,9 +1748,14 @@ class PlanExtractionService:
                 
                 if not analysis_result.data:
                     raise HolisticOSException(f"Analysis result {analysis_result_id} not found")
-                
+
                 plan_date = analysis_result.data[0]["analysis_date"]
-            
+
+            # === INFER TASK TIMES: Calculate times for tasks without explicit times ===
+            # This handles cases where AI generates time_blocks with overall time ranges
+            # but doesn't assign specific times to individual tasks within those blocks
+            tasks = await self._infer_task_times_from_time_blocks(tasks, time_block_id_map, analysis_result_id)
+
             # Prepare data for insertion
             insert_data = []
             library_match_count = 0

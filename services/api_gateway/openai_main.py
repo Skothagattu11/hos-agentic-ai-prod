@@ -5322,13 +5322,26 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
    - {archetype} archetype characteristics
    - Readiness mode: {readiness_level}
    - Zone type (peak = high intensity, maintenance = moderate, recovery = light)
-3. **task details**: Each task needs:
-   - start_time/end_time: Within the block's time range, in 12-hour format (e.g., "06:00 AM")
+3. **task details**: Each task MUST include ALL of these fields:
+   - start_time: REQUIRED - Specific time within block range in 12-hour format with AM/PM (e.g., "06:00 AM", "02:30 PM")
+     ⚠️ CRITICAL: Use 12-hour format (01-12) with AM/PM, NOT 24-hour format with PM (e.g., "13:00 PM" is INVALID)
+   - end_time: REQUIRED - Specific time within block range in 12-hour format with AM/PM (e.g., "06:30 AM", "03:00 PM")
+     ⚠️ CRITICAL: Use 12-hour format (01-12) with AM/PM, NOT 24-hour format with PM (e.g., "15:00 PM" is INVALID)
    - title: Clear, actionable task name
    - description: Detailed explanation tailored to user's needs and health data
    - task_type: exercise, nutrition, work, focus, recovery, wellness, or social
    - category: nutrition, exercise, hydration, recovery, movement, mindfulness, sleep, or social (MUST match feedback categories)
    - priority: high, medium, or low based on health impact
+
+🚨 CRITICAL TIME REQUIREMENTS:
+- EVERY task MUST have both start_time AND end_time
+- Times MUST be within their parent block's time range
+- Times MUST be in 12-hour format with AM/PM (e.g., "08:45 AM", "02:15 PM")
+- NEVER mix 24-hour format with AM/PM (e.g., "13:00 PM" is INVALID - use "01:00 PM" instead)
+- Valid examples: "06:00 AM", "12:30 PM", "01:00 PM", "11:45 PM"
+- Invalid examples: "13:00 PM", "15:00 PM", "18:00 PM" (these will be REJECTED)
+- Tasks should be scheduled sequentially within each block (no overlaps)
+- If you generate a task with invalid times, the system will override them
 
 🚨 YOU MUST OUTPUT ONLY VALID JSON - NO MARKDOWN, NO EXTRA TEXT, JUST JSON.
 """
@@ -5344,7 +5357,7 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
             messages=[
                 {
                     "role": "system",
-                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks.\n\n{safety_guidelines}\n\nYou MUST respond with ONLY valid JSON in this exact structure:\n{{\n  \"time_blocks\": [\n    {{\n      \"block_name\": \"Morning Block\",\n      \"start_time\": \"06:00 AM\",\n      \"end_time\": \"09:00 AM\",\n      \"zone_type\": \"maintenance\",\n      \"purpose\": \"Gentle activation and preparation for the day\",\n      \"tasks\": [\n        {{\n          \"start_time\": \"06:00 AM\",\n          \"end_time\": \"06:30 AM\",\n          \"title\": \"Morning hydration\",\n          \"description\": \"Start with a glass of water and light stretching\",\n          \"task_type\": \"wellness\",\n          \"category\": \"hydration\",\n          \"priority\": \"high\"\n        }}\n      ]\n    }}\n  ]\n}}"
+                    "content": f"{system_prompt}\n\nYou are a routine optimization expert. Create actionable daily routines based on health data, behavioral insights, energy timeline, and archetype frameworks.\n\n{safety_guidelines}\n\n🚨 CRITICAL REQUIREMENT: EVERY task MUST have start_time and end_time. Never generate a task without explicit times.\n\nYou MUST respond with ONLY valid JSON in this exact structure:\n{{\n  \"time_blocks\": [\n    {{\n      \"block_name\": \"Morning Block\",\n      \"start_time\": \"06:00 AM\",\n      \"end_time\": \"09:00 AM\",\n      \"zone_type\": \"maintenance\",\n      \"purpose\": \"Gentle activation and preparation for the day\",\n      \"tasks\": [\n        {{\n          \"start_time\": \"06:00 AM\",\n          \"end_time\": \"06:30 AM\",\n          \"title\": \"Morning hydration\",\n          \"description\": \"Start with a glass of water and light stretching\",\n          \"task_type\": \"wellness\",\n          \"category\": \"hydration\",\n          \"priority\": \"high\"\n        }},\n        {{\n          \"start_time\": \"06:30 AM\",\n          \"end_time\": \"07:00 AM\",\n          \"title\": \"Balanced breakfast\",\n          \"description\": \"Nutritious meal with protein and complex carbs\",\n          \"task_type\": \"nutrition\",\n          \"category\": \"nutrition\",\n          \"priority\": \"high\"\n        }}\n      ]\n    }}\n  ]\n}}\n\nNOTE: Each task MUST have both start_time and end_time within the parent block's time range. Sequential scheduling with no overlaps."
                 },
                 {
                     "role": "user",
@@ -5359,6 +5372,44 @@ You MUST respond with EXACTLY 5 time blocks in this structure (block_name, start
         content = response.choices[0].message.content
         try:
             structured_data = json.loads(content)
+
+            # === VALIDATION: Check if AI provided times for all tasks ===
+            missing_times_count = 0
+            invalid_format_count = 0
+            total_tasks_count = 0
+
+            # Regex to detect invalid mixed format (24-hour with AM/PM)
+            import re
+            invalid_time_pattern = re.compile(r'\b(1[3-9]|2[0-3]):[0-5][0-9]\s*(AM|PM)\b', re.IGNORECASE)
+
+            if "time_blocks" in structured_data:
+                for block in structured_data["time_blocks"]:
+                    if "tasks" in block:
+                        for task in block["tasks"]:
+                            total_tasks_count += 1
+                            start_time = task.get("start_time", "")
+                            end_time = task.get("end_time", "")
+
+                            # Check if times exist
+                            if not start_time or not end_time:
+                                missing_times_count += 1
+                                logger.warning(f"[TIME-VALIDATION] Task missing times: '{task.get('title', 'Unknown')}' in block '{block.get('block_name', 'Unknown')}'")
+                            # Check if times are in invalid format (e.g., "13:00 PM")
+                            elif invalid_time_pattern.search(start_time) or invalid_time_pattern.search(end_time):
+                                invalid_format_count += 1
+                                logger.error(f"[TIME-VALIDATION] ❌ INVALID TIME FORMAT: '{task.get('title', 'Unknown')}' has invalid times: {start_time} - {end_time}")
+                                logger.error(f"[TIME-VALIDATION]    Invalid format detected: Cannot mix 24-hour (13-23) with AM/PM")
+                                logger.error(f"[TIME-VALIDATION]    Time inference will override these times")
+
+            if invalid_format_count > 0:
+                logger.error(f"[TIME-VALIDATION] ❌ AI generated {invalid_format_count}/{total_tasks_count} tasks with INVALID TIME FORMATS - time inference will override")
+
+            if missing_times_count > 0:
+                logger.error(f"[TIME-VALIDATION] AI generated {missing_times_count}/{total_tasks_count} tasks WITHOUT times - time inference will fill gaps")
+
+            if invalid_format_count == 0 and missing_times_count == 0:
+                logger.info(f"[TIME-VALIDATION] ✅ All {total_tasks_count} tasks have valid time data")
+
         except json.JSONDecodeError:
             logger.error(f"[ERROR] Failed to parse JSON response from GPT-4: {content[:500]}")
             # Fallback to text content
