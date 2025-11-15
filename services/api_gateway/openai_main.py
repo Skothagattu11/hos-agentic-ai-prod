@@ -1066,18 +1066,16 @@ async def get_routine_plan_by_date(user_id: str, date: str):
     """
     try:
         from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
-        from shared_libs.services.memory_service import MemoryManagementService
-        
+        from datetime import datetime
+
         # Validate date format
         try:
-            from datetime import datetime
             parsed_date = datetime.strptime(date, '%Y-%m-%d')
         except ValueError:
             raise HTTPException(status_code=400, detail="Date must be in YYYY-MM-DD format")
-        
-        # Initialize services
+
+        # Initialize adapter
         adapter = SupabaseAsyncPGAdapter()
-        memory_service = MemoryManagementService(adapter)
         
         try:
             # Query holistic_analysis_results for routine plans on the specified date
