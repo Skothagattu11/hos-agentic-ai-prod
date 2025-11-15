@@ -4386,6 +4386,7 @@ async def run_routine_generation(
                 'analysis_type': 'routine_plan',
                 'analysis_result': routine_result,
                 'archetype': archetype,
+                'goal_id': goal_id,  # ✅ CRITICAL: Link plan to specific goal
                 'input_summary': input_summary,
                 'agent_id': 'routine_plan_agent',
                 'key_insights': json.dumps(key_insights),
@@ -4404,9 +4405,10 @@ async def run_routine_generation(
                     stored_items = await extraction_service.extract_and_store_plan_items(
                         analysis_result_id=analysis_id,
                         profile_id=user_id,
-                        preselected_tasks=preselected_tasks_result
+                        preselected_tasks=preselected_tasks_result,
+                        goal_id=goal_id  # ✅ CRITICAL: Link plan items to specific goal
                     )
-                    print(f"[SUCCESS] [EXTRACTION] Stored {len(stored_items)} plan items")
+                    print(f"[SUCCESS] [EXTRACTION] Stored {len(stored_items)} plan items for goal: {goal_id}")
 
                 except Exception as extraction_error:
                     print(f"[WARNING] [EXTRACTION] Failed: {extraction_error}")
