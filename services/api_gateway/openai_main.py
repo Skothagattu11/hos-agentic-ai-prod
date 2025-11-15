@@ -990,7 +990,7 @@ async def get_latest_routine_plan(user_id: str):
 async def get_user_plans_for_date(user_id: str, date: str):
     """Simple endpoint: Get routine plan and extract time blocks for calendar"""
     try:
-        from shared_libs.database.supabase_async_pg_adapter import SupabaseAsyncPGAdapter
+        from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
         from services.plan_extraction_service import PlanExtractionService
         from datetime import datetime
         
@@ -1065,7 +1065,7 @@ async def get_routine_plan_by_date(user_id: str, date: str):
     Use /api/user/{user_id}/plans/{date} for new time-block-centric approach
     """
     try:
-        from shared_libs.database.supabase_async_pg_adapter import SupabaseAsyncPGAdapter
+        from shared_libs.supabase_client.adapter import SupabaseAsyncPGAdapter
         from shared_libs.services.memory_service import MemoryManagementService
         
         # Validate date format
