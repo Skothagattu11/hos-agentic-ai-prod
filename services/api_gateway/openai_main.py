@@ -476,6 +476,7 @@ class HealthResponse(BaseModel):
 
 # On-Demand Plan Generation Models
 class PlanGenerationRequest(BaseModel):
+    goal_id: str  # MANDATORY: Link plan to specific goal
     archetype: Optional[str] = None  # Use stored archetype if not provided
     preferences: Optional[Dict[str, Any]] = None  # User preferences for customization
     timezone: Optional[str] = None  # User's IANA timezone (e.g., "America/New_York", "Asia/Kolkata")
@@ -483,6 +484,7 @@ class PlanGenerationRequest(BaseModel):
 class RoutinePlanResponse(BaseModel):
     status: str
     user_id: str
+    goal_id: Optional[str] = None  # Goal this plan is associated with
     routine_plan: Dict[str, Any]
     analysis_id: Optional[str] = None  # ID of the stored analysis in holistic_analysis_results
     behavior_analysis: Optional[Dict[str, Any]] = None  # Include behavior analysis in response
@@ -1157,6 +1159,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
         force_refresh = request.preferences.get('force_refresh', False) if request.preferences else False
         archetype = request.archetype or "Foundation Builder"
         user_timezone = request.timezone  # Extract user's timezone from request
+        goal_id = request.goal_id  # Extract goal_id from request (MANDATORY)
 
         # MVP-Style Logging: Import and prepare input data (independent of database)
         from services.mvp_style_logger import mvp_logger
@@ -1390,7 +1393,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                         # Store plan items in database for active plan display
                         stored_items = await extraction_service.extract_and_store_plan_items(
                             analysis_result_id=analysis_result_id,
-                            profile_id=user_id
+                            profile_id=user_id,
+                            goal_id=goal_id
                         )
                         pass
                     
@@ -1420,6 +1424,7 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
             response_data = RoutinePlanResponse(
                 status="success",
                 user_id=user_id,
+                goal_id=goal_id,  # Include goal_id for frontend to track which goal this plan belongs to
                 routine_plan=routine_plan,
                 analysis_id=analysis_id,  # Include analysis_id at top level for easy access
                 behavior_analysis=None,  # Excluded from response per user request

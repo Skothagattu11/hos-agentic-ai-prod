@@ -96,7 +96,7 @@ class PlanExtractionService:
         
         self.supabase = create_client(supabase_url, supabase_key)
         
-    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str, override_plan_date: str = None, preselected_tasks: dict = None) -> List[Dict[str, Any]]:
+    async def extract_and_store_plan_items(self, analysis_result_id: str, profile_id: str, override_plan_date: str = None, preselected_tasks: dict = None, goal_id: str = None) -> List[Dict[str, Any]]:
         """
         Extract trackable tasks and time blocks from a plan and store them in normalized structure
 
@@ -105,6 +105,7 @@ class PlanExtractionService:
             profile_id: User's profile ID
             override_plan_date: Optional date to override the plan_date (YYYY-MM-DD format). If not provided, uses analysis_date from holistic_analysis_results.
             preselected_tasks: Optional dict from TaskPreseeder with pre-selected library tasks for Option B source tracking
+            goal_id: Optional goal ID to link plan items to a specific goal
 
         Returns:
             List of extracted and stored plan items with time block relationships
@@ -189,7 +190,8 @@ class PlanExtractionService:
                 extracted_plan.tasks,
                 time_block_id_map,
                 override_plan_date,
-                preselected_tasks  # Pass through for Option B source tracking
+                preselected_tasks,  # Pass through for Option B source tracking
+                goal_id  # Pass goal_id for linking to specific goal
             )
             store_items_time = time.time() - store_items_start
 
@@ -691,7 +693,7 @@ class PlanExtractionService:
             if analysis_result_id:
                 logger.info(f"Using specific analysis_result_id: {analysis_result_id}")
                 specific_analysis = self.supabase.table("holistic_analysis_results")\
-                    .select("id, archetype, analysis_date, created_at, user_id")\
+                    .select("id, archetype, analysis_date, created_at, user_id, goal_id")\
                     .eq("id", analysis_result_id)\
                     .eq("user_id", profile_id)\
                     .single()\
@@ -719,7 +721,7 @@ class PlanExtractionService:
             if not complete_analysis:
                 logger.info("No specific analysis_result_id provided, finding most recent complete analysis")
                 analyses_with_blocks = self.supabase.table("holistic_analysis_results")\
-                    .select("id, archetype, analysis_date, created_at, user_id")\
+                    .select("id, archetype, analysis_date, created_at, user_id, goal_id")\
                     .eq("user_id", profile_id)\
                     .in_("analysis_type", ["routine_plan", "nutrition_plan"])\
                     .order("created_at", desc=True)\
@@ -773,6 +775,7 @@ class PlanExtractionService:
                 "routine_plan": {
                     "analysis_id": complete_analysis["id"],
                     "analysis_result_id": complete_analysis["id"],  # Add explicit analysis_result_id field
+                    "goal_id": complete_analysis.get("goal_id"),  # Include goal_id from analysis
                     "archetype": complete_analysis.get("archetype"),
                     "created_at": complete_analysis["created_at"],
                     "analysis_date": complete_analysis["analysis_date"]
@@ -1705,7 +1708,7 @@ class PlanExtractionService:
             # Return original tasks if inference fails
             return tasks
 
-    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None, preselected_tasks: dict = None) -> List[Dict[str, Any]]:
+    async def _store_plan_items_with_time_blocks(self, analysis_result_id: str, profile_id: str, tasks: List[ExtractedTask], time_block_id_map: Dict[str, str], override_plan_date: str = None, preselected_tasks: dict = None, goal_id: str = None) -> List[Dict[str, Any]]:
         """
         Store plan items with time block relationships and Option B source tracking
 
@@ -1716,6 +1719,7 @@ class PlanExtractionService:
             time_block_id_map: Mapping of time block keys to IDs
             override_plan_date: Optional plan date override
             preselected_tasks: Optional dict from TaskPreseeder for source tracking
+            goal_id: Optional goal ID to link plan items to a specific goal
         """
         if not tasks:
             return []
@@ -1817,6 +1821,7 @@ class PlanExtractionService:
                     'item_id': task.task_id,
                     'time_block': task.time_block_id,  # Keep original for backward compatibility
                     'time_block_id': time_block_id,  # New foreign key
+                    'goal_id': goal_id,  # Link plan items to specific goal
                     'title': task.title,
                     'description': task.description,
                     'scheduled_time': task.scheduled_time.strftime('%H:%M:%S') if task.scheduled_time else None,
