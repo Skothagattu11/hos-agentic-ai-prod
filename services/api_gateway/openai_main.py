@@ -1334,7 +1334,8 @@ async def generate_fresh_routine_plan(user_id: str, request: PlanGenerationReque
                 behavior_analysis=behavior_analysis,
                 circadian_analysis=circadian_analysis if circadian_success else None,
                 user_timezone=user_timezone,  # Pass user timezone for accurate date calculation
-                preferences=request.preferences  # NEW: Pass user preferences for task selection and scheduling
+                preferences=request.preferences,  # NEW: Pass user preferences for task selection and scheduling
+                goal_id=goal_id  # ✅ CRITICAL: Pass goal_id to link plan to specific goal
             )
 
             # FINAL AGENT HANDOFF: Log the combined analysis → routine generation transformation
@@ -4191,7 +4192,8 @@ async def run_routine_generation(
     circadian_analysis: dict = None,
     user_timezone: str = None,
     markdown_plan: str = None,
-    preferences: dict = None
+    preferences: dict = None,
+    goal_id: str = None  # ✅ CRITICAL: Link plan to specific goal
 ) -> dict:
     """
     Simplified Routine Generation - Clean flow with feedback integration
@@ -4214,6 +4216,7 @@ async def run_routine_generation(
             - wake_time: "06:00" (24-hour format)
             - sleep_time: "22:00" (24-hour format)
             - preferred_workout_time: "morning" | "evening" | "flexible"
+        goal_id: Optional UUID string to link plan to specific goal
             - available_time_slots: ["morning", "afternoon", "evening"]
             - goals: ["hydration", "movement", "nutrition", "sleep", "stress"]
             - energy_pattern: "morning_person" | "night_owl" | "balanced"
@@ -4381,6 +4384,15 @@ async def run_routine_generation(
                 'feedback_count': preselected_tasks_result.get('selection_stats', {}).get('feedback_available', 0) if preselected_tasks_result else 0
             })
 
+            # 🔍 DEBUG: Before inserting
+            print(f"[DEBUG] [STORAGE] About to insert holistic_analysis_results:")
+            print(f"[DEBUG]   user_id={user_id}")
+            print(f"[DEBUG]   goal_id={goal_id}")
+            print(f"[DEBUG]   analysis_type=routine_plan")
+            print(f"[DEBUG]   archetype={archetype}")
+            print(f"[DEBUG]   analysis_result type={type(routine_result).__name__}, size={len(str(routine_result))} chars")
+            print(f"[DEBUG]   key_insights type={type(key_insights).__name__}, json_size={len(json.dumps(key_insights))} chars")
+
             result = supabase.table('holistic_analysis_results').insert({
                 'user_id': user_id,
                 'analysis_type': 'routine_plan',
@@ -4392,6 +4404,11 @@ async def run_routine_generation(
                 'key_insights': json.dumps(key_insights),
                 'created_at': datetime.now(timezone.utc).isoformat()
             }).execute()
+
+            # 🔍 DEBUG: After insert
+            print(f"[DEBUG] [STORAGE] Insert returned:")
+            print(f"[DEBUG]   result.data type={type(result.data).__name__}")
+            print(f"[DEBUG]   result.data={result.data}")
 
             if result.data:
                 analysis_id = result.data[0]['id']
@@ -4411,10 +4428,23 @@ async def run_routine_generation(
                     print(f"[SUCCESS] [EXTRACTION] Stored {len(stored_items)} plan items for goal: {goal_id}")
 
                 except Exception as extraction_error:
-                    print(f"[WARNING] [EXTRACTION] Failed: {extraction_error}")
+                    print(f"[ERROR] [EXTRACTION] Failed to extract plan items:")
+                    print(f"[ERROR]   Type: {type(extraction_error).__name__}")
+                    print(f"[ERROR]   Message: {extraction_error}")
+                    import traceback
+                    print(f"[ERROR]   Traceback:\n{traceback.format_exc()}")
+            else:
+                print(f"[ERROR] [STORAGE] Insert succeeded but returned no data")
+                print(f"[ERROR]   result.data={result.data}")
 
         except Exception as storage_error:
-            print(f"[WARNING] [STORAGE] Failed: {storage_error}")
+            print(f"[ERROR] [STORAGE] INSERT FAILED - This is the root cause of missing plans!")
+            print(f"[ERROR]   Exception Type: {type(storage_error).__name__}")
+            print(f"[ERROR]   Exception Message: {storage_error}")
+            import traceback
+            print(f"[ERROR]   Full Traceback:")
+            print(traceback.format_exc())
+            print(f"[ERROR]   ❌ Latest plan NOT created in database - investigate above error")
 
         # Add metadata to result
         routine_result.update({

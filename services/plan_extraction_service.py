@@ -1790,7 +1790,7 @@ class PlanExtractionService:
                     logger.warning(f"Could not map task '{task.title}' with time_block_id '{task.time_block_id}' to any time block")
 
                 # === OPTION B: Match task to library tasks for source tracking ===
-                task_source = 'ai'  # Default to AI-generated
+                task_source = 'ai'  # Default to AI-generated (backward compatible)
                 task_library_id = None
                 task_category = task.category  # Use category from AI response (if provided)
                 task_subcategory = None
