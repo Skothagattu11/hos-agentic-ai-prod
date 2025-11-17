@@ -349,7 +349,14 @@ async def generate_anchors_via_rest_api(body: dict) -> dict:
                     # Find original plan item to get time
                     plan_item = next((p for p in plan_items if p['id'] == task.id), None)
                     if plan_item:
-                        scheduled_time = plan_item.get('scheduled_time', '08:00')[:5]
+                        # Get scheduled_time, handling None case
+                        scheduled_time_raw = plan_item.get('scheduled_time') or '08:00'
+                        # Ensure it's a string and extract HH:MM
+                        if isinstance(scheduled_time_raw, str):
+                            scheduled_time = scheduled_time_raw[:5]  # Extract HH:MM
+                        else:
+                            scheduled_time = '08:00'
+
                         duration = task.estimated_duration_minutes
                         end_time = _add_minutes_to_time(scheduled_time, duration)
 
