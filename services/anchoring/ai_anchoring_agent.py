@@ -277,15 +277,39 @@ FINAL DECISION:
 - Total score <70 → Keep STANDALONE (don't force) ✗
 
 CRITICAL CONSTRAINT RULES:
-- Each task can be assigned to AT MOST ONE gap
-- Gap capacity MUST NOT be exceeded (sum of task durations ≤ gap duration)
-- HIGH-PRIORITY tasks SHOULD be anchored if semantically suitable
-- LOW-PRIORITY tasks can remain STANDALONE
-- Tasks can be placed sequentially within the same gap
-- UNANCHORED tasks should keep their original time as fallback
-- NEVER force a task into a logically incompatible gap
 
-Think step-by-step, analyze semantics carefully, and provide clear reasoning for EACH decision.
+⚠️ ANCHORING LIMITS (STRICT - NO EXCEPTIONS):
+1. Maximum 2 tasks can be anchored to ANY single calendar event
+2. Total duration of anchored tasks ≤ 15 minutes
+   - Example: 10min + 5min = OK (total 15min)
+   - Example: 10min + 10min = NOT OK (total 20min) → Keep second task STANDALONE
+3. If gap is too small for task duration → Keep task STANDALONE
+4. If gap already has 2 anchored tasks → ALL remaining tasks STANDALONE
+5. If adding task would exceed 15 min total → Keep task STANDALONE
+
+STANDALONE TASK HANDLING:
+- Tasks kept STANDALONE must be scheduled at their ORIGINAL time from plan_items
+- Do NOT move standalone tasks to different times
+- Use original scheduled_time from the task definition
+- Example: If task originally scheduled for 12:00 PM, keep it at 12:00 PM (don't move to 12:30 PM)
+
+DECISION PROCESS FOR EACH TASK:
+1. Check if semantically suitable gap exists
+2. Check if gap has <2 anchored tasks AND total_duration + task_duration ≤ 15 min
+3. If YES → ANCHOR to gap
+4. If NO → KEEP STANDALONE at original scheduled_time
+
+EXAMPLES:
+✓ Calendar event "wakeup" (30 min):
+  - Anchor "Morning Yoga" (10 min) → Total: 10 min ✓
+  - Anchor "Hydration" (5 min) → Total: 15 min ✓
+  - "Breakfast" (15 min) → Would exceed 15 min → STANDALONE at original time ✗
+
+✗ Calendar event "gym" (60 min):
+  - Anchor "Stretch" (10 min) → Total: 10 min ✓
+  - Anchor "Cool-down" (10 min) → Total: 20 min ✗ (exceeds 15) → STANDALONE
+
+Think step-by-step, analyze semantics carefully, and ENFORCE anchor limits strictly.
 
 Always output valid JSON matching the specified structure."""
 
@@ -404,17 +428,22 @@ Think through this step-by-step:
 - Are there synergies (meal prep before dinner time)?
 
 **STEP 3: MAKE ASSIGNMENTS**
-For each task, assign to optimal gap considering:
-- Energy match (task demand vs time of day)
-- Timing preference (user's stated preference)
-- Context fit (events before/after this gap)
-- Workflow optimization (creates good daily flow)
-- Constraint satisfaction (fits in gap capacity)
+For each task, check ANCHORING LIMITS FIRST:
+1. Count tasks already anchored to this gap
+2. Sum their durations
+3. If gap has <2 anchored tasks AND adding this task keeps total ≤ 15 min → ANCHOR
+4. Otherwise → MARK AS UNANCHORED (STANDALONE)
+
+If task is UNANCHORED (STANDALONE):
+- Use task.scheduled_time (original time) from plan_items
+- Do NOT modify the time - keep it exactly as originally scheduled
+- Example: If task is originally scheduled for "12:00 PM", keep "12:00"
 
 **STEP 4: VALIDATE**
-- Check no gap is over-capacity
-- Verify high-priority tasks are anchored
-- Ensure no overlaps within same gap
+- ✓ No gap has >2 anchored tasks
+- ✓ No gap has total anchor duration >15 minutes
+- ✓ Each unanchored task has original scheduled_time preserved
+- ✓ Each task appears ONCE (either anchored or unanchored)
 
 ## Output Format (JSON)
 
@@ -428,24 +457,34 @@ Return ONLY valid JSON with this EXACT structure:
       "start_time": "06:00",
       "end_time": "06:05",
       "confidence": 0.95,
-      "reasoning": "Brief explanation why this gap is optimal..."
+      "reasoning": "Anchored: Morning Yoga (10min) + Hydration (5min) = 15min total"
+    }},
+    {{
+      "task_id": "task_008",
+      "gap_id": null,
+      "start_time": "12:00",
+      "end_time": "12:15",
+      "confidence": 0.3,
+      "reasoning": "STANDALONE: Gap already has 2 anchored tasks (15min), would exceed limit"
     }}
   ],
   "unanchored": [
     {{
-      "task_id": "task_008",
-      "reason": "No suitable gap - all slots at capacity"
+      "task_id": "task_005",
+      "reason": "STANDALONE: Original time 15:00, no gap available that respects 15min anchor limit"
     }}
   ],
   "insights": [
-    "Created morning wellness routine with 3 sequential tasks",
-    "Positioned focus work after coffee break for clarity"
+    "Anchored 2 tasks to morning routine (total 15 min)",
+    "3 tasks kept as standalone - will be scheduled at their original times"
   ]
 }}
 
 CRITICAL:
-- Ensure gap capacities are not exceeded
-- Each task appears ONCE (either in assignments or unanchored)
+- Max 2 anchored tasks PER gap, max 15 min total
+- ANCHORED task: has gap_id, anchored_time in gap
+- UNANCHORED task: gap_id=null, start_time=original scheduled_time from plan_items
+- Each task appears ONCE (either anchored or unanchored)
 - All task_ids and gap_ids must match the input exactly
 - Times must be in HH:MM format
 """
@@ -470,16 +509,49 @@ CRITICAL:
         assignments = []
         assigned_task_ids = set()
 
-        # Process AI assignments
+        # Process AI assignments (both anchored and unanchored in assignments array)
         for assignment in ai_output.get('assignments', []):
             task_id = assignment['task_id']
-            gap_id = assignment['gap_id']
+            gap_id = assignment.get('gap_id')  # Can be None for unanchored
 
-            if task_id not in task_map or gap_id not in slot_map:
-                logger.warning(f"[AI-ANCHORING-AGENT] Invalid task/gap ID: {task_id}/{gap_id}")
+            if task_id not in task_map:
+                logger.warning(f"[AI-ANCHORING-AGENT] Invalid task ID: {task_id}")
                 continue
 
             task = task_map[task_id]
+
+            # Check if this is an anchored or unanchored task
+            if gap_id is None or gap_id == 'null':
+                # UNANCHORED (STANDALONE) - keep original time
+                logger.info(f"[AI-ANCHORING-AGENT] Task '{task.title}' marked as STANDALONE - using original time {task.scheduled_time}")
+
+                task_assignment = TaskAssignment(
+                    task_id=task.id,
+                    task_title=task.title,
+                    original_time=task.scheduled_time,
+                    original_end_time=task.scheduled_end_time,
+                    anchored_time=task.scheduled_time,  # Keep original
+                    anchored_end_time=task.scheduled_end_time,  # Keep original
+                    duration_minutes=task.estimated_duration_minutes,
+                    slot_id='unanchored',
+                    confidence_score=float(assignment.get('confidence', 0.2)),
+                    time_adjustment_minutes=0,  # No adjustment
+                    scoring_breakdown={
+                        'algorithm_used': 'ai_holistic_standalone',
+                        'model': self.model,
+                        'reasoning': assignment.get('reasoning', 'Kept as standalone'),
+                        'ai_confidence': assignment.get('confidence', 0.2)
+                    }
+                )
+                assignments.append(task_assignment)
+                assigned_task_ids.add(task_id)
+                continue
+
+            # ANCHORED task
+            if gap_id not in slot_map:
+                logger.warning(f"[AI-ANCHORING-AGENT] Invalid gap ID: {gap_id}")
+                continue
+
             slot = slot_map[gap_id]
 
             # Parse AI-provided times
@@ -499,7 +571,7 @@ CRITICAL:
             anchored_dt = datetime.combine(datetime.today(), anchored_time)
             time_diff = (anchored_dt - original_dt).total_seconds() / 60
 
-            # Create TaskAssignment
+            # Create TaskAssignment for anchored task
             task_assignment = TaskAssignment(
                 task_id=task.id,
                 task_title=task.title,
@@ -512,7 +584,7 @@ CRITICAL:
                 confidence_score=float(assignment.get('confidence', 0.9)),
                 time_adjustment_minutes=int(time_diff),
                 scoring_breakdown={
-                    'algorithm_used': 'ai_holistic',
+                    'algorithm_used': 'ai_holistic_anchored',
                     'model': self.model,
                     'reasoning': assignment.get('reasoning', ''),
                     'ai_confidence': assignment.get('confidence', 0.9)

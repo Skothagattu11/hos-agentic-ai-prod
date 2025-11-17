@@ -141,6 +141,13 @@ class GreedyAssignmentService:
         assigned_tasks = set()
         assignments = []
 
+        # Track anchors per slot for max 2 tasks + 15 min limit
+        anchors_per_slot = {}  # slot_id -> list of (task_id, duration)
+
+        # ⚠️ CRITICAL: Track tasks rejected due to anchor limits
+        # These tasks should be STANDALONE at original time, not tried for other slots
+        tasks_rejected_for_anchor_limits = set()
+
         # Sort scores by total score (highest first)
         sorted_scores = sorted(scores, key=lambda x: x.total_score, reverse=True)
 
@@ -151,6 +158,10 @@ class GreedyAssignmentService:
 
             # Skip if task already assigned
             if task_id in assigned_tasks:
+                continue
+
+            # Skip if task was rejected due to anchor limits (must be standalone at original time)
+            if task_id in tasks_rejected_for_anchor_limits:
                 continue
 
             # Skip if slot no longer available
@@ -164,14 +175,46 @@ class GreedyAssignmentService:
             if task.estimated_duration_minutes > slot.duration_minutes:
                 continue
 
+            # ⚠️ ANCHOR LIMIT CHECK: Max 2 anchors, max 15 min total per slot
+            if slot_id not in anchors_per_slot:
+                anchors_per_slot[slot_id] = []
+
+            current_anchors = anchors_per_slot[slot_id]
+            current_total_duration = sum(duration for _, duration in current_anchors)
+
+            # Check if adding this task exceeds limits
+            if len(current_anchors) >= 2:
+                logger.warning(
+                    f"[ANCHOR-LIMIT] Slot {slot_id} already has 2 anchored tasks (max=2). "
+                    f"Task '{task.title}' marked as STANDALONE (rejected for this slot)"
+                )
+                # Mark as rejected - will NOT try other slots
+                tasks_rejected_for_anchor_limits.add(task_id)
+                continue
+
+            if current_total_duration + task.estimated_duration_minutes > 15:
+                logger.warning(
+                    f"[ANCHOR-LIMIT] Slot {slot_id} would exceed 15min limit "
+                    f"({current_total_duration}min + {task.estimated_duration_minutes}min = "
+                    f"{current_total_duration + task.estimated_duration_minutes}min). "
+                    f"Task '{task.title}' marked as STANDALONE (rejected for this slot)"
+                )
+                # Mark as rejected - will NOT try other slots
+                tasks_rejected_for_anchor_limits.add(task_id)
+                continue
+
             # Assign task to slot
             assignment = self._create_assignment(task, slot, score)
             assignments.append(assignment)
             assigned_tasks.add(task_id)
 
+            # Track this anchor
+            anchors_per_slot[slot_id].append((task_id, task.estimated_duration_minutes))
+
             logger.info(
                 f"[GREEDY-ASSIGNMENT] Assigned '{task.title}' to slot {slot_id} "
-                f"(score: {score.total_score:.1f})"
+                f"(score: {score.total_score:.1f}, total anchors in slot: {len(current_anchors) + 1}/2, "
+                f"total duration: {current_total_duration + task.estimated_duration_minutes}/15 min)"
             )
 
             # Update slot availability
@@ -186,9 +229,15 @@ class GreedyAssignmentService:
         unassigned_task_ids = []
         for task in tasks:
             if task.id not in assigned_tasks:
+                # Determine why task wasn't assigned
+                if task.id in tasks_rejected_for_anchor_limits:
+                    reason = "rejected due to anchor limits (max 2 anchors, max 15 min per slot)"
+                else:
+                    reason = "no suitable slot available"
+
                 logger.warning(
-                    f"[GREEDY-ASSIGNMENT] Task '{task.title}' could not be assigned, "
-                    f"using original time"
+                    f"[GREEDY-ASSIGNMENT] Task '{task.title}' kept as STANDALONE - {reason} - "
+                    f"using original time {task.scheduled_time.strftime('%H:%M')}"
                 )
                 # Keep original time as fallback
                 assignment = self._create_fallback_assignment(task)
