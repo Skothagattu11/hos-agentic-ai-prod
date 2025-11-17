@@ -4402,7 +4402,8 @@ async def run_routine_generation(
                 'input_summary': input_summary,
                 'agent_id': 'routine_plan_agent',
                 'key_insights': json.dumps(key_insights),
-                'created_at': datetime.now(timezone.utc).isoformat()
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'analysis_date': datetime.now(timezone.utc).date().isoformat()  # ✅ FIXED: Explicitly set to today's date
             }).execute()
 
             # 🔍 DEBUG: After insert
